@@ -22,4 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.cursor"src/assets/@fortawesome" 
+.cursor
+src/assets/
