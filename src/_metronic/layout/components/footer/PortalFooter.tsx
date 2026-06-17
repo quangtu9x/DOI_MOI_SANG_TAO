@@ -16,26 +16,26 @@ export const PortalFooter = () => {
             />
             <div className="flex flex-col">
               <h2 className="text-white text-[16px] md:text-[18px] font-bold uppercase leading-tight">
-                SỞ KHOA HỌC VÀ CÔNG NGHỆ HẢI PHÒNG
+                TỔNG CÔNG TY HÀNG KHÔNG VIỆT NAM - CTCP
               </h2>
               <p className="text-blue-100 text-[12px] md:text-[13px] font-medium leading-tight mt-1 opacity-80">
-                Hệ thống quản lý đầu tư, ứng dụng CNTT, CĐS, KHCN trên địa bàn thành phố
+                Hệ thống phần mềm quản trị đổi mới sáng tạo 
               </p>
             </div>
           </Link>
           <div className="flex flex-col gap-3 mt-2">
             <div className="flex items-start gap-3 text-[14px]">
               <i className="fa-regular fa-location-dot mt-1 text-white opacity-80"></i>
-              <span className="text-blue-100 opacity-80">Số 1 Phạm Ngũ Lão, Lương Khánh Thiện, Ngô Quyền, Hải Phòng</span>
+              <span className="text-blue-100 opacity-80">Số 200 Nguyễn Sơn, Phường Bồ Đề, Hà Nội.</span>
             </div>
             <div className="flex items-center gap-3 text-[14px]">
               <i className="fa-regular fa-phone text-white opacity-80"></i>
-              <span className="text-blue-100 opacity-80">(0225) 3757.101</span>
+              <span className="text-blue-100 opacity-80">(+84-24) 38272289</span>
             </div>
-            <div className="flex items-center gap-3 text-[14px]">
+            {/* <div className="flex items-center gap-3 text-[14px]">
               <i className="fa-regular fa-envelope text-white opacity-80"></i>
               <span className="text-blue-100 opacity-80">sokhcn@haiphong.gov.vn</span>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -81,7 +81,7 @@ export const PortalFooter = () => {
       <div className="border-t border-white/10 py-6 bg-black/20">
         <div className="max-w-[1320px] mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-white text-[14px] opacity-80">
-            © 2026 Sở KHCN Hải Phòng. All rights Reserved
+            © 2026 Tổng công ty Hàng không Việt Nam - CTCP
           </p>
           <div className="flex items-center gap-6">
             <Link to="#" className="text-white opacity-80 hover:text-white transition-opacity">

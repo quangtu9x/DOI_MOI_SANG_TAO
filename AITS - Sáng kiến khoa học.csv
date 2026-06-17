@@ -1,0 +1,612 @@
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,Ghi chú
+A,Core Business – Nghiệp vụ lõi,,,,
+I,Innovation Portal & Workflow – Quản lý sáng kiến,,,,
+I.1,Quản lý ý tưởng,,,,
+I.1.1,"Khởi tạo ý tưởng theo 2 cách:
+ - Cho phép người dùng khởi tạo một ý tưởng cá nhân mới trên hệ thống theo mẫu biểu được cấu hình sẵn.
+ - Import ý tưởng hàng loạt qua file Excel, CSV, API, hoặc tích hợp hệ thống khác.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa đủ
+I.1.2,"Nhập thông tin ý tưởng: Cho phép người dùng nhập thông tin chi tiết của ý tưởng, bao gồm nhưng không giới hạn: Tiêu đề ý tưởng; Mô tả vấn đề/thực trạng cần cải tiến; Nội dung ý tưởng (ý tưởng ban đầu, định hướng giải quyết); Lợi ích dự kiến (nâng cao hiệu quả khai thác, chất lượng dịch vụ, an toàn, tiết kiệm chi
+ phí, chuyển đổi số, v.v.)",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Đã có nhưng cần phải sửa tên các trường thông tin
+I.1.3,"Cấu hình trường thông tin ý tưởng: Hệ thống cho phép cấu hình các trường thông tin bắt buộc/không bắt buộc đối với ý tưởng,
+ phù hợp với mục tiêu thu thập ý tưởng ở giai đoạn ban đầu.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+I.1.4,"Lưu nháp ý tưởng: Cho phép người dùng lưu ý tưởng ở trạng thái nháp để tiếp tục chỉnh sửa, hoàn thiện trước khi nộp chính
+ thức.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+I.1.5,"Đính kèm tài liệu ý tưởng: Cho phép người dùng tải lên các tệp tin đính kèm liên quan đến ý tưởng (hình ảnh minh họa, tài liệu
+ mô tả, file trình bày…), hỗ trợ nhiều định dạng theo cấu hình hệ thống.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Đã có
+I.1.6,"Chọn cán bộ quản lý tiếp nhận: Cho phép người dùng lựa chọn
+ cán bộ quản lý trực tiếp hoặc người tiếp nhận ý tưởng từ danh",Đáp ứng,Không đáp ứng,"Văn bản cam kết và
+ Demo chứng minh",Chưa có
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,"sách cán bộ được phân quyền; hỗ trợ tìm kiếm theo tên và đơn
+ vị công tác.",,,,
+I.1.7,"Xem trước ý tưởng: Cho phép người dùng xem trước toàn bộ
+ nội dung ý tưởng trước khi nộp, bao gồm thông tin đã nhập, tài liệu đính kèm và thông tin người tiếp nhận.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+I.1.8,"Nộp ý tưởng: Cho phép người dùng chính thức nộp ý tưởng lên
+ hệ thống; hệ thống ghi nhận thời gian nộp và chuyển trạng thái ý tưởng sang “Đã nộp/Chờ xét duyệt”.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+I.1.9,"Thông báo xác nhận nộp ý tưởng: Sau khi nộp thành công, hệ
+ thống tự động gửi thông báo xác nhận cho người nộp ý tưởng thông qua email và/hoặc thông báo trên hệ thống.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+I.1.10,"Quản lý quyền chỉnh sửa: Sau khi ý tưởng được nộp, hệ thống khóa quyền chỉnh sửa nội dung, trừ trường hợp ý tưởng được trả
+ về để yêu cầu bổ sung/chỉnh sửa theo quy trình xét duyệt.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Đã có
+I.1.11,"Xem hồ sơ, thông tin công nhận ý tưởng.",Đáp ứng,Không đáp ứng,"Văn bản cam kết và
+ Demo chứng minh",Chưa có
+I.2,Quản lý giải pháp,,,,
+I.2.1,"Xem danh sách giải pháp: Cho phép người dùng xem danh sách các giải pháp cá nhân mà bản thân đã khởi tạo hoặc tham gia triển khai/áp dụng trên hệ thống; danh sách hiển thị tối thiểu:
+ mã giải pháp, tiêu đề, ngày tạo, trạng thái xử lý, đơn vị áp dụng.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.2.2,"Xem chi tiết giải pháp: Cho phép người dùng xem chi tiết thông tin giải pháp mà bản thân đã khởi tạo hoặc tham gia triển khai, bao gồm thông tin chung của giải pháp (tiêu đề, mô tả, ý tưởng
+ liên quan, mục tiêu thực hiện), kế hoạch thực hiện giải pháp và các tài liệu đính kèm liên quan.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.2.3,"Tìm kiếm giải pháp: Cho phép người dùng thực hiện tìm kiếm giải pháp trong danh sách giải pháp cá nhân thông qua nhập từ
+ khóa như tiêu đề, mô tả, mã giải pháp hoặc ý tưởng liên quan.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+I.2.4,"Lọc giải pháp: Cho phép người dùng thực hiện lọc danh sách các giải pháp dựa trên nhiều tiêu chí như trạng thái xử lý, thời
+ gian tạo, đơn vị áp dụng và mức độ triển khai.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.2.5,"Tạo và gửi đăng ký áp dụng giải pháp: Cho phép người dùng nhập thông tin và gửi đăng ký áp dụng giải pháp trên hệ thống, đồng thời cho phép người dùng đăng tải các tệp tin đính kèm
+ liên quan đến giải pháp và kế hoạch triển khai.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.2.6,"Chỉnh sửa giải pháp: Cho phép người dùng thực hiện cập nhật,
+ chỉnh sửa thông tin giải pháp trong các trạng thái được hệ thống cho phép theo quy trình quản lý.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.2.7,Xem hồ sơ công nhận giải pháp: Cho phép người dùng xem các hồ sơ khen thưởng đối với các giải pháp đã được phê duyệt.,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.2.8,"Tải hồ sơ nhận thưởng: Cho phép người dùng tải các tệp hồ sơ
+ nhận thưởng của giải pháp về thiết bị cá nhân theo các định dạng được hệ thống hỗ trợ.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.3,Quản lý sáng kiến,,,,
+I.3.1,"Xem danh sách sáng kiến: Cho phép người dùng xem danh sách các sáng kiến cá nhân mà bản thân đã khởi tạo hoặc đã tham gia vào quá trình áp dụng trên hệ thống; danh sách hiển thị tối thiểu: mã sáng kiến, tiêu đề, ngày tạo, trạng thái công nhận, đơn vị áp
+ dụng.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.3.2,"Xem chi tiết sáng kiến: Cho phép người dùng xem chi tiết thông tin sáng kiến mà bản thân đã khởi tạo hoặc tham gia áp dụng, bao gồm thông tin chung của sáng kiến (tiêu đề, mô tả, ý tưởng liên quan, mục tiêu thực hiện) và báo cáo nghiệm thu kết quả áp
+ dụng giải pháp.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+I.3.3,"Tìm kiếm sáng kiến: Cho phép người dùng thực hiện tìm kiếm sáng kiến trong danh sách sáng kiến cá nhân thông qua nhập từ
+ khóa như tiêu đề, mô tả, mã sáng kiến hoặc ý tưởng liên quan.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3.4,"Lọc sáng kiến: Cho phép người dùng thực hiện lọc danh sách các sáng kiến dựa trên nhiều tiêu chí như trạng thái công nhận,
+ thời gian tạo, đơn vị áp dụng và mức độ hiệu quả.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3.5,"Tạo và gửi yêu cầu công nhận sáng kiến: Cho phép người dùng nhập và gửi yêu cầu công nhận sáng kiến trên hệ thống; cho phép người dùng sử dụng AI để kiểm tra mức độ trùng lặp hoặc tương đồng của sáng kiến với các sáng kiến đã tồn tại; cho phép người dùng đăng tải các tệp tin đính kèm liên quan đến sáng
+ kiến và kết quả áp dụng.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.3.6,"Chỉnh sửa sáng kiến: Cho phép người dùng thực hiện cập nhật,
+ chỉnh sửa thông tin sáng kiến trong các trạng thái được hệ thống cho phép theo quy trình xét duyệt và công nhận sáng kiến.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.3.7,"Xem hồ sơ nhận thưởng: Cho phép người dùng xem các hồ sơ
+ khen thưởng đối với các sáng kiến đã được công nhận, bao gồm quyết định công nhận, thư khen và các tài liệu liên quan.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.3.8,"Tải hồ sơ nhận thưởng: Cho phép người dùng tải các tệp hồ sơ
+ nhận thưởng của sáng kiến về thiết bị cá nhân theo các định dạng được hệ thống hỗ trợ.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.3.9,"Gửi báo cáo để xét duyệt thù lao: Cho phép người dùng thực hiện gửi các báo cáo định kỳ về kết quả duy trì và hiệu quả áp dụng sáng kiến để cơ quan, đơn vị có thẩm quyền soát xét; đồng
+ thời cho phép người dùng xem danh sách các báo cáo định kỳ do bản thân đã gửi để phục vụ việc xét duyệt thù lao.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.4,Quy trình xử lý và phê duyệt,,,,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+I.4.1,"Tùy biến quy trình xử lý nhiều cấp:
+ - Hệ thống hỗ trợ quy trình xử lý và phê duyệt nhiều cấp, áp dụng cho Ý tưởng, Giải pháp và Sáng kiến, với các bước cơ bản bao gồm: Tiếp nhận - Sơ loại - Đánh giá - Phê duyệt - Triển khai (nếu áp dụng) -Tổng kết/ghi nhận kết quả.
+ - Cho phép cấu hình bổ sung, rút gọn hoặc thay đổi thứ tự
+ các bước xử lý tùy theo từng loại hình (ý tưởng, giải pháp, sáng kiến) hoặc từng chương trình/cuộc thi.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.4.2,"Phân loại và áp dụng quy trình:
+ - Hệ thống cho phép áp dụng các quy trình xử lý khác nhau cho: Ý tưởng, Giải pháp, Sáng kiến; Các chương trình, cuộc thi, hoặc đợt phát động khác nhau.
+ - Cho phép cấu hình điều kiện để tự động chuyển luồng xử
+ lý, ví dụ: ý tưởng được phê duyệt sẽ được đề xuất chuyển sang giai đoạn giải pháp hoặc sáng kiến.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.4.3,"Phân công và phân quyền xử lý:
+ - Hệ thống cho phép phân công rõ ràng người hoặc nhóm phụ trách tại từng bước trong quy trình (cán bộ tiếp nhận, hội đồng đánh giá, lãnh đạo phê duyệt, đơn vị triển khai).
+ - Việc phân quyền phải linh hoạt, có thể cấu hình theo vai trò, chức danh, đơn vị hoặc hội đồng xét duyệt.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.4.4,"Xử lý kết quả tại từng bước:
+ - Tại mỗi bước xử lý, hệ thống phải cho phép người phụ trách lựa chọn kết quả xử lý, bao gồm nhưng không giới hạn: Thông qua / Phê duyệt; Không thông qua; Yêu cầu chỉnh sửa, bổ sung; Chuyển sang bước tiếp theo hoặc chuyển sang
+ quy trình khác.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,"- Đối với các trường hợp không thông qua hoặc yêu cầu chỉnh sửa, hệ thống phải cho phép nhập lý do chi tiết và gửi
+ phản hồi cho người đề xuất.",,,,
+I.5,Hỗ trợ kỹ số và chữ ký điện từ,,,,
+I.5.1,"Cho phép người dùng xem danh sách các tài liệu, hồ sơ hoặc sáng kiến đang chờ ký duyệt trên hệ thống",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.5.2,"Thực hiện ký số: Cho phép người dùng thực hiện ký số trực tiếp trên tài liệu điện tử trong hệ thống thông qua các phương thức ký được hỗ trợ (USB Token, ký số từ xa hoặc chữ ký điện tử nội
+ bộ)",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.5.3,"Ký nhiều cấp trong quy trình phê duyệt: Hệ thống hỗ trợ ký số theo quy trình phê duyệt nhiều cấp; cho phép thiết lập ký tuần tự hoặc ký song song giữa các cấp phê duyệt; hiển thị trạng thái
+ ký của từng cá nhân trong quy trình.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.5.4,"Xác thực và đảm bảo toàn vẹn tài liệu: Sau khi tài liệu được ký số, hệ thống đảm bảo nội dung tài liệu không bị thay đổi; mọi chỉnh sửa sau khi ký phải được ghi nhận hoặc yêu cầu thực hiện
+ lại quy trình ký.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.6,Theo dõi SLA và tự động cảnh báo,,,,
+I.6.1,"Cấu hình thời gian xử lý (SLA): Cho phép quản trị hệ thống thiết lập thời gian xử lý tiêu chuẩn (SLA) cho từng bước trong quy trình tiếp nhận, đánh giá và phê duyệt Ý tưởng, Giải pháp và Sáng kiến; thời gian xử lý tại mỗi bước phải được cấu hình linh
+ hoạt theo từng loại hồ sơ hoặc từng cấp phê duyệt.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.6.2,"Ghi nhận thời gian xử lý: Hệ thống tự động ghi nhận thời điểm bắt đầu và kết thúc xử lý tại từng bước trong quy trình; dữ liệu này được sử dụng để theo dõi tiến độ xử lý hồ sơ và phục vụ
+ công tác báo cáo, thống kê.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+I.6.3,"Theo dõi trạng thái SLA: Hệ thống tự động so sánh thời gian xử lý thực tế với thời gian SLA đã được cấu hình để xác định trạng thái xử lý của từng hồ sơ, bao gồm: đúng hạn, sắp quá hạn hoặc
+ quá hạn.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.6.4,"Cảnh báo sắp quá hạn: Khi thời gian xử lý tại một bước sắp đến hạn theo SLA đã cấu hình, hệ thống tự động gửi thông báo nhắc
+ việc đến người hoặc nhóm phụ trách thông qua các kênh như thông báo trên hệ thống, email hoặc tin nhắn nội bộ.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.6.5,"Tự động cảnh báo và leo thang khi quá hạn: Khi hồ sơ vượt quá thời gian xử lý theo SLA, hệ thống phải tự động gửi cảnh báo đến người phụ trách, đồng thời thực hiện cơ chế leo thang thông
+ báo tới cấp quản lý hoặc bộ phận liên quan để kịp thời xử lý.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.6.6,"Gia hạn thời gian xử lý: Cho phép người có thẩm quyền gia hạn hoặc điều chỉnh thời gian xử lý tại từng bước trong các trường hợp đặc biệt; hệ thống phải ghi nhận đầy đủ thông tin về người
+ thực hiện gia hạn, thời điểm điều chỉnh và lý do gia hạn.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II,AI Engine - Ứng dụng trí tuệ nhân tạo,,,,
+II.1,"Phát hiện trùng lặp: Hệ thống sử dụng công nghệ AI để tự động phân tích nội dung Ý tưởng, Giải pháp hoặc Sáng kiến được đề
+ xuất; so sánh với dữ liệu sáng kiến đã tồn tại trong hệ thống nhằm phát hiện mức độ trùng lặp hoặc tương đồng về nội dung.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II.2,"Gợi ý các sáng kiến liên quan: Khi người dùng tạo mới hoặc chỉnh sửa đề xuất, hệ thống tự động hiển thị danh sách các sáng kiến, giải pháp hoặc dự án có nội dung tương tự đã tồn tại trên
+ hệ thống để người dùng tham khảo và tránh trùng lặp.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II.3,"Tạo Business Case tự động: Hệ thống hỗ trợ người dùng xây dựng bản phân tích hiệu quả của sáng kiến (Business Case) dựa
+ trên nội dung đề xuất, bao gồm gợi ý các yếu tố như mục tiêu",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,"thực hiện, phạm vi áp dụng, chi phí dự kiến, lợi ích định lượng
+ và định tính.",,,,
+II.4,"Gợi ý cải thiện nội dung sáng kiến: Hệ thống cung cấp các gợi ý nhằm giúp người đề xuất hoàn thiện nội dung sáng kiến, bao gồm đề xuất bổ sung thông tin còn thiếu, làm rõ mục tiêu, phạm
+ vi áp dụng hoặc các chỉ tiêu đánh giá hiệu quả.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II.5,"Tìm kiếm tri thức thông minh (Knowledge Search): Hệ thống cho phép người dùng tìm kiếm thông tin, tài liệu, bài học kinh nghiệm và các sáng kiến đã triển khai trước đó thông qua cơ chế
+ tìm kiếm ngữ nghĩa dựa trên AI.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II.6,"Tích hợp chatbot để hỗ trợ hỏi đáp, tra cứu thông tin, hướng dẫn người dùng.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+III,Innovation Project Hub/Sandbox – Quản trị dự án ĐMST,,,,
+III.1,"Nhập dữ liệu chương trình/dự án: Cho phép người dùng tải lên tệp dữ liệu (Excel/CSV) để khởi tạo hàng loạt danh sách chương trình/dự án Chuyển đổi số (CĐS), R&D hoặc Sandbox vào hệ thống; hệ thống kiểm tra định dạng dữ liệu và thông báo lỗi nếu
+ có.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.2,"Xem danh sách chương trình/dự án: Cho phép người dùng xem toàn bộ danh sách chương trình/dự án CĐS, R&D hoặc Sandbox trên hệ thống; danh sách hiển thị tối thiểu các thông tin: mã dự
+ án, tên dự án, đơn vị phụ trách, người quản lý dự án, tiến độ thực hiện và trạng thái hiện tại.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.3,"Xem chi tiết chương trình/dự án: Cho phép người dùng xem thông tin chi tiết của chương trình/dự án bao gồm: mục tiêu, phạm vi triển khai, kế hoạch thực hiện, nguồn lực tham gia, ngân
+ sách dự kiến, các mốc triển khai (milestones) và kết quả thực hiện.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+III.4,"Khởi tạo chương trình/dự án mới: Cho phép người dùng tạo mới chương trình hoặc dự án CĐS, R&D hoặc Sandbox và khai báo các thông tin ban đầu như tên dự án, mục tiêu, phạm vi, đơn vị
+ chủ trì, người phụ trách và thời gian thực hiện.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.5,"Cập nhật thông tin chương trình/dự án: Cho phép người dùng chỉnh sửa thông tin dự án, cập nhật tiến độ triển khai, cập nhật
+ kết quả thực hiện và thay đổi trạng thái dự án theo quy trình quản lý đã được thiết lập.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.6,"Hệ thống hỗ trợ quản lý vòng đời của sáng kiến từ giai đoạn đề xuất (Proposal) đến khi hình thành dự án thử nghiệm (Project/POC/Sandbox) và triển khai thực tế; trạng thái của dự
+ án được cập nhật và theo dõi xuyên suốt các giai đoạn.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.7,"Quản lý mốc triển khai (Milestone Management): Cho phép người dùng thêm, sửa hoặc xóa các mốc chính của dự án; mỗi mốc triển khai bao gồm các thông tin như mô tả mốc, thời hạn
+ hoàn thành, người phụ trách và tỷ lệ hoàn thành.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.8,"Theo dõi tiến độ dự án: Hệ thống cung cấp các công cụ trực quan như Timeline, biểu đồ Gantt và bảng theo dõi tiến độ nhằm
+ hỗ trợ theo dõi tiến độ thực hiện của dự án theo thời gian.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+III.9,"Quản lý rủi ro và vấn đề: Cho phép người dùng ghi nhận và theo dõi các rủi ro, vấn đề, giả định và phụ thuộc phát sinh trong quá
+ trình triển khai dự án; hệ thống hỗ trợ cập nhật trạng thái và phương án xử lý.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.10,"Phân bổ nguồn lực và ngân sách: Cho phép người quản lý dự án
+ phân bổ nguồn lực nhân sự, ngân sách và các nguồn lực liên quan cho từng giai đoạn hoặc từng mốc triển khai của dự án.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+III.11,"Tìm kiếm chương trình/dự án: Cho phép người dùng nhập từ
+ khóa để tìm kiếm nhanh các chương trình/dự án theo mã, tên dự án, đơn vị phụ trách hoặc người quản lý.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+III.12,"Cho phép người dùng lọc danh sách dự án theo các tiêu chí như trạng thái, giai đoạn triển khai, thời gian thực hiện, đơn vị phụ
+ trách, mức độ ưu tiên hoặc lĩnh vực triển khai.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+III.13,"Theo dõi trạng thái và cảnh báo tiến độ: Hệ thống hiển thị trạng thái thực hiện của từng dự án và tự động cảnh báo các dự án chậm tiến độ hoặc có nguy cơ chậm tiến độ dựa trên kế hoạch
+ đã được thiết lập.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.14,"Đánh giá sau triển khai: cho phép ghi nhận kết quả thực hiện,
+ đánh giá hiệu quả triển khai và tổng hợp các bài học kinh nghiệm phục vụ cho các dự án tiếp theo.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+IV,Knowledge Hub – Quản trị tri thức,,,,
+IV.1,Thư viện ĐMST,,,,
+IV.1.1,"Thư viện tri thức: Hệ thống cung cấp thư viện tri thức tập trung cho phép lưu trữ và chia sẻ các tài liệu hướng dẫn, playbooks, biểu mẫu (templates), tài liệu nghiên cứu và các case studies liên
+ quan đến hoạt động đổi mới sáng tạo trong toàn TCT.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.1.2,"Kho lưu trữ bài học kinh nghiệm báo cáo đánh giá sau triển khai
+ dự án nhằm phục vụ việc tham khảo, học hỏi và cải tiến cho các sáng kiến và dự án tiếp theo.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.1.3,"Phân loại và quản lý metadata: Hệ thống hỗ trợ phân loại nội dung tri thức theo nhiều tiêu chí khác nhau, bao gồm nhưng không giới hạn (Lĩnh vực áp dụng, Đơn vị, cá nhân đề xuất hoặc
+ triển khai, trạng thái xử lý theo vòng đời).",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.1.4,"Quản lý tài liệu và nội dung đính kèm: Cho phép lưu trữ các tài liệu liên quan đến ý tưởng, giải pháp và sáng kiến dưới nhiều
+ định dạng khác nhau như PDF, Word, PowerPoint, ảnh, liên kết đến các nguồn tài liệu bên ngoài.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.1.5,"Tìm kiếm và tra cứu nâng cao: Hệ thống hỗ trợ cơ chế tìm kiếm
+ nâng cao, bao gồm: Tìm kiếm toàn văn (Full-text search), Tìm",Đáp ứng,Không đáp ứng,"Văn bản cam kết và
+ Demo chứng minh",Chưa có
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,"kiếm theo từ khóa hoặc tag, tìm kiếm theo metadata như lĩnh
+ vực, trạng thái, đơn vị.",,,,
+IV.1.6,"Danh bạ chuyên gia: Hệ thống cung cấp danh mục chuyên gia theo từng lĩnh vực chuyên môn, cho phép người dùng tìm kiếm và liên hệ với các chuyên gia trong tổ chức để hỗ trợ tư vấn,
+ đánh giá hoặc triển khai sáng kiến.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.1.7,"Quản trị nội dung: Cho phép thiết lập quy trình kiểm duyệt, phê duyệt và quản lý nội dung tri thức trước khi được công bố trên hệ thống; đồng thời phân quyền truy cập và chỉnh sửa nội dung
+ theo vai trò của người dùng.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.2,Cộng đồng và tương tác,,,,Chưa có
+IV.2.1,"Hệ thống hỗ trợ xây dựng các cộng đồng thực hành theo lĩnh vực chuyên môn, cho phép người dùng trao đổi, đặt câu hỏi, chia sẻ kinh nghiệm và thảo luận về các chủ đề liên quan đến
+ đổi mới sáng tạo.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.2.2,"Hệ thống cho phép người dùng tương tác với ý tưởng, giải pháp, sáng kiến đã được đăng tải, bao gồm: Thích (Like); Bình luận
+ (Comment).",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.2.3,"Hệ thống phải ghi nhận và hiển thị: Số lượt thích; Danh sách và
+ nội dung bình luận; Thời gian và người thực hiện tương tác",Đáp ứng,Không đáp ứng,"Văn bản cam kết và
+ Demo chứng minh",Chưa có
+IV.2.4,"Hệ thống hỗ trợ cá nhân hóa News Feed dựa trên: Đơn vị công tác; Lĩnh vực quan tâm; Các ý tưởng/giải pháp/sáng kiến đã
+ tương tác hoặc tham gia; Vai trò người dùng.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+B,Rewards & engagement - Thưởng & Tương tác,,,,
+I,Thưởng & Ghi nhận,,,,
+I.1,Cấp phát điểm thưởng: Cho phép hệ thống tự động cấp định kỳ (năm/tháng) số lượng Cánh sen/Bông sen cho Lãnh đạo TCT và,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,"Lãnh đạo CQĐV theo hạn mức được cấu hình để sử dụng khen
+ thưởng.",,,,
+I.2,"Tặng thưởng nội bộ: Cho phép lãnh đạo hoặc CBNV gửi Cánh
+ sen/Bông sen cho cá nhân/nhóm khác kèm nội dung ghi nhận, lý do khen thưởng và giá trị tương ứng.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.3,"Ghi nhận thưởng từ hoạt động/chương trình: Cho phép hệ thống tự động cộng điểm Cánh sen/Bông sen hoặc tiền thưởng cho người lao động khi tham gia hoặc đạt thành tích trong các
+ chương trình, chiến dịch, cuộc thi hoặc sáng kiến do TCT phát động.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.4,"Chi trả thưởng tiền mặt: Cho phép thực hiện chi trả tiền thưởng từ Quỹ tiền mặt cho các ý tưởng/giải pháp/sáng kiến được phê duyệt, hỗ trợ lập danh sách chi trả và tích hợp xuất dữ liệu phục
+ vụ thanh toán/kế toán.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.5,"Quy đổi điểm thưởng: Cho phép CBNV sử dụng Cánh sen/Bông sen để quy đổi thành quà tặng, vật phẩm hoặc phúc lợi theo danh
+ mục và tỷ lệ quy đổi được cấu hình.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.6,"Quản lý danh mục quà tặng: Cho phép tạo, cập nhật và quản lý danh mục quà, số lượng tồn, giá trị quy đổi và trạng thái khả
+ dụng.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.7,"Theo dõi số dư và lịch sử giao dịch: Cho phép người dùng xem số dư từng ví và toàn bộ lịch sử nhận, tặng, quy đổi, chi trả theo
+ thời gian thực.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.8,"Quản lý giao dịch minh bạch: Ghi nhận đầy đủ nhật ký giao
+ dịch, thông tin người gửi/nhận, thời điểm, giá trị và lý do; hỗ trợ tra cứu, đối soát.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.9,"Cảnh báo và thông báo: Tự động gửi thông báo khi cấp phát
+ điểm, nhận thưởng, gần hết ngân sách quỹ, hoặc khi giao dịch được phê duyệt/hoàn tất.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+II,Trò trơi hóa và bảng xếp hạng,,,,
+II.1,"Hệ thống điểm kinh nghiệm (XP): Hệ thống cho phép ghi nhận và cộng điểm kinh nghiệm (XP) cho người dùng khi thực hiện các hoạt động trên nền tảng như: đề xuất ý tưởng, tham gia đánh giá, đóng góp nội dung tri thức, tham gia chiến dịch hoặc hoàn
+ thành nhiệm vụ.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II.2,"Hệ thống cấp độ người dùng: Hệ thống cung cấp cơ chế phân cấp độ người dùng dựa trên điểm kinh nghiệm tích lũy, với tối thiểu 100 cấp độ từ; mỗi cấp độ tương ứng với một ngưỡng điểm
+ XP được cấu hình trên hệ thống.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II.3,"Xem thông tin cấp độ và điểm XP: Cho phép người dùng xem
+ thông tin cấp độ hiện tại, tổng điểm XP đã tích lũy, tiến độ lên cấp tiếp theo và lịch sử các hoạt động đã ghi nhận điểm.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+II.4,"Quản lý huy hiệu và thành tựu: Hệ thống cho phép cấu hình và cấp các huy hiệu (badges) và thành tựu (achievements) cho
+ người dùng khi đạt được các mốc hoạt động hoặc thành tích nhất định trên hệ thống.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II.5,"Quản lý nhiệm vụ (Missions): Hệ thống cho phép thiết lập các nhiệm vụ nhằm khuyến khích người dùng tham gia hoạt động
+ đổi mới sáng tạo, bao gồm các loại nhiệm vụ: ngày/Tuần/Tháng.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.6,"Hồ sơ thành tích cá nhân: Cho phép người dùng xem hồ sơ thành tích cá nhân bao gồm cấp độ, điểm XP, huy hiệu đã đạt được,
+ nhiệm vụ đã hoàn thành và các đóng góp trên nền tảng.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.7,"Bảng xếp hạng đóng góp theo tháng/ quý/ năm:
+ - Hệ thống cho phép người dùng xem bảng xếp hạng theo tháng, bao gồm: Danh sách các đơn vị có đóng góp ý tưởng, giải pháp, sáng kiến nổi bật; Danh sách các cá nhân có đóng
+ góp ý tưởng, giải pháp, sáng kiến nổi bật.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,- Cơ chế tính điểm/xếp hạng phải cho phép cấu hình linh hoạt theo từng chương trình hoặc giai đoạn.,,,,
+III,Chiến dịch & Cuộc thi,,,,
+III.1,"Xem danh sách chiến dịch: Cho phép người dùng xem danh sách các chiến dịch đổi mới sáng tạo đã được tạo trên hệ thống theo phân quyền; danh sách hiển thị tối thiểu các thông tin: mã chiến dịch, tên chiến dịch, đơn vị tổ chức, thời gian triển khai, trạng
+ thái và số lượng người tham gia.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.2,"Khởi tạo chiến dịch: Cho phép người dùng khởi tạo chiến dịch mới và nhập các thông tin chung của chiến dịch theo mẫu quy định, bao gồm: tên chiến dịch, mục tiêu, mô tả nội dung, đơn vị
+ tổ chức, thời gian triển khai và phạm vi áp dụng.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.3,"Cập nhật thông tin chiến dịch: Cho phép người dùng chỉnh sửa hoặc cập nhật thông tin chiến dịch trong các trạng thái được hệ thống cho phép; mọi thay đổi phải được lưu vết để phục vụ theo
+ dõi.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.4,"Thiết lập giai đoạn chiến dịch: Cho phép người dùng cấu hình các giai đoạn của chiến dịch, bao gồm số lượng giai đoạn, tên giai đoạn và thời gian bắt đầu/kết thúc của từng giai đoạn; hệ thống tự động chuyển trạng thái chiến dịch theo cấu hình thời
+ gian.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.5,"Tìm kiếm và lọc chiến dịch: Cho phép người dùng tìm kiếm và lọc chiến dịch thông qua từ khóa liên quan đến tên, nội dung
+ hoặc đơn vị tổ chức chiến dịch.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+III.6,"Thiết lập cơ chế thưởng: Cho phép người dùng thiết lập các điều khoản và mức thưởng cho từng giai đoạn hoặc toàn bộ chiến dịch dựa trên các hành động tham gia như nộp ý tưởng, hoàn
+ thành thử thách hoặc đạt kết quả đánh giá.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+III.7,"Thiết lập huy hiệu chiến dịch: Cho phép người dùng lựa chọn và gắn các huy hiệu (badges) đã được cấu hình cho chiến dịch; huy hiệu được cấp cho người tham gia khi đạt được các điều
+ kiện nhất định.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.8,"Đăng ký tham gia chiến dịch: Cho phép người dùng đăng ký tham gia chiến dịch; hệ thống ghi nhận thông tin người tham gia
+ và cho phép theo dõi quá trình tham gia.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+III.9,"Nộp ý tưởng/giải pháp/sáng kiến cho chiến dịch: Cho phép người tham gia nộp ý tưởng, giải pháp hoặc sáng kiến vào chiến dịch theo quy trình đã được thiết lập; hệ thống liên kết dữ liệu
+ đề xuất với chiến dịch tương ứng.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.10,"Chấm điểm và Ban giám khảo: Hệ thống hỗ trợ thiết lập danh sách Ban giám khảo, tiêu chí chấm điểm và cơ chế đánh giá cho từng giai đoạn hoặc vòng thi; cho phép giám khảo chấm điểm
+ và ghi nhận nhận xét trực tiếp trên hệ thống.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III.11,"Quản lý quỹ giải thưởng: Cho phép thiết lập tổng giá trị quỹ giải
+ thưởng của chiến dịch và tự động phân bổ giải thưởng cho cá nhân hoặc nhóm đạt thành tích theo quy định đã được cấu hình.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+III.12,"Bảng xếp hạng (Leaderboard) của chiến dịch: Hệ thống cung cấp bảng xếp hạng theo thời gian thực dựa trên kết quả chấm điểm hoặc mức độ tham gia của cá nhân và nhóm trong chiến
+ dịch.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+IV,Budget & Cost Management - Quản lý Chi phí & Ngân sách,,,,
+IV.1,"Quản lý cấu trúc ngân sách:
+ - Budget Source (Nguồn ngân sách): Phân loại rõ nguồn (nội
+ bộ, quỹ đổi mới sáng tạo, quỹ cách sen, tài trợ, đối tác…) để theo dõi và báo cáo riêng biệt.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,"- Fiscal Period (Kỳ tài chính): Quản lý theo năm/quý/phase dự án, đảm bảo chi tiêu đúng kỳ.
+ - Budget Line (Dòng ngân sách): Quản lý ngân sách, chi phí cho các hoạt động R&D, thử nghiệm, công nghệ, đào tạo…
+ - Hạn mức (Budget Limit): Thiết lập trần chi tiêu theo nhiều cấp (chương trình, đơn vị, dự án).",,,,
+IV.2,"Theo dõi sử dụng ngân sách (Budget Tracking):
+ - Cho phép theo dõi realtime mức độ sử dụng ngân sách theo nhiều cấp: Theo năm tài chính; Theo chương trình đổi mới sáng tạo; Theo hồ sơ/ý tưởng/dự án
+ - Hiển thị trực quan: Đã phân bổ bao nhiêu; Đã cam kết bao nhiêu; Đã chi thực tế bao nhiêu; Còn lại bao nhiêu",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+IV.3,"Quản lý chênh lệch (Variance Control): Tự động theo dõi và cảnh báo chênh lệch giữa các lớp ngân sách:
+ - Plan vs Allocation: lệch phân bổ
+ - Allocation vs Commitment: chưa triển khai
+ - Commitment vs Actual: chi vượt hoặc tiết kiệm",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+IV.4,"Cảnh báo & kiểm soát rủi ro (Alert & Risk Control): Thiết lập cảnh báo thông minh theo ngưỡng như (Vượt hạn mức ngân sách; Sắp hết ngân sách (ví dụ >80%); Chậm giải ngân (đã phân
+ bổ nhưng chưa dùng); Chi tiêu bất thường (đột biến).",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+C,People & Capability – Con người và năng lực,,,,
+I,Tích hợp năng lực toàn diện nhân viên,,,,
+I.1,"Tích hợp dữ liệu từ hệ thống quản trị nhân sự của TCT để đồng
+ bộ thông tin hiệu quả công việc và đánh giá nhân sự theo tiêu chuẩn KPI mới của TCT.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+I.2,Quản lý danh mục chức danh theo quy định của TCT,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3,"Quản lý thư viện tiêu chí đánh giá: Cho phép người dùng xem danh sách thư viện tiêu chí đánh giá CBNV; hỗ trợ tìm kiếm, lọc theo đơn vị, chức danh, loại tiêu chí, trạng thái và thời gian
+ hiệu lực.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.4,"Xem chi tiết tiêu chí và trọng số: Cho phép xem chi tiết tiêu chí
+ đánh giá của từng phòng/ban/chức danh, bao gồm mô tả, phương pháp đo lường, trọng số, thang điểm và ngưỡng đạt.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.5,"Cấu hình bộ tiêu chí theo đơn vị: Cho phép cấu hình linh hoạt
+ bộ tiêu chí và trọng số khác nhau theo từng đơn vị/phòng ban/chức danh hoặc theo từng kỳ đánh giá.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.6,"Đánh giá năng lực định kỳ: Cho phép thực hiện đánh giá năng
+ lực theo chu kỳ (tháng/quý/năm), hỗ trợ tự đánh giá, đánh giá của quản lý và đánh giá đa chiều).",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.7,Xem kết quả đánh giá hồ sơ năng lực của CBNV theo phân quyền hệ thống.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II,Đánh giá năng lực ĐMST,,,,
+II.1,"Thiết lập mô hình đánh giá trưởng thành: Hệ thống cho phép cấu hình mô hình đánh giá mức độ trưởng thành về đổi mới sáng tạo của tổ chức theo nhiều cấp độ, tối thiểu từ Level 1 đến Level
+ 5",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+II.2,"Thực hiện khảo sát đánh giá năng lực: Cho phép triển khai các bộ câu hỏi khảo sát nhằm đánh giá mức độ trưởng thành về đổi mới sáng tạo của cá nhân, đơn vị hoặc toàn tổ chức; hệ thống
+ ghi nhận và tổng hợp kết quả khảo sát theo từng tiêu chí đánh giá.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+II.3,"Biểu đồ năng lực toàn TCT: Hệ thống cung cấp biểu đồ trực quan dạng heatmap để thể hiện mức độ năng lực đổi mới sáng tạo của các đơn vị hoặc bộ phận trong tổ chức theo từng tiêu chí
+ đánh giá.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+D,Platform Services – Dịch vụ nền tảng,,,,
+I,Quản trị hệ thống,,,,
+I.1,Đăng nhập và xác thực,,,,
+I.1.1,"Cho phép người dùng thực hiện đăng nhập vào hệ thống. Người dùng có thể thực hiện bằng 1 trong 2 cách: Đăng nhập qua cơ chế LDAP của TCTHK hoặc Đăng nhập bằng tên người dùng
+ và mật khẩu.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.1.2,Quên mật khẩu: Cho phép người dùng khôi phục và thay đổi mật khẩu trong trường hợp không đăng nhập được,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.1.3,Đăng xuất: Cho phép người dùng đăng xuất khỏi hệ thống.,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.1.4,Thay đổi mật khẩu: Cho phép người dùng thực hiện thay đổi mật khẩu.,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.2,Quản lý người dùng,,,,
+I.2.1,Xem danh sách người dùng: Cho phép xem danh sách các người dùng trong hệ thống.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.2.2,Xem chi tiết thông tin người dùng.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+I.2.3,"Cập nhật thông tin người dùng: Cho phép cập nhật thông tin của 1 người dùng trong hệ thống. Các thông tin có thể được cập nhật bao gồm: Thông tin chung; Vai trò của người dùng; Phòng ban
+ của người dùng.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+I.2.4,Tìm kiếm người dùng: Cho phép tìm kiếm thông tin của người dùng bằng các từ khóa để tìm kiếm qua tên hoặc email.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.2.5,"Lọc người dùng: Cho phép lọc danh sách người dùng dựa trên các tiêu chí như: Đơn vị, Vị trí…",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.2.6,Xóa người dùng: Cho phép xóa hồ sơ người dùng khỏi hệ thống,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.2.7,Xem hồ sơ cá nhân: Cho phép người dùng xem thông tin hồ sơ cá nhân,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.2.8,Cập nhật hồ sơ cá nhân: Cho phép người dùng thực hiện cập nhật thông tin trong hồ sơ cá nhân,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3,Quản lý Vai trò,,,,
+I.3.1,Xem danh sách các vai trò: Cho phép xem danh sách các vai trò đã được tạo ra,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3.2,"Xem chi tiết vai trò: Cho phép người dùng xem chi tiết vai trò. Các thông tin chi tiết có thể bao gồm: Thông tin chung của vai
+ trò; Các nhóm quyền được áp dụng cho vai trò.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3.3,"Khởi tạo thông tin vai trò: Cho phép thực hiện thêm vai trò. Thông tin thêm mới có thể bao gồm: Thông tin chung của vai
+ trò; Gán các nhóm quyền được áp dụng cho vai trò.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+I.3.4,Tìm kiếm vai trò: Cho phép tìm kiếm thông tin của vai trò bằng các từ khóa,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3.5,Lọc vai trò: Cho phép lọc danh sách vai trò dựa trên các tiêu chí.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3.6,"Xóa vai trò: Cho phép xóa vai trò khỏi hệ thống. Những người dùng có vai trò bị xóa sẽ cần phải được cấp lại thông tin vai trò
+ mới",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3.7,Chỉnh sửa vai trò: Cho phép người dùng chỉnh sửa thông tin của vai trò.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.3.8,Vai trò được ủy quyền hoặc đăng ký hộ ý tưởng/ giải pháp/ sáng kiến.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.4,Quản lý cơ cấu tổ chức,,,,
+I.4.1,"Đồng bộ danh sách, thông tin phòng, Ban từ hệ thống quản trị nhân sự của TCTHK",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.4.2,"Xem danh sách phòng ban: Cho phép người dùng xem danh sách, cây tổ chức các phòng ban trong hệ thống",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.4.3,Cho phép người dùng xem thông tin chi tiết của phòng ban,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.4.4,"Cho phép người dùng xem chi tiết danh sách nhân sự trong 1 phòng ban. Danh sách nhân sự được tổng hợp từ danh sách
+ người dùng đã được đồng bộ và khởi tạo.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+I.4.5,"Khởi tạo thông tin phòng ban: Thông tin thêm mới có thể bao gồm: Thông tin chung của phòng ban; Thông tin phân cấp của
+ phòng ban.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.4.6,Tìm kiếm phòng ban: Cho phép tìm kiếm thông tin của phòng ban bằng các từ khóa để tìm kiếm,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.4.7,Lọc phòng ban: Cho phép lọc danh sách phòng ban dựa trên các tiêu chí.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.4.8,"Xóa phòng ban: Cho phép xóa phòng ban khỏi hệ thống. Những người dùng có phòng ban bị xóa sẽ cần phải được cấp lại thông
+ tin phòng ban mới",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.4.9,Chỉnh sửa phòng ban: Cho phép người dùng chỉnh sửa thông tin phòng ban.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+I.5,Quản lý mẫu thư khen/ Thư phản hồi,,,,
+I.5.1,"Tạo, sửa, xóa, lưu trữ mẫu thư phản hồi theo từng loại: Thư khen
+ – ý tưởng/ giải pháo/ sáng kiến được phê duyệt; Thư phản hồi tích cực – Không phê duyệt; Thư yêu cầu bổ sung/chỉnh sửa.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+I.5.2,Lưu lịch sử: Thư đã gửi; Thời gian gửi; Người gửi; Trạng thái gửi (thành công/thất bại).,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+II,Quản lý cấu hình và tham số hệ thống,,,,
+II.1,Tham số chấm điểm Ý tưởng,,,,
+II.1.1,Xem danh sách các tiêu chí chấm điểm.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+II.1.2,"Xem chi tiết tiêu chí: Các trọng số chấm điểm cho tiêu chí; Mức điểm tối thiểu để được khen thưởng; Mức thưởng; Trạng thái;
+ Ngày hiệu lực.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.1.3,Cho phép khởi tạo thêm tiêu chí chấm điểm.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.1.4,"Cho phép cập nhật tiêu chí chấm điểm như thông tin, trạng thái, hiệu lực.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.2,Tham số chấm điểm giải pháp,,,,
+II.2.1,Xem danh sách các tiêu chí chấm điểm.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.2.2,"Xem chi tiết tiêu chí: Các trọng số chấm điểm cho tiêu chí; Mức
+ điểm tối thiểu để được khen thưởng; Mức thưởng; Trạng thái; Ngày hiệu lực.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+II.2.3,Cho phép khởi tạo thêm tiêu chí chấm điểm.,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+II.2.4,"Cho phép cập nhật tiêu chí chấm điểm như thông tin, trạng thái, hiệu lực.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+II.3,Tham số chấm điểm Sáng kiến,,,,
+II.3.1,Xem danh sách các tiêu chí chấm điểm.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.3.2,"Xem chi tiết tiêu chí: Các trọng số chấm điểm cho tiêu chí; Mức điểm tối thiểu để được khen thưởng; Mức thưởng; Trạng thái;
+ Ngày hiệu lực.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+II.3.3,Cho phép khởi tạo thêm tiêu chí chấm điểm.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.3.4,"Cho phép cập nhật tiêu chí chấm điểm như thông tin, trạng thái, hiệu lực.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.4,Cấu hình thời gian xử lý cho từng quy trình,,,,
+II.4.1,"Hệ thống cho phép cấu hình thời gian xử lý (SLA) cho từng bước trong quy trình xử lý và phê duyệt Ý tưởng, Giải pháp và
+ Sáng kiến.",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.4.2,Thời gian xử lý tại mỗi bước phải được cấu hình linh hoạt.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.4.3,"Hệ thống phải tự động ghi nhận thời điểm bắt đầu và kết thúc
+ xử lý tại từng bước; so sánh với thời gian xử lý đã cấu hình để xác định đúng hạn, quá hạn hoặc sắp quá hạn.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+II.4.4,"Khi thời gian xử lý tại một bước sắp đến hạn hoặc quá hạn, hệ
+ thống phải tự động gửi thông báo nhắc việc/cảnh báo đến người hoặc nhóm phụ trách và cấp quản lý liên quan.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+II.4.5,"Cho phép gia hạn hoặc điều chỉnh thời gian xử lý tại từng bước
+ trong các trường hợp đặc biệt, đồng thời ghi nhận lý do và người thực hiện điều chỉnh.",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+II.5,Cấu hình danh hiệu/Huy hiệu ĐMST,,,,
+II.5.1,"Hệ thống phải cho phép quản trị viên cấu hình danh hiệu/huy hiệu với các thông tin tối thiểu: Tên danh hiệu/huy hiệu; Mô tả ý nghĩa; Phân loại (cá nhân / đơn vị); Biểu tượng (icon, hình ảnh); Thời hạn hiệu lực (theo tháng, quý, năm hoặc không thời
+ hạn); Trạng thái kích hoạt.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+II.5.2,Cho phép cấu hình nhiều cấp độ huy hiệu (ví dụ: Đồng – Bạc – Vàng – Kim cương).,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+II.5.3,"Tiêu chí và điều kiện xét trao có thể cấu hình như: Số lượng ý tưởng, giải pháp, sáng kiến được nộp; Số lượng được phê duyệt/triển khai; Mức độ hiệu quả hoặc điểm đánh giá; Mức độ tương tác (like, bình luận, tham gia nhóm); Đóng góp theo vai
+ trò (tác giả chính, đồng tác giả, thành viên triển khai).",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,
+III,Quản lý thông báo,,,,
+III.1,Xem danh sách thông báo: Cho phép người dùng xem danh sách thông báo cá nhân được nhận.,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+III.2,Nhận thông báo: Cho phép người dùng nhận được thông báo theo vai trò và quyền hạn,Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+III.3,"Xem chi tiết thông báo: Cho phép người dùng xem thông tin chi tiết của thông báo. Thông tin có thể bao gồm: Thời gian gửi
+ thông báo; Nội dung thông báo",Đáp ứng,Không đáp ứng,"Văn bản cam kết hoặc Giải pháp kỹ
+ thuật",
+III.4,Lọc danh sách thông báo: Cho phép người dùng thực hiện lọc danh sách thông báo theo trạng thái.,Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+III.5,"Gửi thông báo đa kênh: Thông báo trực tiếp trên hệ thống (In- app), Email, Tin nhắn SMS (nếu được cấu hình)",Đáp ứng,Không đáp ứng,"Văn bản cam kết
+ hoặc Giải pháp kỹ thuật",
+IV,Phân tích và báo cáo,,,,
+IV.1,"Tổng quan Dashboard điều hành: Cho phép hiển thị bức tranh tổng thể về hoạt động ĐMST và CĐS trên một màn hình, bao
+ gồm số lượng ý tưởng/giải pháp/sáng kiến, chương trình/dự án",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Dashboard cần thêm các trường thông tin theo dõi nữa
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,"CĐS, chiến dịch, quỹ thưởng và mức độ tham gia của CBNV
+ theo thời gian thực.",,,,
+IV.2,"Dashboard theo vai trò: Cho phép hệ thống tự động hiển thị dashboard khác nhau theo vai trò (CBNV, Lãnh đạo đơn vị, Lãnh đạo TCT, Quản trị hệ thống) với các chỉ số và phạm vi dữ
+ liệu tương ứng.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,"Chưa có dashboard theo vai trò, vẫn đang chung 1 dashboard tổng"
+IV.3,"Tùy biến Dashboard: Cho phép người dùng cấu hình bố cục, lựa chọn chỉ số (KPI), biểu đồ và phạm vi thời gian hiển thị theo
+ nhu cầu cá nhân.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có tuỳ biến
+IV.4,"Báo cáo Ý tưởng/Giải pháp/Sáng kiến: Cho phép thống kê số lượng theo trạng thái (nháp, đã nộp, phê duyệt, triển khai, không
+ thông qua), theo đơn vị, lĩnh vực, thời gian và mức độ hiệu quả.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Đã có
+IV.5,"Báo cáo hiệu quả ĐMST: Cho phép tổng hợp lợi ích mang lại từ các sáng kiến như tiết kiệm chi phí, tăng doanh thu, nâng cao
+ chất lượng dịch vụ, số lượng áp dụng/nhân rộng.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.6,"Báo cáo quy trình xử lý & SLA: Cho phép theo dõi thời gian xử
+ lý trung bình từng bước, tỷ lệ đúng hạn/quá hạn, các điểm nghẽn quy trình và cảnh báo tồn đọng hồ sơ.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.7,"Báo cáo đóng góp cá nhân/đơn vị: Cho phép xếp hạng và thống
+ kê mức độ tham gia theo cá nhân/đơn vị dựa trên số lượng nộp, phê duyệt, điểm thưởng, lượt tương tác và huy hiệu đạt được.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.8,"Bảng xếp hạng (Leaderboard): Cho phép hiển thị bảng xếp hạng
+ theo tháng/quý/năm cho cá nhân và đơn vị có thành tích nổi bật trong hoạt động ĐMST và CĐS.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.9,"Báo cáo tương tác hệ thống: Cho phép thống kê lượt xem, thích,
+ bình luận, tham gia chiến dịch và mức độ sử dụng hệ thống theo người dùng/đơn vị.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.10,"Báo cáo chiến dịch ĐMST: Cho phép theo dõi hiệu quả từng
+ chiến dịch bao gồm số người tham gia, số ý tưởng/giải",Đáp ứng,Không đáp ứng,"Văn bản cam kết và
+ Demo chứng minh",Chưa có
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+,"pháp/sáng kiến nộp, tỷ lệ hoàn thành, tổng thưởng đã chi và huy
+ hiệu đã trao.",,,,
+IV.11,"Báo cáo chương trình/dự án CĐS/ R&D và Sandbox: Cho phép tổng hợp tiến độ thực hiện, trạng thái (đúng hạn/trễ/rủi ro), tỷ lệ hoàn thành milestone, ngân sách sử dụng và hiệu quả đạt được
+ của từng chương trình.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.12,"Dashboard tiến độ CĐS/ R&D và Sandbox: Cho phép hiển thị biểu đồ Gantt, biểu đồ tiến độ và cảnh báo các mốc triển khai
+ chậm hoặc vượt ngân sách.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.13,"Báo cáo Quỹ phát triển KHCN: Cho phép theo dõi tình hình phân bổ và sử dụng quỹ theo thời gian thực, bao gồm ngân sách
+ ban đầu, đã chi, còn lại, theo loại quỹ và theo đơn vị.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có quỹ
+IV.14,"Báo cáo chi thưởng: Cho phép thống kê chi tiết các khoản chi tiền thưởng và điểm thưởng theo cá nhân, đơn vị, chiến dịch,
+ sáng kiến hoặc thời gian.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.15,"Báo cáo ví và giao dịch: Cho phép tra cứu lịch sử giao dịch, số
+ dư ví tiền mặt và ví Cánh sen/Bông sen; hỗ trợ đối soát.",Đáp ứng,Không đáp ứng,"Văn bản cam kết và
+ Demo chứng minh",Chưa có
+IV.16,"Báo cáo quy đổi quà tặng: Cho phép thống kê số lượng quy đổi,
+ loại quà phổ biến, tồn kho và chi phí quy đổi.",Đáp ứng,Không đáp ứng,"Văn bản cam kết và
+ Demo chứng minh",Chưa có
+IV.17,"Báo cáo ngân sách & ROI: Cho phép so sánh chi phí quỹ khen
+ thưởng với giá trị/hiệu quả mang lại từ các sáng kiến để đánh giá hiệu quả đầu tư (ROI).",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có
+IV.18,"Báo cáo người dùng & sử dụng hệ thống: Cho phép thống kê số lượng người dùng hoạt động, tần suất đăng nhập, tỷ lệ sử dụng
+ tính năng và mức độ tương tác theo phòng ban/đơn vị.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,"Chưa có thống kê tần suất đăng nhập, tỷ lệ sử dụng
+ tính năng và mức độ tương tác theo phòng ban/đơn vị."
+IV.19,"Xuất báo cáo: Cho phép xuất dữ liệu và biểu đồ sang các định dạng Excel, PDF hoặc CSV để phục vụ họp, tổng hợp và báo
+ cáo lãnh đạo.",Đáp ứng,Không đáp ứng,Văn bản cam kết và Demo chứng minh,Chưa có xuất biểu đồ
+V,Tích hợp và chia sẻ dữ liệu,,,,
+,,,,,
+,,,,,
+STT,Mô tả yêu cầu kỹ thuật,Đánh giá,,Tài liệu đánh giá,
+,,Đáp ứng,Không đáp ứng,,
+V.1,"Hệ thống có khả năng tích hợp, chía sẻ dữ liệu với các hệ thống phần mềm nghiệp vụ, cơ sở dữ liệu của TCT thông qua API/Webservices hoặc theo hiện trạng ứng dụng của TCT.Các hệ thống dự kiến:
+ - Hệ thống đăng nhập tập chung.
+ - Hệ thống Nhân sự.
+ - Hệ thống Tài chính (nếu được cho phép).
+ - Các hệ thống khác phụ vụ nghiệp vụ phần mềm.",Đáp ứng,Không đáp ứng,Văn bản cam kết hoặc Giải pháp kỹ thuật,

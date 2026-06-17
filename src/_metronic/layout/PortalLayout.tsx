@@ -19,8 +19,8 @@ const PortalLayout = () => {
   if (!cssLoaded) {
     return (
       <div id="splash-screen" className="splash-screen">
-        <img src="media/logos/logo-loading.png" className="dark-logo" alt="TD dark logo" />
-        <img src="media/logos/logo-loading.png" height="120px" className="light-logo" alt="TD light logo" />
+        <img src="media/logos/logo-loading.png" width={500} height={80} className="dark-logo" alt="TD dark logo" />
+        <img src="media/logos/logo-loading.png" width={500} height={80} className="light-logo" alt="TD light logo" />
         <div className="loader-wrapper">
           <span className="loader"></span>
           <span className="loading-text">Loading...</span>

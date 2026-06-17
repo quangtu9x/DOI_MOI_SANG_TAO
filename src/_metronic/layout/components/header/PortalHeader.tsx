@@ -27,10 +27,10 @@ export const PortalHeader = () => {
             />
             <div className="flex flex-col">
               <h1 className="text-portal-primary text-[14px] md:text-[18px] lg:text-[20px] font-bold uppercase leading-tight drop-shadow-md">
-                SỞ KHOA HỌC VÀ CÔNG NGHỆ HẢI PHÒNG
+                TỔNG CÔNG TY HÀNG KHÔNG VIỆT NAM - CTCP
               </h1>
               <p className="text-portal-secondary text-[10px] md:text-[14px] lg:text-[16px] font-medium leading-tight mt-1 drop-shadow-sm">
-                Hệ thống quản lý đầu tư, ứng dụng CNTT, CĐS, KHCN trên địa bàn thành phố
+                Hệ thống phần mềm quản trị đổi mới sáng tạo 
               </p>
             </div>
           </Link>

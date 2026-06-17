@@ -60,12 +60,12 @@ export function Login() {
       id='kt_login_signin_form'
     >
       <div className='text-center mb-11'>
-        <img src='/media/logos/logo-loading.png' height={120}></img>
+        <img src='/media/logos/logo-loading.png' width={500} height={70}></img>
       </div>
       {/* begin::Heading */}
       <div className='text-center mb-11'>
         <h1 className='text-gray-900 fw-bolder mb-3'>ĐĂNG NHẬP</h1>
-        <h1 className='text-gray-900 fw-semibold fs-3'>HỆ THỐNG QUẢN LÝ ĐẦU TƯ, ỨNG DỤNG CNTT, CĐS, KHCN TRÊN ĐỊA BÀN THÀNH PHỐ</h1>
+        <h1 className='text-gray-900 fw-semibold fs-3'>HỆ THỐNG PHẦN MỀM QUẢN TRỊ ĐỔI MỚI SÁNG TẠO</h1>
       </div>
 
       <div className='text-center mb-11' style={{ height: '20px' }}>
