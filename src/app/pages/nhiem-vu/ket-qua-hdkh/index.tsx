@@ -1,0 +1,5 @@
+export * from './thong-tin-chuyen-giao/ThongTinChuyenGiaoPage'
+export * from './quyet-dinh-pham-vi-chuyen-giao/QuyetDinhPhamViChuyenGiaoPage'
+export * from './san-pham-khoa-hoc/SanPhamKhoaHocPage'
+export * from './phieu-dang-ky-cap-gcn-ket-qua-thuc-hien/PhieuDangKyCapGCNKetQuaThucHienPage'
+export * from './phieu-dang-ky-cap-gcn-ket-qua-thuc-hien/TraCuuPhieuDangKyCapGCNKetQuaThucHienPage'

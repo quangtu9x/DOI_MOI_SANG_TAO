@@ -1,0 +1,6 @@
+export * from './chuyen-gia-ngoai/ChuyenGiaNgoaiPage'
+export * from './thong-tin-chung/ThongTinChungPage'
+export * from './qua-trinh-dao-tao/QuaTrinhDaoTaoPage'
+export * from './qua-trinh-nghien-cuu/QuaTrinhNghienCuuPage'
+export * from './giai-thuong/GiaiThuongPage'
+export * from './tra-cuu/TraCuuLyLichPage'

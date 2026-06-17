@@ -1,0 +1,22 @@
+.ant-image-preview-mask {
+    z-index: 2000 !important;
+    pointer-events: none !important;
+}
+
+.ant-image-preview-wrap {
+    z-index: 2001 !important;
+    pointer-events: auto !important;
+}
+
+.ant-image-preview {
+    z-index: 2002 !important;
+}
+
+.ant-image-preview-close,
+.ant-image-preview-zoomIn,
+.ant-image-preview-zoomOut,
+.ant-image-preview-rotateLeft,
+.ant-image-preview-rotateRight {
+    z-index: 2003 !important;
+    pointer-events: auto !important;
+}

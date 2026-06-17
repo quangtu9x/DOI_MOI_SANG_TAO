@@ -1,0 +1,596 @@
+
+.custom-node-thtt-react-flow {
+  min-height: 120px;
+  min-width: 200px;
+  border: 1px solid black;
+  padding: 20px;
+  border-radius: 5px;
+  background: #fff;
+  position: relative;
+}
+
+.custom-edge-thtt-react-flow {
+  padding: 2px 8px;
+  background: #fff;
+  border-radius: 5px;
+  border: 1px solid black;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.ant-form-item-label>label {
+  font-weight: 500 !important;
+}
+
+// .ant-input[disabled] {
+//   color: #222 !important;
+// }
+.ant-input, .ant-select, .ant-select-selector, .ant-input-number{
+  min-height: 35px !important;
+  width: 100%;
+  border-radius: 5px !important;
+}
+
+
+.ant-input-affix-wrapper {
+  height: 35px !important;
+  border-radius: 5px !important;
+
+
+
+
+  .ant-input {
+    min-height: auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 4px 0 !important;
+
+  }
+
+  .ant-input[disabled] {
+    background-color: transparent !important;
+  }
+
+  .ant-input-suffix {
+    display: flex;
+    align-items: center;
+    color: rgba(0, 0, 0, 0.45);
+
+
+    i {
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+
+    }
+  }
+
+  // Disabled state cho suffix icon
+  &.ant-input-affix-wrapper-disabled {
+    .ant-input-suffix {
+
+      a,
+      span {
+        color: rgba(0, 0, 0, 0.25) !important;
+        cursor: not-allowed !important;
+        pointer-events: none;
+
+      }
+
+    }
+  }
+
+  // Style cho disabled span
+  .ant-input-suffix {
+    span.text-muted {
+      color: rgba(0, 0, 0, 0.25) !important;
+      cursor: not-allowed !important;
+
+      i {
+        color: rgba(0, 0, 0, 0.25) !important;
+        cursor: not-allowed !important;
+
+      }
+    }
+  }
+}
+
+.ant-select-dropdown {
+  z-index: 1080 !important;
+}
+
+.ant-picker-dropdown {
+  z-index: 1080 !important;
+}
+
+.ant-upload.ant-upload-drag {
+  border-color: #009ef7 !important;
+}
+
+.ant-picker {
+  min-height: 35px !important;
+  border-radius: 5px !important;
+  border-color: #e9e9e9 !important;
+  width: 100%;
+}
+
+
+
+// .ant-picker-disabled {
+//   color: #222 !important;
+// }
+
+.iframeApp {
+  width: 100%;
+  height: calc(100vh - 140px);
+}
+
+.ant-table-thead>tr>th {
+  // background-color: #f3f2f7 !important;
+  //color: #40566f !important;
+  font-weight: 600 !important;
+  // border: 0px !important;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--bs-border-dashed-color);
+}
+
+.customList>.ant-list-header {
+  background-color: #f3f2f7 !important;
+  //color: #40566f !important;
+  font-weight: 600 !important;
+}
+
+.modal-header>button {
+  padding: 0.5rem !important;
+  border: 0px !important;
+  background-color: transparent !important;
+  color: #fff !important;
+}
+
+.text-header-td {
+  color: $gray-800;
+}
+
+/* .ant-modal-wrap {
+  z-index: 9999;
+}
+ */
+.td-row-dashed {
+  border-bottom-width: 1px;
+  border-bottom-style: dashed;
+  border-bottom-color: var(--bs-border-dashed-color);
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+}
+
+.ant-modal-root {
+  z-index: 99999;
+}
+
+:where(.css-dev-only-do-not-override-1vr7spz).ant-radio-group {
+  font-size: 14px !important;
+}
+
+.ant-radio-wrapper {
+  align-items: center !important;
+}
+
+.tdselect-timeworking {
+  width: calc(100% - 380px);
+}
+
+.tdselect-timeworking-last {
+  width: calc(100% - 315px);
+}
+
+.app-sidebar-menu {
+  height: 100%;
+  overflow: auto !important;
+}
+
+.ant-input[disabled] {
+  color: #222 !important;
+  background-color: #fafafa !important;
+}
+
+.ant-select-disabled.ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  background-color: #fafafa !important;
+  color: #222 !important;
+}
+
+.ant-picker-disabled {
+  background-color: #fafafa !important;
+  color: #222 !important;
+}
+
+.ant-input-number-disabled {
+  background-color: #fafafa !important;
+  color: #222 !important;
+}
+
+.ant-picker-input>input[disabled] {
+  color: #222 !important;
+  background-color: #fafafa !important;
+}
+
+.ant-checkbox-disabled+span {
+  color: #222 !important;
+}
+
+.ant-select-disabled:where(.css-dev-only-do-not-override-17sses9).ant-select-multiple .ant-select-selection-item {
+  color: #222 !important;
+}
+
+.input-with-addon>div>div.ant-input-number {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.deleteWidgetButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  padding: 0 7px !important;
+  height: 22px;
+  border-radius: 0 0 0 10px;
+  box-shadow: none;
+  outline: none;
+  text-align: center;
+  border: 0 !important;
+  z-index: 1002;
+}
+
+.react-grid-item>.react-resizable-handle.react-resizable-handle-se {
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  display: none;
+}
+
+.react-grid-item:hover>.react-resizable-handle.react-resizable-handle-se {
+  display: block;
+}
+
+.td-grid-item {
+  overflow: hidden;
+}
+
+.td-react-grid-draggable:hover {
+  cursor: move;
+}
+
+.text-ellipsis {
+  white-space: nowrap;
+  /* Hiển thị văn bản trên một dòng */
+  overflow: hidden;
+  /* Ẩn phần văn bản tràn ra ngoài */
+  text-overflow: ellipsis;
+  /* Thêm dấu ... nếu văn bản quá dài */
+}
+
+.td-row-dashed {
+  border-bottom-width: 1px;
+  border-bottom-style: dashed;
+  border-bottom-color: #f1f1f4;
+}
+
+.ant-tree.ant-tree-directory .ant-tree-treenode-selected::before {
+  background: #1677ff;
+}
+
+div#kt_app_sidebar {
+  background: $gray-200 !important;
+  border-right: 1px solid $gray-300 !important;
+}
+
+#kt_app_header {
+  background: $gray-200 !important;
+  border-bottom: 1px solid $gray-300;
+  //background: #2B82C1 !important;
+  //background: linear-gradient(to right, #2B82C1, #1C5B8D);;
+}
+
+#kt_help_header {
+  min-height: var(--#{$prefix}app-header-height) !important;
+  background: $gray-200 !important;
+  border-bottom: 1px solid $gray-300;
+}
+
+#kt_app_header_menu_wrapper {
+  margin-left: 15px !important;
+}
+
+#kt_app_sidebar_logo {
+  margin-left: -4px;
+  background: $gray-200 !important; // Giữ cùng màu với sidebar
+  border-bottom: 1px solid $gray-300;
+  // Fix cho animation toggle
+  transition: none !important;
+
+  >a {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
+
+// Fix cho minimize mode và animation
+[data-kt-app-sidebar-minimize="on"] #kt_app_sidebar_logo {
+  background: $gray-200 !important;
+}
+
+// Fix khi đang trong quá trình animation (toggle từ minimize sang full)
+.app-sidebar.animating #kt_app_sidebar_logo,
+.app-sidebar.animating .app-sidebar-logo {
+  background: $gray-200 !important;
+}
+
+// Fix cho logo area và các element con
+#kt_app_sidebar_logo,
+#kt_app_sidebar_logo>*,
+.app-sidebar-logo,
+.app-sidebar-logo>* {
+  background: $gray-200 !important;
+}
+
+// Fix cho cả hai trạng thái logo
+.app-sidebar-logo-default,
+.app-sidebar-logo-minimize {
+  background: transparent !important; // Logo image không cần background
+}
+
+#kt_app_sidebar_toggle,
+div#kt_app_sidebar_toggle,
+body #kt_app_sidebar_toggle,
+body div#kt_app_sidebar_toggle {
+  background: $gray-200 !important;
+  border: 1px solid $gray-300 !important;
+}
+
+.menu-link {
+
+  .menu-icon,
+  .menu-title,
+  .menu-arrow {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 20px !important;
+  }
+
+  .menu-icon>i {
+    color: $app-sidebar-light-menu-link-color !important;
+  }
+
+  .menu-arrow {
+    i {
+      font-size: 10px !important;
+      color: var(--#{$prefix}app-sidebar-light-menu-link-icon-color) !important;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+}
+
+// Rotate arrow khi menu mở
+#kt_app_sidebar_menu_wrapper .menu-item.show>.menu-link {
+  .menu-arrow i {
+    transform: rotate(180deg) translateY(-1px);
+  }
+}
+
+// Override: Class hover do Metronic tự thêm - KHÔNG đổi màu
+.menu-item.hover:not(.here)>.menu-link {
+  .menu-title {
+    color: var(--#{$prefix}app-sidebar-light-menu-link-color) !important;
+  }
+
+  .menu-icon>i {
+    color: var(--#{$prefix}app-sidebar-light-menu-link-icon-color) !important;
+  }
+
+  .menu-arrow i {
+    color: var(--#{$prefix}app-sidebar-light-menu-link-icon-color) !important;
+  }
+}
+
+// Hover state cho menu (chỉ khi hover chuột thực sự, không phải class .hover)
+.menu-item:hover:not(.here):not(.hover)>.menu-link {
+  .menu-title {
+    color: var(--#{$prefix}primary) !important;
+  }
+
+  .menu-icon>i {
+    color: var(--#{$prefix}primary) !important;
+  }
+
+  .menu-arrow i {
+    color: var(--#{$prefix}primary) !important;
+  }
+
+  i {
+    color: var(--#{$prefix}primary) !important;
+  }
+}
+
+// Menu cha có menu con active - đổi màu toàn bộ
+.menu-item:has(.menu-sub.menu-active-bg)>.menu-link {
+  .menu-title {
+    color: var(--#{$prefix}primary) !important;
+  }
+
+  .menu-icon>i {
+    color: var(--#{$prefix}primary) !important;
+  }
+
+  .menu-arrow i {
+    color: var(--#{$prefix}primary) !important;
+  }
+}
+
+// Menu-title của menu-item cấp cao nhất (không nằm trong menu-accordion)
+.menu-item:not(.menu-item .menu-accordion .menu-item)>.menu-link {
+  .menu-title {
+    font-weight: 500 !important;
+  }
+}
+
+.menu-link.without-sub {
+  .menu-title {
+    font-weight: 400 !important;
+  }
+
+  .menu-bullet .bullet.bullet-dot {
+    width: 6px !important;
+    height: 6px !important;
+  }
+}
+
+.menu-link.active>.menu-icon>i {
+  color: var(--#{$prefix}primary) !important;
+}
+
+.menu-link.active>.menu-arrow>i {
+  color: var(--#{$prefix}primary) !important;
+}
+
+.menu-item.here>.menu-link {
+  background: $blue-100 !important;
+
+  .menu-title {
+    color: var(--#{$prefix}primary) !important;
+  }
+
+  .menu-icon>i {
+    color: var(--#{$prefix}primary) !important;
+  }
+
+  .menu-arrow {
+    color: var(--#{$prefix}primary) !important;
+
+    i {
+      color: var(--#{$prefix}primary) !important;
+    }
+  }
+}
+
+#kt_app_main,
+.modal-content>.modal-body {
+  background: url('/media/images/bg-main.png') no-repeat center center !important;
+  background-size: 80vw auto !important;
+}
+
+html,
+body {
+  background-color: #ffffff !important;
+}
+
+#kt_app_root,
+#kt_app_page,
+#kt_app_wrapper {
+  background-color: transparent !important;
+}
+
+#kt_app_content_container>.card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.ant-table-wrapper {
+  background: transparent !important;
+}
+
+.ant-pagination.ant-table-pagination.ant-table-pagination-right {
+  background: transparent !important;
+}
+
+
+
+
+.ant-tabs-tab {
+  border-left: 1px solid #a8a8a86c !important;
+  border-top: 1px solid #a8a8a86c !important;
+  border-right: 1px solid #a8a8a86c !important;
+}
+
+.ant-tabs-nav-wrap {
+  border-bottom: 1px solid #A8A8A8 !important;
+}
+
+.ant-tabs-tab-active {
+  background-color: #2E82FA !important;
+}
+
+.ant-tabs-tab-btn {
+  font-weight: 500 !important;
+}
+
+.ant-tabs-tab-active>.ant-tabs-tab-btn {
+  color: #fff !important;
+}
+
+.ant-input:not(.ant-input-affix-wrapper .ant-input),
+.ant-input-number,
+.ant-select-selector,
+.ant-picker,
+.ant-select,
+.ant-checkbox-inner {
+  border-color: #a8a8a8c7 !important
+}
+
+.ant-input-affix-wrapper {
+  border-color: #a8a8a8c7 !important
+}
+
+
+.carousel-indicators li::marker {
+  display: inline-block;
+  content: "●";
+  transition: all .3s ease;
+  background-color: var(--bs-gray-400);
+  border-radius: 6px;
+  height: 6px;
+  width: 6px;
+}
+
+.card-custom-padding {
+  padding: 1.35rem !important;
+}
+
+.input-group>.antd-input,
+.first-input {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.input-group>.antd-input,
+.second-input {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: 0 !important;
+}
+
+.ck-content pre {
+  background-color: white !important;
+}
+
+.ck-content pre code {
+  color: #333;
+  background-color: transparent !important;
+  padding: 0.5em;
+  border-radius: 4px;
+  font-size: 1.075rem !important;
+}
+
+
+.tdcolumn-image .ant-image-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+.ant-steps-item-title {
+  user-select: none !important
+}

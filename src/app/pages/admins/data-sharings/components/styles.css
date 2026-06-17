@@ -1,0 +1,37 @@
+.example-code {
+    font-family: var(--bs-font-monospace) !important;
+    font-feature-settings: normal;
+    font-variation-settings: normal;
+    background-color: transparent !important;
+    color: white !important;
+    tab-size: 4;
+    font-size: 1.075rem !important;
+}
+
+.ant-input {
+    transition: none !important;
+}
+
+.ant-input:focus {
+    box-shadow: none !important;
+    border-color: #2563eb !important;
+}
+
+.prose {
+    pre {
+        background: #1e293b;
+        color: #f8fafc;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+        padding-right: 1.25rem !important;
+    }
+
+    code {
+        color: #f8fafc;
+        border-radius: 0.25em;
+        font-family: var(--bs-font-monospace) !important;
+        font-size: 1.075rem !important;
+    } }

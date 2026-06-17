@@ -1,0 +1,93 @@
+/* TDMapSelfManaged - Search functionality styles */
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.hover-bg-light:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Search box styling - reduced width */
+.map-container .search-box-container {
+    max-width: 400px; /* Giới hạn chiều rộng */
+    width: 60%; /* Responsive width */
+}
+
+.map-container .ant-input-search {
+    border-radius: 8px;
+}
+
+.map-container .ant-card {
+    border-radius: 8px;
+    max-width: 400px; /* Giới hạn chiều rộng dropdown */
+}
+
+.map-container .ant-list-item {
+    transition: background-color 0.2s ease;
+}
+
+.map-container .ant-list-item:last-child {
+    border-bottom: none !important;
+}
+
+/* Search results dropdown animation */
+.map-container .search-results-dropdown {
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .map-container .search-box-container {
+        max-width: 300px;
+        width: 80%;
+    }
+    
+    .map-container .ant-input-search {
+        font-size: 14px;
+    }
+    
+    .map-container .ant-card {
+        max-height: 150px;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 576px) {
+    .map-container .search-box-container {
+        max-width: 250px;
+        width: 90%;
+    }
+    
+    .map-container .ant-card {
+        max-width: 250px;
+    }
+}
+
+/* Current address display - reduced width */
+.map-container .address-display {
+    max-width: 400px;
+    width: 60%;
+}
+
+.map-container .bg-white {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+}
+
+/* Search input focus state */
+.map-container .ant-input-search .ant-input:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
