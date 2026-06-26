@@ -13,7 +13,8 @@ import {
   SidebarKeHoachVonMenu,
   SidebarDanhMucHeThongMenu,
   SidebarLichSuMenu,
-  SidebarEformMenu
+  SidebarEformMenu,
+  SidebarDoiMoiSangTaoMenu
 } from '../components';
 import { hasAll, uiManage } from '@/utils/utils';
 import { useAuth } from '../modules/auth';
@@ -32,6 +33,7 @@ import { DangKyNhiemVuRoutes, ThucHienNhiemVuRoutes, TrienKhaiThucHienRoutes, Xe
 import { NghiemThuThanhLyRoutes } from './nhiem-vu/NghiemThuThanhLyRoutes';
 import { DangKySangKienRoutes, KiemTraTrungLapRoutes, TiepNhanXuLyRoutes, XetCongNhanRoutes, QuanLyGiaiPhapRoutes, QuanLySangKienNangCaoRoutes } from './sang-kien';
 import { QuanLyYTuongRoutes } from './y-tuong';
+import { DoiMoiSangTaoRoutes } from './doi-moi-sang-tao/DoiMoiSangTaoRoutes';
 import {
   LapKeHoachVonRoutes,
   QuanLyTienTrinhRoutes,
@@ -293,6 +295,18 @@ const PrivateRoutes = () => {
         <Route path="ql-mau-eform" element={<ProtectedSuspenseView><QLEformPage /></ProtectedSuspenseView>} />
         <Route path="thiet-ke" element={<ProtectedSuspenseView><ThietKePage /></ProtectedSuspenseView>} />
         <Route path="*" element={<Navigate to="/error/404/system" replace />} />
+      </Route>
+
+      {/* Đổi mới sáng tạo - Innovation Portal */}
+      <Route path="doi-moi-sang-tao/*" element={<MasterLayout asideMenu={<SidebarDoiMoiSangTaoMenu />} menuInner={<MenuInnerSystem />} />}>
+        <Route
+          path="*"
+          element={
+            <ProtectedSuspenseView>
+              <DoiMoiSangTaoRoutes />
+            </ProtectedSuspenseView>
+          }
+        />
       </Route>
 
       {/* Kế hoạch vốn chung - sidebar SidebarKeHoachVonMenu */}

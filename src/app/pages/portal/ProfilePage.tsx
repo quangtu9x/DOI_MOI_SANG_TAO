@@ -12,7 +12,8 @@ import {
     Star,
     Key,
     UserCircle,
-    Layout
+    Layout,
+    Lightbulb
 } from "lucide-react"
 import { getAuth, useAuth } from "@/app/modules/auth"
 import { useNavigate, useSearchParams } from "react-router-dom"
@@ -24,12 +25,13 @@ import clsx from "clsx"
 import { InitiativeSection } from "./components/profile/InitiativeSection"
 import { ITProjectSection } from "./components/profile/ITProjectSection"
 import { ResearchSection } from "./components/profile/ResearchSection"
+import { YTuongSection } from "./components/profile/YTuongSection"
 
-type SectionType = "account" | "research" | "initiative" | "it-project"
+type SectionType = "account" | "y-tuong"
 type AccountTabType = "personal" | "password"
 type StatusType = "pending" | "approved" | "rejected"
 
-const profileSections: SectionType[] = ["account", "research", "initiative", "it-project"]
+const profileSections: SectionType[] = ["account", "y-tuong"]
 
 const isProfileSection = (section: string | null): section is SectionType =>
     !!section && profileSections.includes(section as SectionType)
@@ -154,9 +156,8 @@ export const ProfilePage = () => {
                             <nav className="space-y-1">
                                 {[
                                     { id: "account", label: "Thông tin tài khoản", icon: Settings },
-                                    { id: "research", label: "Nhiệm vụ NCKH", icon: FileText, purpose: UserPurpose.NhiemVuKhoaHoc },
-                                    { id: "initiative", label: "Sáng kiến khoa học", icon: Star, purpose: UserPurpose.SangKienKhoaHoc },
-                                    { id: "it-project", label: "Dự án CNTT", icon: Layout, purpose: UserPurpose.DuAnCNTT },
+                                    { id: "y-tuong", label: "Ý tưởng của tôi", icon: Lightbulb },
+                                    // "Nhiệm vụ NCKH", "Sáng kiến", "Dự án CNTT" — ẩn, giai đoạn sau
                                 ].map((item) => {
                                     const isVisible = !item.purpose
                                         || currentUser?.type !== UserType.FromPortal
@@ -191,7 +192,7 @@ export const ProfilePage = () => {
                         <div className="mb-5">
 
                             {/* Navigation Tabs */}
-                            {(activeSection !== "initiative" && activeSection !== "it-project" && activeSection !== "research") && (
+                            {(activeSection === "account") && (
                                 <div className="flex border-b border-gray-200 mb-8">
                                     {activeSection === "account" ? (
                                         <>
@@ -320,6 +321,10 @@ export const ProfilePage = () => {
                             )}
 
                             {/* Tables for other sections */}
+                            {activeSection === "y-tuong" && (
+                                <YTuongSection />
+                            )}
+
                             {activeSection === "initiative" && (
                                 <InitiativeSection />
                             )}

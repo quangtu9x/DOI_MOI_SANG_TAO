@@ -63,13 +63,13 @@ export const Step3Success: React.FC<Props> = ({ ticketCode, copied, setCopied, s
 
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <Link
-                    to="/portal/home"
+                    to="/doi-moi/trang-chu"
                     className="px-8 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold transition text-center"
                 >
                     Về trang chủ
                 </Link>
                 <Link
-                    to={`/portal/profile?section=${content.profileSection}`}
+                    to={`/doi-moi/profile?section=${content.profileSection}`}
                     className="px-8 py-3 rounded-lg bg-portal-primary hover:bg-portal-hover text-white font-bold transition text-center"
                 >
                     Tra cứu

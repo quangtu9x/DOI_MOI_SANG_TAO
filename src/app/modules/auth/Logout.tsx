@@ -11,7 +11,7 @@ export function Logout() {
 
   return (
     <Routes>
-      <Navigate to='/portal/home' />
+      <Navigate to='/doi-moi/trang-chu' />
     </Routes>
   )
 }

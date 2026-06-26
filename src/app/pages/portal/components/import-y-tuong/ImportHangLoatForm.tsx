@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Button, Upload, Card, Table, Space, Tag, message, Tabs } from 'antd';
-import { DownloadOutlined, InboxOutlined, LinkOutlined, FileExcelOutlined, FileProtectOutlined } from '@ant-design/icons';
+import { Button, Upload, Card, Table, Space, Tag, message, Tabs, Progress, Alert } from 'antd';
+import { DownloadOutlined, InboxOutlined, LinkOutlined, FileExcelOutlined, FileProtectOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
 import * as XLSX from 'xlsx';
+import dayjs from 'dayjs';
+import { requestPOST } from '@/utils/baseAPI';
 
 const { Dragger } = Upload;
 const { TabPane } = Tabs;
@@ -21,6 +23,23 @@ export interface ImportedRecord {
   loiIchDuKien: string;
   [key: string]: any;
 }
+
+interface SendResult {
+  key: string;
+  tenYTuong: string;
+  status: 'success' | 'error';
+  message: string;
+}
+
+const TEMPLATE_FIELD_NAMES = new Set([
+  'title', 'linhVuc', 'problemDescription', 'ideaContent',
+  'mucTieu', 'nguoiDeXuat', 'donViCongTac', 'phamViApDung', 'expectedBenefit',
+]);
+
+const isFieldNamesRow = (row: any): boolean => {
+  const values = Object.values(row).filter((v) => v !== '');
+  return values.length > 0 && values.every((v) => TEMPLATE_FIELD_NAMES.has(v as string));
+};
 
 const EXPECTED_HEADERS = [
   'Tên ý tưởng',
@@ -76,8 +95,18 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
   const [apiUrl, setApiUrl] = useState('');
   const [importing, setImporting] = useState(false);
 
+  // Send progress state
+  const [sending, setSending] = useState(false);
+  const [sentCount, setSentCount] = useState(0);
+  const [sendResults, setSendResults] = useState<SendResult[]>([]);
+  const [sendDone, setSendDone] = useState(false);
+
   const downloadTemplate = () => {
-    const wsData = [EXPECTED_HEADERS];
+    const FIELD_NAMES = [
+      'title', 'linhVuc', 'problemDescription', 'ideaContent',
+      'mucTieu', 'nguoiDeXuat', 'donViCongTac', 'phamViApDung', 'expectedBenefit',
+    ];
+    const wsData = [EXPECTED_HEADERS, FIELD_NAMES];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     ws['!cols'] = [
@@ -107,15 +136,13 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json<any>(firstSheet, { defval: '' });
 
-          if (jsonData.length === 0) {
-            reject(new Error('File không có dữ liệu!'));
-            return;
-          }
+          if (jsonData.length === 0) { reject(new Error('File không có dữ liệu!')); return; }
 
-          const rawHeaders = Object.keys(jsonData[0]);
+          const dataRows = jsonData.length > 0 && isFieldNamesRow(jsonData[0]) ? jsonData.slice(1) : jsonData;
+          const rawHeaders = Object.keys(dataRows[0] ?? jsonData[0]);
           const mappedHeaders = normalizeHeaders(rawHeaders);
 
-          const records: ImportedRecord[] = jsonData.map((row: any, idx: number) => {
+          const records: ImportedRecord[] = dataRows.map((row: any, idx: number) => {
             const record: any = { key: `row-${idx}` };
             rawHeaders.forEach((header, hIdx) => {
               const mappedKey = mappedHeaders[hIdx];
@@ -127,7 +154,7 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
           });
 
           resolve(records);
-        } catch (error) {
+        } catch {
           reject(new Error('Không thể đọc file. Vui lòng kiểm tra định dạng!'));
         }
       };
@@ -143,24 +170,21 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
         try {
           const text = e.target?.result as string;
           const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-          if (lines.length < 2) {
-            reject(new Error('File CSV không có dữ liệu hoặc chỉ có header!'));
-            return;
-          }
+          if (lines.length < 2) { reject(new Error('File CSV không có dữ liệu hoặc chỉ có header!')); return; }
 
           const firstLine = lines[0];
-          const commaCount = (firstLine.match(/,/g) || []).length;
-          const semicolonCount = (firstLine.match(/;/g) || []).length;
-          const delimiter = semicolonCount > commaCount ? ';' : ',';
-
+          const delimiter = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
           const rawHeaders = firstLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
           const mappedHeaders = normalizeHeaders(rawHeaders);
 
-          const records: ImportedRecord[] = lines.slice(1).map((line, idx) => {
+          const secondLineValues = lines[1]?.split(delimiter).map(v => v.trim().replace(/^"|"$/g, '')) ?? [];
+          const secondLineObj = Object.fromEntries(rawHeaders.map((h, i) => [h, secondLineValues[i] ?? '']));
+          const dataLines = isFieldNamesRow(secondLineObj) ? lines.slice(2) : lines.slice(1);
+
+          const records: ImportedRecord[] = dataLines.map((line, idx) => {
             const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
             const record: any = { key: `row-${idx}` };
             rawHeaders.forEach((header, hIdx) => {
-              const mappedKey = COLUMN_MAP[header.trim().toLowerCase()] || mappedHeaders[hIdx];
               if (COLUMN_MAP[header.trim().toLowerCase()]) {
                 record[COLUMN_MAP[header.trim().toLowerCase()]] = values[hIdx] || '';
               }
@@ -169,7 +193,7 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
           });
 
           resolve(records);
-        } catch (error) {
+        } catch {
           reject(new Error('Không thể đọc file CSV!'));
         }
       };
@@ -200,6 +224,8 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
 
       setImportedData(records);
       setIsPreviewVisible(true);
+      setSendResults([]);
+      setSendDone(false);
       message.success({ content: `Đã đọc thành công ${records.length} ý tưởng từ file!`, key: 'importing' });
       return false;
     } catch (error: any) {
@@ -209,60 +235,97 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
   };
 
   const handleApiImport = async () => {
-    if (!apiUrl.trim()) {
-      message.warning('Vui lòng nhập URL API!');
-      return;
-    }
-
+    if (!apiUrl.trim()) { message.warning('Vui lòng nhập URL API!'); return; }
     setImporting(true);
     try {
       const response = await fetch(apiUrl.trim());
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       const data = await response.json();
 
-      let records: ImportedRecord[] = [];
-      if (Array.isArray(data)) {
-        records = data.map((item: any, idx: number) => ({
-          key: `api-${idx}`,
-          tenYTuong: item.tenYTuong || item.title || item.name || '',
-          linhVuc: item.linhVuc || item.field || item.category || '',
-          moTaVanDe: item.moTaVanDe || item.description || item.problem || '',
-          noiDungDeXuat: item.noiDungDeXuat || item.solution || item.content || '',
-          mucTieu: item.mucTieu || item.goal || item.objective || '',
-          nguoiDeXuat: item.nguoiDeXuat || item.author || item.creator || '',
-          donViCongTac: item.donViCongTac || item.department || item.unit || '',
-          phamViApDung: item.phamViApDung || item.scope || '',
-          loiIchDuKien: item.loiIchDuKien || item.benefit || '',
-        }));
-      } else if (data.data && Array.isArray(data.data)) {
-        records = data.data.map((item: any, idx: number) => ({
-          key: `api-${idx}`,
-          tenYTuong: item.tenYTuong || item.title || item.name || '',
-          linhVuc: item.linhVuc || item.field || item.category || '',
-          moTaVanDe: item.moTaVanDe || item.description || item.problem || '',
-          noiDungDeXuat: item.noiDungDeXuat || item.solution || item.content || '',
-          mucTieu: item.mucTieu || item.goal || item.objective || '',
-          nguoiDeXuat: item.nguoiDeXuat || item.author || item.creator || '',
-          donViCongTac: item.donViCongTac || item.department || item.unit || '',
-          phamViApDung: item.phamViApDung || item.scope || '',
-          loiIchDuKien: item.loiIchDuKien || item.benefit || '',
-        }));
-      }
+      const mapItem = (item: any, idx: number): ImportedRecord => ({
+        key: `api-${idx}`,
+        tenYTuong: item.tenYTuong || item.title || item.name || '',
+        linhVuc: item.linhVuc || item.field || item.category || '',
+        moTaVanDe: item.moTaVanDe || item.description || item.problem || '',
+        noiDungDeXuat: item.noiDungDeXuat || item.solution || item.content || '',
+        mucTieu: item.mucTieu || item.goal || item.objective || '',
+        nguoiDeXuat: item.nguoiDeXuat || item.author || item.creator || '',
+        donViCongTac: item.donViCongTac || item.department || item.unit || '',
+        phamViApDung: item.phamViApDung || item.scope || '',
+        loiIchDuKien: item.loiIchDuKien || item.benefit || '',
+      });
 
-      if (records.length === 0) {
-        message.warning('API không trả về dữ liệu hợp lệ!');
-        return;
-      }
+      const raw = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+      const records = raw.map(mapItem);
+
+      if (records.length === 0) { message.warning('API không trả về dữ liệu hợp lệ!'); return; }
 
       setImportedData(records);
       setIsPreviewVisible(true);
+      setSendResults([]);
+      setSendDone(false);
       message.success(`Đã lấy thành công ${records.length} ý tưởng từ API!`);
     } catch (error: any) {
       message.error(`Lỗi kết nối API: ${error.message}`);
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleSubmitBatch = async () => {
+    if (validRecords.length === 0) { message.warning('Không có ý tưởng hợp lệ nào để gửi!'); return; }
+
+    setSending(true);
+    setSentCount(0);
+    setSendResults([]);
+    setSendDone(false);
+
+    const results: SendResult[] = [];
+
+    for (let i = 0; i < validRecords.length; i++) {
+      const rec = validRecords[i];
+      const body = {
+        code: `YT-${dayjs().format('YYMMDDHHmmss')}-${i + 1}`,
+        title: rec.tenYTuong,
+        problemDescription: rec.moTaVanDe || '',
+        ideaContent: rec.noiDungDeXuat || '',
+        expectedBenefit: rec.loiIchDuKien || '',
+        templateId: null,
+        receiverId: null,
+        status: 'DRAFT',
+        sourceType: 'IMPORT',
+        importBatchId: null,
+        linhVuc: rec.linhVuc,
+        mucTieu: rec.mucTieu || '',
+        nguoiDeXuat: rec.nguoiDeXuat || '',
+        donViCongTac: rec.donViCongTac || '',
+        phamViApDung: rec.phamViApDung || '',
+        ngayApDung: null,
+      };
+
+      const res = await requestPOST('ideas', body);
+      if (res.status >= 200 && res.status < 300) {
+        results.push({ key: rec.key, tenYTuong: rec.tenYTuong, status: 'success', message: 'Thành công' });
+      } else {
+        const errMsg = (res.data as any)?.message || res.statusText || `HTTP ${res.status}`;
+        results.push({ key: rec.key, tenYTuong: rec.tenYTuong, status: 'error', message: errMsg });
+      }
+
+      setSentCount(i + 1);
+      setSendResults([...results]);
+    }
+
+    setSending(false);
+    setSendDone(true);
+
+    const successCount = results.filter(r => r.status === 'success').length;
+    const errorCount = results.filter(r => r.status === 'error').length;
+
+    if (errorCount === 0) {
+      message.success(`Đã gửi thành công ${successCount} ý tưởng!`);
+      onSubmit(validRecords);
+    } else {
+      message.warning(`Gửi xong: ${successCount} thành công, ${errorCount} thất bại.`);
     }
   };
 
@@ -305,23 +368,47 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
       width: 100,
       render: (_: any, record: ImportedRecord) => {
         const isValid = record.tenYTuong && record.linhVuc;
-        return isValid
-          ? <Tag color="green">Hợp lệ</Tag>
-          : <Tag color="red">Thiếu dữ liệu</Tag>;
+        return isValid ? <Tag color="green">Hợp lệ</Tag> : <Tag color="red">Thiếu dữ liệu</Tag>;
       },
+    },
+  ];
+
+  const resultColumns: ColumnsType<SendResult> = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 60,
+      render: (_: any, __: any, idx: number) => idx + 1,
+    },
+    {
+      title: 'Tên ý tưởng',
+      dataIndex: 'tenYTuong',
+      key: 'tenYTuong',
+    },
+    {
+      title: 'Kết quả',
+      key: 'result',
+      width: 120,
+      render: (_: any, record: SendResult) =>
+        record.status === 'success'
+          ? <Tag icon={<CheckCircleOutlined />} color="success">Thành công</Tag>
+          : <Tag icon={<CloseCircleOutlined />} color="error">Thất bại</Tag>,
+    },
+    {
+      title: 'Chi tiết',
+      dataIndex: 'message',
+      key: 'message',
+      render: (val: string, record: SendResult) =>
+        record.status === 'error' ? <span className="text-red-500 text-xs">{val}</span> : <span className="text-green-600 text-xs">{val}</span>,
     },
   ];
 
   const validRecords = importedData.filter(r => r.tenYTuong && r.linhVuc);
   const invalidRecords = importedData.filter(r => !r.tenYTuong || !r.linhVuc);
 
-  const handleSubmitBatch = () => {
-    if (validRecords.length === 0) {
-      message.warning('Không có ý tưởng hợp lệ nào để gửi!');
-      return;
-    }
-    onSubmit(validRecords);
-  };
+  const percent = validRecords.length > 0 ? Math.round((sentCount / validRecords.length) * 100) : 0;
+  const successCount = sendResults.filter(r => r.status === 'success').length;
+  const errorCount = sendResults.filter(r => r.status === 'error').length;
 
   const uploadProps: UploadProps = {
     multiple: false,
@@ -340,205 +427,251 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
         </p>
       </div>
 
-      <Card className="mb-6">
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane
-            tab={<span className='px-2'><FileExcelOutlined /> Import từ Excel / CSV</span>}
-            key="file"
-          >
-            <div className="py-6">
-              {/* Bước 1: Tải file mẫu */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                  1
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-800">Tải file mẫu</p>
-                  <p className="text-sm text-gray-500">Tải file Excel mẫu, điền thông tin ý tưởng theo đúng cấu trúc.</p>
-                </div>
-                <Button icon={<DownloadOutlined />} onClick={downloadTemplate}>
-                  Tải file mẫu
-                </Button>
-              </div>
+      {/* Progress panel — hiển thị khi đang hoặc đã gửi */}
+      {(sending || sendDone) && (
+        <div className="mb-6 p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-semibold text-gray-800">
+              {sending ? '⏳ Đang gửi dữ liệu lên hệ thống...' : '✅ Hoàn tất gửi dữ liệu'}
+            </span>
+            <span className="text-sm text-gray-500">
+              {sentCount} / {validRecords.length} bản ghi
+            </span>
+          </div>
 
-              {/* Bước 2: Upload file */}
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
-                  2
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-800 mb-1">Tải lên file dữ liệu</p>
-                  <p className="text-sm text-gray-500 mb-4">Kéo thả hoặc chọn file Excel (.xlsx, .xls) hoặc CSV (.csv) đã điền dữ liệu.</p>
-                  <Dragger {...uploadProps}>
-                    <p className="ant-upload-drag-icon">
-                      <InboxOutlined />
-                    </p>
-                    <p className="ant-upload-text">Nhấp hoặc kéo file vào đây</p>
-                    <p className="ant-upload-hint">
-                      Hỗ trợ .xlsx, .xls, .csv · Tối đa 1000 bản ghi
-                    </p>
-                  </Dragger>
+          <Progress
+            percent={percent}
+            status={sending ? 'active' : errorCount > 0 ? 'exception' : 'success'}
+            strokeColor={sending ? '#1677ff' : errorCount > 0 ? '#ff4d4f' : '#52c41a'}
+          />
 
-                  {importedData.length > 0 && !isPreviewVisible && (
-                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm text-green-700">
-                        ✓ Đã đọc <strong>{importedData.length}</strong> ý tưởng từ file.
-                        Bấm <strong>"Xem trước dữ liệu"</strong> để kiểm tra trước khi gửi.
-                      </p>
+          {sendDone && (
+            <div className="flex gap-4 mt-3">
+              <span className="text-sm text-green-600 font-medium">✓ {successCount} thành công</span>
+              {errorCount > 0 && (
+                <span className="text-sm text-red-500 font-medium">✗ {errorCount} thất bại</span>
+              )}
+            </div>
+          )}
+
+          {sendResults.length > 0 && (
+            <div className="mt-4">
+              <Table
+                dataSource={sendResults}
+                columns={resultColumns}
+                rowKey="key"
+                size="small"
+                pagination={{ pageSize: 5, showSizeChanger: false, showTotal: (total) => `Tổng ${total} bản ghi` }}
+                scroll={{ y: 220 }}
+              />
+            </div>
+          )}
+
+          {sendDone && errorCount === 0 && (
+            <Alert
+              className="mt-4"
+              type="success"
+              showIcon
+              message={`Đã gửi thành công ${successCount} ý tưởng lên hệ thống!`}
+            />
+          )}
+          {sendDone && errorCount > 0 && (
+            <Alert
+              className="mt-4"
+              type="warning"
+              showIcon
+              message={`${successCount} thành công, ${errorCount} thất bại. Kiểm tra chi tiết bên trên.`}
+            />
+          )}
+        </div>
+      )}
+
+      {!sending && !sendDone && (
+        <>
+          <Card className="mb-6">
+            <Tabs activeKey={activeTab} onChange={setActiveTab}>
+              <TabPane
+                tab={<span className='px-2'><FileExcelOutlined /> Import từ Excel / CSV</span>}
+                key="file"
+              >
+                <div className="py-6">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">1</div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800">Tải file mẫu</p>
+                      <p className="text-sm text-gray-500">Tải file Excel mẫu, điền thông tin ý tưởng theo đúng cấu trúc.</p>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </TabPane>
+                    <Button icon={<DownloadOutlined />} onClick={downloadTemplate}>Tải file mẫu</Button>
+                  </div>
 
-          <TabPane
-            tab={<span className='px-2'><LinkOutlined /> Import từ API</span>}
-            key="api"
-          >
-            <div className="py-4">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL API (trả về JSON)
-                </label>
-                <div className="flex gap-3">
-                  <input
-                    type="url"
-                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="https://example.com/api/y-tuong"
-                    value={apiUrl}
-                    onChange={(e) => setApiUrl(e.target.value)}
-                  />
-                  <Button
-                    type="primary"
-                    icon={<LinkOutlined />}
-                    loading={importing}
-                    onClick={handleApiImport}
-                  >
-                    Lấy dữ liệu
-                  </Button>
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">2</div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800 mb-1">Tải lên file dữ liệu</p>
+                      <p className="text-sm text-gray-500 mb-4">Kéo thả hoặc chọn file Excel (.xlsx, .xls) hoặc CSV (.csv) đã điền dữ liệu.</p>
+                      <Dragger {...uploadProps}>
+                        <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                        <p className="ant-upload-text">Nhấp hoặc kéo file vào đây</p>
+                        <p className="ant-upload-hint">Hỗ trợ .xlsx, .xls, .csv · Tối đa 1000 bản ghi</p>
+                      </Dragger>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  API cần trả về mảng JSON hoặc object có chứa trường "data".
-                  Hỗ trợ các trường: tenYTuong, linhVuc, moTaVanDe, noiDungDeXuat, mucTieu, nguoiDeXuat, donViCongTac, phamViApDung, loiIchDuKien.
-                </p>
-              </div>
-            </div>
-          </TabPane>
+              </TabPane>
 
-          <TabPane
-            tab={<span className='px-2'><FileProtectOutlined /> Tích hợp hệ thống</span>}
-            key="integration"
-          >
-            <div className="py-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-                <i className="fa-solid fa-cloud-arrow-up text-4xl text-blue-400 mb-4 block"></i>
-                <h4 className="font-semibold text-blue-800 mb-2">Tích hợp hệ thống qua API</h4>
-                <p className="text-blue-600 text-sm mb-4">
-                  Hệ thống hỗ trợ tích hợp với các hệ thống bên ngoài qua REST API.
-                  Vui lòng liên hệ quản trị viên để được cấp API key và tài liệu tích hợp.
-                </p>
-                <div className="bg-white rounded p-4 text-left border border-blue-100">
-                  <p className="text-xs text-gray-500 font-mono mb-2">POST /api/v1/y-tuong/import</p>
-                  <p className="text-xs text-gray-500 font-mono mb-2">Content-Type: application/json</p>
-                  <pre className="text-xs text-gray-600 bg-gray-50 p-3 rounded overflow-x-auto">
+              <TabPane
+                tab={<span className='px-2'><LinkOutlined /> Import từ API</span>}
+                key="api"
+              >
+                <div className="py-4">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">URL API (trả về JSON)</label>
+                    <div className="flex gap-3">
+                      <input
+                        type="url"
+                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="https://example.com/api/y-tuong"
+                        value={apiUrl}
+                        onChange={(e) => setApiUrl(e.target.value)}
+                      />
+                      <Button type="primary" icon={<LinkOutlined />} loading={importing} onClick={handleApiImport}>
+                        Lấy dữ liệu
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                      API cần trả về mảng JSON hoặc object có chứa trường "data".
+                    </p>
+                  </div>
+                </div>
+              </TabPane>
+
+              <TabPane
+                tab={<span className='px-2'><FileProtectOutlined /> Tích hợp hệ thống</span>}
+                key="integration"
+              >
+                <div className="py-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                    <i className="fa-solid fa-cloud-arrow-up text-4xl text-blue-400 mb-4 block"></i>
+                    <h4 className="font-semibold text-blue-800 mb-2">Tích hợp hệ thống qua API</h4>
+                    <p className="text-blue-600 text-sm mb-4">
+                      Hệ thống hỗ trợ tích hợp với các hệ thống bên ngoài qua REST API.
+                      Vui lòng liên hệ quản trị viên để được cấp API key và tài liệu tích hợp.
+                    </p>
+                    <div className="bg-white rounded p-4 text-left border border-blue-100">
+                      <p className="text-xs text-gray-500 font-mono mb-2">POST /api/v1/y-tuong/import</p>
+                      <p className="text-xs text-gray-500 font-mono mb-2">Content-Type: application/json</p>
+                      <pre className="text-xs text-gray-600 bg-gray-50 p-3 rounded overflow-x-auto">
 {`{
   "apiKey": "your-api-key",
   "items": [
     {
       "tenYTuong": "Tên ý tưởng",
       "linhVuc": "Lĩnh vực",
-      "moTaVanDe": "Mô tả vấn đề",
-      "noiDungDeXuat": "Nội dung đề xuất",
-      "mucTieu": "Mục tiêu",
-      "nguoiDeXuat": "Người đề xuất",
-      "donViCongTac": "Đơn vị",
-      "phamViApDung": "Phạm vi áp dụng",
-      "loiIchDuKien": "Lợi ích dự kiến"
+      ...
     }
   ]
 }`}
-                  </pre>
+                      </pre>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </TabPane>
-        </Tabs>
-      </Card>
+              </TabPane>
+            </Tabs>
+          </Card>
 
-      {/* Preview imported data */}
-      {importedData.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <span className="font-semibold text-gray-800">Dữ liệu đã import</span>
-              <Tag className="ml-2" color="blue">{importedData.length} bản ghi</Tag>
-              <Tag className="ml-1" color="green">{validRecords.length} hợp lệ</Tag>
+          {/* Preview imported data */}
+          {importedData.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <span className="font-semibold text-gray-800">Dữ liệu đã import</span>
+                  <Tag className="ml-2" color="blue">{importedData.length} bản ghi</Tag>
+                  <Tag className="ml-1" color="green">{validRecords.length} hợp lệ</Tag>
+                  {invalidRecords.length > 0 && (
+                    <Tag className="ml-1" color="red">{invalidRecords.length} thiếu dữ liệu</Tag>
+                  )}
+                </div>
+                <Space>
+                  <Button onClick={() => { setImportedData([]); setSendResults([]); setSendDone(false); }}>
+                    Xóa dữ liệu
+                  </Button>
+                  <Button type="primary" onClick={() => setIsPreviewVisible(!isPreviewVisible)}>
+                    {isPreviewVisible ? 'Ẩn bảng' : 'Xem trước dữ liệu'}
+                  </Button>
+                </Space>
+              </div>
+
+              {isPreviewVisible && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <Table
+                    dataSource={importedData}
+                    columns={columns}
+                    scroll={{ x: 900, y: 400 }}
+                    pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Tổng ${total} bản ghi` }}
+                    size="small"
+                  />
+                </div>
+              )}
+
               {invalidRecords.length > 0 && (
-                <Tag className="ml-1" color="red">{invalidRecords.length} thiếu dữ liệu</Tag>
+                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded">
+                  <p className="text-sm text-orange-700">
+                    <i className="fa-solid fa-triangle-exclamation mr-2"></i>
+                    Có <strong>{invalidRecords.length}</strong> bản ghi thiếu tên ý tưởng hoặc lĩnh vực (bắt buộc).
+                    Các bản ghi này sẽ được bỏ qua khi gửi.
+                  </p>
+                </div>
               )}
             </div>
-            <Space>
-              <Button onClick={() => setImportedData([])}>
-                Xóa dữ liệu
-              </Button>
-              <Button type="primary" onClick={() => setIsPreviewVisible(!isPreviewVisible)}>
-                {isPreviewVisible ? 'Ẩn bảng' : 'Xem trước dữ liệu'}
-              </Button>
-            </Space>
-          </div>
-
-          {isPreviewVisible && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <Table
-                dataSource={importedData}
-                columns={columns}
-                scroll={{ x: 900, y: 400 }}
-                pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Tổng ${total} bản ghi` }}
-                size="small"
-              />
-            </div>
           )}
-
-          {invalidRecords.length > 0 && (
-            <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded">
-              <p className="text-sm text-orange-700">
-                <i className="fa-solid fa-triangle-exclamation mr-2"></i>
-                Có <strong>{invalidRecords.length}</strong> bản ghi thiếu tên ý tưởng hoặc lĩnh vực (bắt buộc).
-                Các bản ghi này sẽ được bỏ qua khi gửi.
-              </p>
-            </div>
-          )}
-        </div>
+        </>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-4">
         <Space>
-          <Button onClick={onBack}>Quay lại</Button>
+          <Button onClick={onBack} disabled={sending}>Quay lại</Button>
         </Space>
-        {importedData.length > 0 && (
+        {!sendDone && importedData.length > 0 && (
           <Button
             type="primary"
+            loading={sending}
             icon={<i className="fa-regular fa-paper-plane mr-1"></i>}
             onClick={handleSubmitBatch}
             disabled={validRecords.length === 0}
           >
-            Gửi {validRecords.length} ý tưởng hợp lệ
+            {sending ? `Đang gửi... (${sentCount}/${validRecords.length})` : `Gửi ${validRecords.length} ý tưởng hợp lệ`}
           </Button>
+        )}
+        {sendDone && errorCount === 0 && (
+          <Button type="primary" onClick={() => onSubmit(validRecords)}>
+            Hoàn tất
+          </Button>
+        )}
+        {sendDone && errorCount > 0 && (
+          <Space>
+            <Button onClick={() => { setSendDone(false); setSendResults([]); setSentCount(0); }}>
+              Thử lại
+            </Button>
+            <Button type="primary" onClick={() => onSubmit(validRecords)}>
+              Hoàn tất
+            </Button>
+          </Space>
         )}
       </div>
 
-      <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <h4 className="font-semibold text-sm text-gray-700 mb-2">📋 Yêu cầu dữ liệu</h4>
-        <ul className="text-sm text-gray-600 space-y-1 list-disc pl-5">
-          <li>Các cột <strong>bắt buộc</strong>: Tên ý tưởng, Lĩnh vực</li>
-          <li>Các cột <strong>khuyến khích</strong>: Người đề xuất, Đơn vị công tác, Mô tả vấn đề, Nội dung đề xuất, Mục tiêu, Phạm vi áp dụng, Lợi ích dự kiến</li>
-          <li>Hỗ trợ nhập tối đa <strong>1000 bản ghi</strong> trong một lần</li>
-          <li>Định dạng file hỗ trợ: <Tag>.xlsx</Tag> <Tag>.xls</Tag> <Tag>.csv</Tag></li>
-          <li>Mỗi bản ghi sẽ được kiểm tra tính hợp lệ trước khi gửi</li>
-          <li>Có thể tải file mẫu để tham khảo cấu trúc dữ liệu chuẩn</li>
-        </ul>
-      </div>
+      {!sending && !sendDone && (
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h4 className="font-semibold text-sm text-gray-700 mb-2">📋 Yêu cầu dữ liệu</h4>
+          <ul className="text-sm text-gray-600 space-y-1 list-disc pl-5">
+            <li>Các cột <strong>bắt buộc</strong>: Tên ý tưởng, Lĩnh vực</li>
+            <li>Các cột <strong>khuyến khích</strong>: Người đề xuất, Đơn vị công tác, Mô tả vấn đề, Nội dung đề xuất, Mục tiêu, Phạm vi áp dụng, Lợi ích dự kiến</li>
+            <li>Hỗ trợ nhập tối đa <strong>1000 bản ghi</strong> trong một lần</li>
+            <li>Định dạng file hỗ trợ: <Tag>.xlsx</Tag> <Tag>.xls</Tag> <Tag>.csv</Tag></li>
+            <li>Mỗi bản ghi sẽ được kiểm tra tính hợp lệ trước khi gửi</li>
+            <li>Có thể tải file mẫu để tham khảo cấu trúc dữ liệu chuẩn</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

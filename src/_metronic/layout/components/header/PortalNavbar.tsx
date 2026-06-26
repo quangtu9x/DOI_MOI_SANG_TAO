@@ -19,39 +19,18 @@ export const PortalNavbar = () => {
       title: "Ý tưởng",
       key: "y-tuong",
       items: [
-        { label: "Giới thiệu", to: "#" },
-        { label: "Hướng dẫn", to: "#" },
-        { label: "Khởi tạo ý tưởng", to: "/portal/y-tuong" },
-        { label: "Import ý tưởng hàng loạt", to: "/portal/y-tuong?mode=import" },
+        { label: "Khởi tạo ý tưởng", to: "/doi-moi/y-tuong" },
+        { label: "Tra cứu hồ sơ", to: "/doi-moi/tra-cuu" },
+        { label: "Import hàng loạt", to: "/doi-moi/y-tuong?mode=import" },
       ]
     },
     {
-      title: "Nhiệm vụ khoa học",
-      key: "nhiem-vu",
+      title: "Kho tri thức",
+      key: "kho-tri-thuc",
       items: [
-        { label: "Giới thiệu", to: "#" },
-        { label: "Hướng dẫn", to: "#" },
-        { label: "Đợt đăng ký", to: "#" },
+        { label: "Xem kho tri thức", to: "/doi-moi/kho-tri-thuc" },
       ]
     },
-    {
-      title: "Sáng kiến khoa học",
-      key: "sang-kien",
-      items: [
-        { label: "Giới thiệu", to: "#" },
-        { label: "Hướng dẫn", to: "#" },
-        { label: "Đợt đăng ký", to: "#" },
-      ]
-    },
-    {
-      title: "Dự án CNTT",
-      key: "du-an",
-      items: [
-        { label: "Giới thiệu", to: "#" },
-        { label: "Hướng dẫn", to: "#" },
-        { label: "Đăng ký vốn", to: "#" },
-      ]
-    }
   ];
 
   return (
@@ -71,7 +50,7 @@ export const PortalNavbar = () => {
         <div className="max-w-[1440px] mx-auto px-4 lg:px-8">
           <ul className="flex items-center">
             <li>
-              <Link to="/portal/home" className="flex items-center h-[50px] px-5 text-white hover:bg-portal-hover transition-colors font-bold text-[14px] border-r border-white/5">
+              <Link to="/doi-moi/trang-chu" className="flex items-center h-[50px] px-5 text-white hover:bg-portal-hover transition-colors font-bold text-[14px] border-r border-white/5">
                 Trang chủ
               </Link>
             </li>
@@ -101,7 +80,7 @@ export const PortalNavbar = () => {
         <div className="bg-white lg:hidden text-portal-primary py-4 border-t border-gray-200 px-4 shadow-xl">
           <ul className="space-y-2">
             <li>
-              <Link to="/portal/home" className="bg-gray-100 block py-2 px-3 font-bold uppercase text-sm rounded transition-colors">
+              <Link to="/doi-moi/trang-chu" className="bg-gray-100 block py-2 px-3 font-bold uppercase text-sm rounded transition-colors">
                 Trang chủ
               </Link>
             </li>

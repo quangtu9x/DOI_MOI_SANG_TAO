@@ -21,6 +21,7 @@ import { SidebarSangKienMenu } from './sidebar-menu/SidebarSangKienMenu';
 import { SidebarDanhMucHeThongMenu } from './sidebar-menu/SidebarDanhMucHeThongMenu';
 import { SidebarLichSuMenu } from './sidebar-menu/SidebarLichSuMenu';
 import { SidebarEformMenu } from './sidebar-menu/SidebarEformMenu';
+import { SidebarDoiMoiSangTaoMenu } from './sidebar-menu/SidebarDoiMoiSangTaoMenu';
 import TDHotTable from './tdhottable';
 import { ActionModal } from './ActionModal';
 import OrganizationUnitTreeSelectByCode from './OrganizationUnitTreeSelectByCode';
@@ -41,6 +42,7 @@ export {
   SidebarDanhMucHeThongMenu,
   SidebarLichSuMenu,
   SidebarEformMenu,
+  SidebarDoiMoiSangTaoMenu,
   FileUpload,
   ImageUpload,
   TDEditor,

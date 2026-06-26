@@ -1,14 +1,17 @@
 import { toAbsoluteUrl } from "@/_metronic/helpers"
 import { Link } from "react-router-dom"
+import { useDMSTRole } from "@/app/hooks/useDMSTRole"
 
 export const PortalFooter = () => {
+  const { isReviewer } = useDMSTRole();
+
   return (
     <footer className="w-full bg-[#002B49] text-white pt-[80px]">
       <div className="max-w-[1320px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 mb-16">
 
         {/* Brand Column */}
         <div className="col-span-1 md:col-span-2 lg:col-span-5 flex flex-col gap-6">
-          <Link to="/portal/home" className="flex items-center gap-4 decoration-none group">
+          <Link to="/doi-moi/trang-chu" className="flex items-center gap-4 decoration-none group">
             <img
               src={toAbsoluteUrl("media/portal/logo-header.png")}
               alt="Logo"
@@ -19,7 +22,7 @@ export const PortalFooter = () => {
                 TỔNG CÔNG TY HÀNG KHÔNG VIỆT NAM - CTCP
               </h2>
               <p className="text-blue-100 text-[12px] md:text-[13px] font-medium leading-tight mt-1 opacity-80">
-                Hệ thống phần mềm quản trị đổi mới sáng tạo 
+                Hệ thống phần mềm quản trị đổi mới sáng tạo
               </p>
             </div>
           </Link>
@@ -32,46 +35,44 @@ export const PortalFooter = () => {
               <i className="fa-regular fa-phone text-white opacity-80"></i>
               <span className="text-blue-100 opacity-80">(+84-24) 38272289</span>
             </div>
-            {/* <div className="flex items-center gap-3 text-[14px]">
-              <i className="fa-regular fa-envelope text-white opacity-80"></i>
-              <span className="text-blue-100 opacity-80">sokhcn@haiphong.gov.vn</span>
-            </div> */}
           </div>
         </div>
 
-        {/* Quick Link: Nhiệm vụ */}
+        {/* Quick Link: Ý tưởng */}
         <div className="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col gap-5">
           <h3 className="text-white text-[18px] font-bold pb-2 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-10 after:h-1 after:bg-blue-400">
-            Nhiệm vụ khoa học
+            Ý tưởng đổi mới
           </h3>
           <ul className="flex flex-col gap-3">
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Giới thiệu</Link></li>
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Hướng dẫn</Link></li>
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Đợt đăng ký</Link></li>
+            <li><Link to="/doi-moi/y-tuong" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Gửi ý tưởng mới</Link></li>
+            <li><Link to="/doi-moi/tra-cuu" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Tra cứu hồ sơ</Link></li>
           </ul>
         </div>
 
-        {/* Quick Link: Sáng kiến */}
+        {/* Quick Link: Tài nguyên */}
         <div className="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col gap-5">
           <h3 className="text-white text-[18px] font-bold pb-2 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-10 after:h-1 after:bg-blue-400">
-            Sáng kiến khoa học
+            Tài nguyên
           </h3>
           <ul className="flex flex-col gap-3">
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Giới thiệu</Link></li>
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Hướng dẫn</Link></li>
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Đợt đăng ký</Link></li>
+            <li><Link to="/doi-moi/kho-tri-thuc" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Kho tri thức</Link></li>
+            {isReviewer && (
+              <li><Link to="/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Quy trình phê duyệt</Link></li>
+            )}
           </ul>
         </div>
 
-        {/* Quick Link: Dự án */}
+        {/* Quick Link: Hỗ trợ */}
         <div className="col-span-1 md:col-span-1 lg:col-span-3 flex flex-col gap-5">
           <h3 className="text-white text-[18px] font-bold pb-2 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-10 after:h-1 after:bg-blue-400">
-            Dự án CNTT
+            Hỗ trợ
           </h3>
           <ul className="flex flex-col gap-3">
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Giới thiệu</Link></li>
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Hướng dẫn</Link></li>
-            <li><Link to="#" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Đợt đăng ký</Link></li>
+            {isReviewer && (
+              <li><Link to="/doi-moi-sang-tao/dashboard" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Trang quản lý</Link></li>
+            )}
+            <li><Link to="/doi-moi/profile" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Hồ sơ cá nhân</Link></li>
+            <li><Link to="/auth/login" className="text-blue-100 hover:text-white hover:translate-x-1 transition-all inline-block opacity-80">Đăng nhập hệ thống</Link></li>
           </ul>
         </div>
 

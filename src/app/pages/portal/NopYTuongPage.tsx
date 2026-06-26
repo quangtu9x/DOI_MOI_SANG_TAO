@@ -130,9 +130,16 @@ export const NopYTuongPage = () => {
           ) : (
             <Space className="mb-6" size={8}>
               <Tag color={step >= 1 ? 'blue' : 'default'}>1. Chọn cách khởi tạo</Tag>
-              <Tag color={step >= 2 ? 'blue' : 'default'}>2. Nhập thông tin ý tưởng</Tag>
-              <Tag color={step >= 3 ? 'blue' : 'default'}>3. Đính kèm & Chọn người tiếp nhận</Tag>
-              <Tag color={step >= 4 ? 'blue' : 'default'}>4. Xem trước</Tag
+              <Tag color={step >= 2 ? 'blue' : 'default'}>2. Nhập thông tin & đính kèm</Tag>
+              <Tag color={step >= 3 ? 'blue' : 'default'}>3. Xem trước</Tag>
+              <Tag color={step >= 4 ? 'green' : 'default'}>4. Hoàn thành</Tag>
+            </Space>
+          )}
+
+          {step === 1 && (
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <Card
                   hoverable
                   className={khoiTaoCach === 'new' ? 'border border-blue-500' : ''}
                   onClick={() => setKhoiTaoCach('new')}
@@ -442,14 +449,14 @@ export const NopYTuongPage = () => {
                   setKhoiTaoCach(null);
                   form.resetFields();
                   setFileList([]);
-                  setPreviewData(null);
-                }}>Tạo ý tưởng mới</Button>
-                <Link to="/portal/home">
+                  setPreviewData(null);}}>Tạo ý tưởng mới</Button>
+                <Link to="/doi-moi/trang-chu">
                   <Button type="primary">Về trang chủ</Button>
                 </Link>
               </Space>
             </div>
           )}
+
         </div>
       </div>
     </div>

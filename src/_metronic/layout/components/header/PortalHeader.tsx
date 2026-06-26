@@ -19,7 +19,7 @@ export const PortalHeader = () => {
       >
         <div className="max-w-[1440px] mx-auto px-4 lg:px-8 flex items-center justify-between">
           {/* Logo & Title Area */}
-          <Link to="/portal/home" className="flex items-center gap-3 lg:gap-5 decoration-none group">
+          <Link to="/doi-moi/trang-chu" className="flex items-center gap-3 lg:gap-5 decoration-none group">
             <img
               src={toAbsoluteUrl("media/portal/logo-header.png")}
               alt="Logo"
@@ -74,7 +74,7 @@ export const PortalHeader = () => {
                           </Link>
                         )}
                         <Link
-                          to="/portal/profile"
+                          to="/doi-moi/profile"
                           className="flex items-center px-4 py-2.5 text-gray-700 hover:text-portal-primary hover:bg-blue-50 transition-colors duration-200"
                         >
                           <i className="fa-regular fa-user mr-3 w-4 text-center pointer-events-none"></i>
@@ -95,10 +95,10 @@ export const PortalHeader = () => {
               ) : (
                 <div className="flex items-center gap-2">
                   <Link to="/auth/login" className="bg-white text-portal-primary px-5 py-2 rounded font-bold text-sm uppercase !hover:bg-gray-300 transition-all flex items-center gap-2">
-                    <i className="fa-regular fa-right-to-bracket !text-portal-primary"></i> Đăng nhập
+                    <i className="fa-regular fa-right-to-bracket"></i> Đăng nhập
                   </Link>
                   <Link to="/auth/registration" className="bg-white text-portal-primary px-5 py-2 rounded font-bold text-sm uppercase !hover:bg-gray-300 transition-all flex items-center gap-2">
-                    <i className="fa-regular fa-user-plus !text-portal-primary"></i> Đăng ký
+                    <i className="fa-regular fa-user-plus"></i> Đăng ký
                   </Link>
                 </div>
               )

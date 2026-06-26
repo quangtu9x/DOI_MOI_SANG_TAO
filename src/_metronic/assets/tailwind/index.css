@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Portal: icons inside buttons/links always inherit parent text color ── */
+button i[class*="fa-"],
+a i[class*="fa-"],
+button span i[class*="fa-"],
+a span i[class*="fa-"] {
+  color: inherit !important;
+}

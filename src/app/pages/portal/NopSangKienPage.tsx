@@ -142,7 +142,7 @@ export const NopSangKienPage = () => {
         <p className="text-red-600 font-bold text-xl mb-6 text-center">
           Hiện tại không có đợt yêu cầu công nhận sáng kiến nào đang mở.<br /> Vui lòng quay lại sau!
         </p>
-        <Link to="/portal/home" className="bg-portal-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-portal-hover transition-colors">
+        <Link to="/doi-moi/trang-chu" className="bg-portal-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-portal-hover transition-colors">
           Quay lại trang chủ
         </Link>
       </div>

@@ -5,3 +5,5 @@ export * from './NopSangKienPage';
 export * from './NopYTuongPage';
 export * from './NopDuAnCNTTPage';
 export * from './NopGiaiPhapPage';
+export * from './TraCuuHoSoPage';
+export * from './KhoTriThucPortalPage';

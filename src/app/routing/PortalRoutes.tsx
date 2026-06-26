@@ -2,11 +2,13 @@ import { FC, lazy, Suspense } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import {
   HomePage,
-  NopDuAnCNTTPage,
-  NopNhiemVuPage,
-  NopSangKienPage,
+  // NopDuAnCNTTPage,   // ẩn - giai đoạn sau
+  // NopNhiemVuPage,    // ẩn - giai đoạn sau
+  // NopSangKienPage,   // ẩn - giai đoạn sau
   NopYTuongPage,
   ProfilePage,
+  TraCuuHoSoPage,
+  KhoTriThucPortalPage,
 } from '../pages/portal';
 
 const PortalRoutes = () => {
@@ -30,18 +32,19 @@ const PortalRoutes = () => {
           <PortalLayout />
         </Suspense>
       }>
-        <Route path='home' element={<HomePage />} />
-        <Route path='nhiem-vu' element={<NopNhiemVuPage />} />
+        <Route path='trang-chu' element={<HomePage />} />
+        {/* <Route path='nhiem-vu' element={<NopNhiemVuPage />} /> ẩn - giai đoạn sau */}
         <Route path='y-tuong' element={<NopYTuongPage />} />
-        <Route path='sang-kien' element={<NopSangKienPage />} />
-        <Route path='du-an' element={<NopDuAnCNTTPage />} />
+        {/* <Route path='sang-kien' element={<NopSangKienPage />} /> ẩn - giai đoạn sau */}
+        {/* <Route path='du-an' element={<NopDuAnCNTTPage />} /> ẩn - giai đoạn sau */}
+        <Route path='tra-cuu' element={<TraCuuHoSoPage />} />
+        <Route path='kho-tri-thuc' element={<KhoTriThucPortalPage />} />
         <Route path='profile' element={<ProfilePage />} />
-        <Route index element={<Navigate to='/portal/home' />} />
+        <Route index element={<Navigate to='/doi-moi/trang-chu' />} />
         <Route path='*' element={<Navigate to='/error/404' />} />
       </Route>
     </Routes >
   );
 };
-
 
 export { PortalRoutes };
