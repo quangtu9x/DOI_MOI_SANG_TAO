@@ -14,3 +14,4 @@ export * from './ke-hoach-von';
 export * from './eform';
 export * from './data-sharings';
 export * from './quan-ly-tai-chinh';
+export * from './idea-portal';

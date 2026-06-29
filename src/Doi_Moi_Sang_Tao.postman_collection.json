@@ -1,0 +1,984 @@
+{
+  "info": {
+    "_postman_id": "4effe630-eaf7-43ed-a91a-a6ae7c4c6353",
+    "name": "Doi_Moi_Sang_Tao",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "49430566",
+    "_collection_link": "https://go.postman.co/collection/49430566-4effe630-eaf7-43ed-a91a-a6ae7c4c6353?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Tạo mới sáng kiến",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"code\": \"SK2026001\",\r\n  \"title\": \"Cải tiến quy trình xử lý hồ sơ\",\r\n  \"problemDescription\": \"Quy trình hiện tại mất nhiều thời gian nhập liệu thủ công.\",\r\n  \"ideaContent\": \"Ứng dụng OCR để tự động hóa nhập liệu.\",\r\n  \"expectedBenefit\": \"Giảm 50% thời gian xử lý.\",\r\n\r\n  \"templateId\": \"d290f1ee-6c54-4b01-90e6-d701748f0851\",\r\n  \"receiverId\": \"7f6b2b2d-9f1f-4b39-b4f5-4f9b4f5d8c11\",\r\n\r\n  \"status\": \"Bản nháp\",\r\n  \"sourceType\": \"MANUAL\",\r\n\r\n  \"linhVuc\": \"Công nghệ thông tin\",\r\n  \"mucTieu\": \"Nâng cao hiệu quả công việc\",\r\n  \"nguoiDeXuat\": \"Nguyễn Văn A\",\r\n  \"donViCongTac\": \"Phòng CNTT\",\r\n  \"phamViApDung\": \"Toàn đơn vị\",\r\n  \"ngayApDung\": \"2026-07-01T00:00:00\",\r\n\r\n  \"attachments\": [\r\n    {\r\n      \"fileName\": \"DeXuat.pdf\",\r\n      \"filePath\": \"/uploads/ideas/DeXuat.pdf\",\r\n      \"fileExt\": \".pdf\",\r\n      \"fileSize\": 245760\r\n    },\r\n    {\r\n      \"fileName\": \"SoDoQuyTrinh.png\",\r\n      \"filePath\": \"/uploads/ideas/SoDoQuyTrinh.png\",\r\n      \"fileExt\": \".png\",\r\n      \"fileSize\": 125600\r\n    }\r\n  ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/ideas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "ideas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Lưu tệp đính kèm",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "type": "file",
+              "key": "files",
+              "src": [
+                "/C:/Users/Administrator/Desktop/donvi.txt",
+                "/C:/Users/Administrator/Desktop/ms2222.png",
+                "/C:/Users/Administrator/Desktop/server_quangtri.txt"
+              ]
+            },
+            {
+              "type": "text",
+              "key": "bucketName",
+              "value": "my-bucket"
+            },
+            {
+              "type": "text",
+              "key": "prefix",
+              "value": "public"
+            },
+            {
+              "type": "text",
+              "key": "generateThumbnail",
+              "value": "true"
+            },
+            {
+              "type": "text",
+              "key": "thumbnailWidth",
+              "value": "150"
+            },
+            {
+              "type": "text",
+              "key": "thumbnailHeight",
+              "value": "150"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/attachments/public",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "attachments",
+            "public"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Mẫu ý tưởng",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{auth_secret_16cl}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"TPL001\",\n  \"name\": \"Mẫu sáng kiến cải tiến\",\n  \"description\": \"Template dùng để tạo các ý tưởng cải tiến quy trình\",\n  \"active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/IdeaTemplates",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "IdeaTemplates"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Xem chi tiết Ý tưởng",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5001/api/v1/ideas/af9b9958-50f2-4cc4-33e0-08ded1457cbf",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "ideas",
+            "af9b9958-50f2-4cc4-33e0-08ded1457cbf"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Cập nhật sáng kiến",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"Id\":\"af9b9958-50f2-4cc4-33e0-08ded1457cbf\",\r\n  \"code\": \"SK2026001\",\r\n  \"title\": \"Cải tiến quy trình xử lý hồ sơ 111\",\r\n  \"problemDescription\": \"Quy trình hiện tại mất nhiều thời gian nhập liệu thủ công.\",\r\n  \"ideaContent\": \"Ứng dụng OCR để tự động hóa nhập liệu.\",\r\n  \"expectedBenefit\": \"Giảm 50% thời gian xử lý.\",\r\n\r\n  \"templateId\": \"d290f1ee-6c54-4b01-90e6-d701748f0851\",\r\n  \"receiverId\": \"7f6b2b2d-9f1f-4b39-b4f5-4f9b4f5d8c11\",\r\n\r\n  \"linhVuc\": \"Công nghệ thông tin\",\r\n  \"mucTieu\": \"Nâng cao hiệu quả công việc\",\r\n  \"nguoiDeXuat\": \"Nguyễn Văn A\",\r\n  \"donViCongTac\": \"Phòng CNTT\",\r\n  \"phamViApDung\": \"Toàn đơn vị\",\r\n  \"ngayApDung\": \"2026-07-01T00:00:00\",\r\n\r\n  \"attachments\": [\r\n     {\r\n            \"fileName\": \"ms2222.png\",\r\n            \"originalName\": null,\r\n            \"filePath\": \"my-bucket/public/d32358bb-e14e-440d-8e25-fa94ca971494/ms2222.png\",\r\n            \"fileExt\": \".png\",\r\n            \"fileSize\": 25469,\r\n            \"bucketName\": \"my-bucket\",\r\n            \"prefix\": \"public\",\r\n            \"thumbnailUrl\": \"my-bucket/public/d32358bb-e14e-440d-8e25-fa94ca971494/ms2222_thumbnail.png\"\r\n        }\r\n  ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/ideas/af9b9958-50f2-4cc4-33e0-08ded1457cbf",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "ideas",
+            "af9b9958-50f2-4cc4-33e0-08ded1457cbf"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Nộp sáng kiến -> Chuyển sang Tiếp nhận Sáng kiến",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"remark\": \"Nộp sáng kiến để xem xét\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/IdeaStatus/54986f75-ae22-443b-9ddd-08ded1d93ae2/submit",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "IdeaStatus",
+            "54986f75-ae22-443b-9ddd-08ded1d93ae2",
+            "submit"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Tiếp nhận Sáng kiến -> Chuyển sang Tiếp nhận Sáng kiến",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"remark\": \"Nộp sáng kiến để xem xét\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/IdeaStatus/54986f75-ae22-443b-9ddd-08ded1d93ae2/receive",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "IdeaStatus",
+            "54986f75-ae22-443b-9ddd-08ded1d93ae2",
+            "receive"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Trả lại Sáng kiến -> Chuyển sang Trả lại Sáng kiến",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"remark\": \"Nộp sáng kiến để xem xét\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/IdeaStatus/54986f75-ae22-443b-9ddd-08ded1d93ae2/return",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "IdeaStatus",
+            "54986f75-ae22-443b-9ddd-08ded1d93ae2",
+            "return"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Hủy Sáng kiến-> Chuyển sang Hủy Sáng kiến",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"remark\": \"Nộp sáng kiến để xem xét\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/IdeaStatus/54986f75-ae22-443b-9ddd-08ded1d93ae2/cancel",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "IdeaStatus",
+            "54986f75-ae22-443b-9ddd-08ded1d93ae2",
+            "cancel"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Là Mẫu ý tưởng -> Chuyển ý tưởng sang làm mẫu (template)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authen_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "en-US,en;q=0.9"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0obu}}"
+          },
+          {
+            "key": "Connection",
+            "value": "keep-alive"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "http://10.10.10.78:3011"
+          },
+          {
+            "key": "Referer",
+            "value": "http://10.10.10.78:3011/"
+          },
+          {
+            "key": "Sec-Fetch-Dest",
+            "value": "empty"
+          },
+          {
+            "key": "Sec-Fetch-Mode",
+            "value": "cors"
+          },
+          {
+            "key": "Sec-Fetch-Site",
+            "value": "cross-site"
+          },
+          {
+            "key": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+          },
+          {
+            "key": "sec-ch-ua",
+            "value": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\""
+          },
+          {
+            "key": "sec-ch-ua-mobile",
+            "value": "?0"
+          },
+          {
+            "key": "sec-ch-ua-platform",
+            "value": "\"Windows\""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "true",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5001/api/v1/IdeaStatus/54986f75-ae22-443b-9ddd-08ded1d93ae2/la-y-tuong-mau",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5001",
+          "path": [
+            "api",
+            "v1",
+            "IdeaStatus",
+            "54986f75-ae22-443b-9ddd-08ded1d93ae2",
+            "la-y-tuong-mau"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "authen_token",
+      "value": "{{json_web_token_0y02}}"
+    }
+  ]
+}

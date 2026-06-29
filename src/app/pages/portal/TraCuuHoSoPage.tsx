@@ -1,151 +1,79 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Spin } from 'antd';
+import { useAuth } from '@/app/modules/auth';
+import { searchIdeas } from '@/app/services/ideaPortalApi';
+import type { IIdea } from '@/models/idea-portal';
+import dayjs from 'dayjs';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-type TrangThai = 'DangSoanThao' | 'ChoDuyet' | 'DaDuyet' | 'TuChoi' | 'DuocCongNhan';
+// ── Status mapping ─────────────────────────────────────────────────────────────
+type TrangThai = 'BanNhap' | 'ChoTiepNhan' | 'DaTiepNhan' | 'TraLai' | 'Huy' | 'DuocCongNhan';
 
-interface IStep { label: string; date: string; done: boolean; active?: boolean; }
+const STATUS_MAP: Record<string, TrangThai> = {
+  'Bản nháp':       'BanNhap',
+  'Chờ tiếp nhận':  'ChoTiepNhan',
+  'Đã tiếp nhận':   'DaTiepNhan',
+  'Trả lại':        'TraLai',
+  'Hủy':            'Huy',
+  'Được công nhận': 'DuocCongNhan',
+};
 
-interface IHoSo {
-  id: string; ma: string; ten: string; linhVuc: string;
-  ngayNop: string; ngayCapNhat: string;
-  trangThai: TrangThai; lyDoTuChoi?: string;
-  // detail fields
-  moTaVanDe: string;
-  noiDungDeXuat: string;
-  mucTieu: string;
-  loiIch: string;
-  nguoiDeXuat: string;
-  donVi: string;
-  files: Array<{ name: string; size: string; icon: string }>;
-  steps: IStep[];
-}
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const MY_HO_SO: IHoSo[] = [
-  {
-    id: '1', ma: 'YT-2026061501',
-    ten: 'Số hóa quy trình self check-in tại sân bay Tier-2',
-    linhVuc: 'Dịch vụ mặt đất',
-    ngayNop: '15/06/2026', ngayCapNhat: '25/06/2026',
-    trangThai: 'ChoDuyet',
-    nguoiDeXuat: 'Nguyễn Minh Tuấn', donVi: 'Ban Dịch vụ mặt đất',
-    moTaVanDe: 'Tại các sân bay Tier-2 (Đà Nẵng, Nha Trang, Phú Quốc), hành khách phải xếp hàng trung bình 15–20 phút tại quầy check-in do thiếu hệ thống tự phục vụ, gây áp lực nhân lực vào cao điểm hè và lễ Tết.',
-    noiDungDeXuat: 'Triển khai 24 kiosk self check-in tích hợp nhận diện khuôn mặt và QR code vé, đồng bộ với hệ thống DCS trung tâm. Hành khách có thể tự làm thủ tục, chọn ghế, in thẻ lên máy bay trong dưới 3 phút.',
-    mucTieu: 'Giảm thời gian chờ check-in xuống dưới 3 phút, giảm tải quầy truyền thống 40%, phủ 100% các chuyến nội địa khởi hành từ 3 sân bay trên.',
-    loiIch: 'Tiết kiệm nhân lực phục vụ mặt đất, tăng điểm hài lòng hành khách (NPS), giảm tình trạng chậm chuyến do thủ tục check-in.',
-    lyDoTuChoi: undefined,
-    files: [
-      { name: 'Thuyết minh sáng kiến YT-2026061501.pdf', size: '1.2 MB', icon: 'fa-file-pdf' },
-      { name: 'Sơ đồ triển khai kiosk.pptx', size: '3.4 MB', icon: 'fa-file-powerpoint' },
-    ],
-    steps: [
-      { label: 'Đã nộp hồ sơ',        date: '15/06/2026', done: true },
-      { label: 'Tiếp nhận & xem xét',  date: '20/06/2026', done: true },
-      { label: 'Hội đồng duyệt',       date: '—',          done: false, active: true },
-      { label: 'Phê duyệt / Từ chối',  date: '—',          done: false },
-      { label: 'Công nhận & lưu kho',  date: '—',          done: false },
-    ],
-  },
-  {
-    id: '2', ma: 'YT-2026062201',
-    ten: 'Triển khai mobile check-in cho thành viên Vietnam Airlines Club',
-    linhVuc: 'Dịch vụ mặt đất',
-    ngayNop: '22/06/2026', ngayCapNhat: '22/06/2026',
-    trangThai: 'DangSoanThao',
-    nguoiDeXuat: 'Nguyễn Minh Tuấn', donVi: 'Ban Dịch vụ mặt đất',
-    moTaVanDe: 'Thành viên hạng Bạch Kim và Vàng của Vietnam Airlines Club hiện vẫn phải làm thủ tục check-in thủ công tại quầy hoặc kiosk, chưa có ứng dụng mobile riêng biệt.',
-    noiDungDeXuat: 'Phát triển tính năng mobile check-in tích hợp vào app Vietnam Airlines, cho phép thành viên Club check-in từ 24h trước khởi hành, tự chọn ghế ưu tiên và nhận boarding pass điện tử.',
-    mucTieu: 'Phục vụ 100% thành viên Club (khoảng 85.000 người) qua kênh mobile, giảm 30% lưu lượng quầy ưu tiên.',
-    loiIch: 'Nâng cao trải nghiệm hành khách VIP, giảm tải nhân lực phục vụ quầy ưu tiên.',
-    files: [],
-    steps: [
-      { label: 'Đang soạn thảo',       date: '22/06/2026', done: false, active: true },
-      { label: 'Nộp hồ sơ',            date: '—',          done: false },
-      { label: 'Hội đồng duyệt',       date: '—',          done: false },
-      { label: 'Phê duyệt / Từ chối',  date: '—',          done: false },
-      { label: 'Công nhận & lưu kho',  date: '—',          done: false },
-    ],
-  },
-  {
-    id: '3', ma: 'YT-2025112801',
-    ten: 'Cải tiến quy trình xử lý hành lý thất lạc nội địa',
-    linhVuc: 'Dịch vụ mặt đất',
-    ngayNop: '28/11/2025', ngayCapNhat: '15/01/2026',
-    trangThai: 'DuocCongNhan',
-    nguoiDeXuat: 'Nguyễn Minh Tuấn', donVi: 'Ban Dịch vụ mặt đất',
-    moTaVanDe: 'Tỷ lệ hành lý thất lạc nội địa ở mức 0.6%/chuyến, xử lý khiếu nại còn thủ công qua email/điện thoại, thời gian giải quyết trung bình 5–7 ngày làm việc.',
-    noiDungDeXuat: 'Xây dựng hệ thống tra cứu hành lý thất lạc trực tuyến tích hợp với app Vietnam Airlines. Hành khách tự khai báo và theo dõi trạng thái; nhân viên nhận notification và cập nhật real-time.',
-    mucTieu: 'Giảm thời gian xử lý xuống 48h, tăng tỷ lệ hành khách hài lòng với dịch vụ xử lý hành lý lên 90%.',
-    loiIch: 'Giảm chi phí vận hành bộ phận hành lý, tăng uy tín thương hiệu, giảm khiếu nại chính thức 40%.',
-    files: [
-      { name: 'Thuyết minh sáng kiến YT-2025112801.pdf', size: '2.1 MB', icon: 'fa-file-pdf' },
-      { name: 'Quy trình xử lý mới (BPMN).vsdx',         size: '0.8 MB', icon: 'fa-file-lines' },
-      { name: 'Kết quả pilot Q1-2026.xlsx',               size: '0.5 MB', icon: 'fa-file-excel' },
-    ],
-    steps: [
-      { label: 'Đã nộp hồ sơ',        date: '28/11/2025', done: true },
-      { label: 'Tiếp nhận & xem xét',  date: '05/12/2025', done: true },
-      { label: 'Hội đồng duyệt',       date: '20/12/2025', done: true },
-      { label: 'Phê duyệt',            date: '02/01/2026', done: true },
-      { label: 'Công nhận & lưu kho',  date: '15/01/2026', done: true },
-    ],
-  },
-  {
-    id: '4', ma: 'YT-2025102001',
-    ten: 'Ứng dụng RFID tra cứu hành lý theo thời gian thực cho hành khách',
-    linhVuc: 'Dịch vụ mặt đất',
-    ngayNop: '20/10/2025', ngayCapNhat: '18/11/2025',
-    trangThai: 'TuChoi',
-    nguoiDeXuat: 'Nguyễn Minh Tuấn', donVi: 'Ban Dịch vụ mặt đất',
-    moTaVanDe: 'Hành khách không biết hành lý của mình đang ở đâu trong quá trình vận chuyển, dẫn đến lo lắng và nhiều cuộc gọi hỏi thăm tới nhân viên mặt đất.',
-    noiDungDeXuat: 'Gắn tag RFID thụ động lên hành lý từ quầy check-in, theo dõi real-time qua toàn bộ hành trình băng chuyền và khoang hàng. Hành khách tra cứu qua app hoặc QR code trên thẻ hành lý.',
-    mucTieu: 'Giảm tỷ lệ thất lạc xuống 0.1%, 100% hành khách biết vị trí hành lý real-time.',
-    loiIch: 'Giảm 75% chi phí bồi thường hành lý, tăng hài lòng hành khách, giảm cuộc gọi phàn nàn.',
-    lyDoTuChoi: 'Chi phí đầu tư hạ tầng RFID tại 5 sân bay ước tính 45 tỷ đồng, vượt ngân sách đổi mới năm 2026. Đề nghị tái đề xuất cho kế hoạch 2027 với phương án phân kỳ đầu tư.',
-    files: [
-      { name: 'Thuyết minh sáng kiến YT-2025102001.pdf', size: '1.8 MB', icon: 'fa-file-pdf' },
-      { name: 'Phân tích ROI hệ thống RFID.xlsx',         size: '0.6 MB', icon: 'fa-file-excel' },
-      { name: 'Tài liệu kỹ thuật RFID gateway.pdf',       size: '2.3 MB', icon: 'fa-file-pdf' },
-    ],
-    steps: [
-      { label: 'Đã nộp hồ sơ',        date: '20/10/2025', done: true },
-      { label: 'Tiếp nhận & xem xét',  date: '28/10/2025', done: true },
-      { label: 'Hội đồng duyệt',       date: '10/11/2025', done: true },
-      { label: 'Từ chối',              date: '18/11/2025', done: true },
-      { label: 'Công nhận & lưu kho',  date: '—',          done: false },
-    ],
-  },
-];
-
-// ── Status config ──────────────────────────────────────────────────────────────
 const STATUS_CFG: Record<TrangThai, { label: string; color: string; icon: string; bg: string }> = {
-  DangSoanThao:  { label: 'Đang soạn thảo', color: '#3B82F6', icon: 'fa-pen-to-square', bg: '#EFF6FF' },
-  ChoDuyet:      { label: 'Chờ phê duyệt',  color: '#F59E0B', icon: 'fa-clock',          bg: '#FFFBEB' },
-  DaDuyet:       { label: 'Đã phê duyệt',   color: '#10B981', icon: 'fa-circle-check',   bg: '#ECFDF5' },
-  TuChoi:        { label: 'Bị từ chối',     color: '#EF4444', icon: 'fa-circle-xmark',   bg: '#FEF2F2' },
-  DuocCongNhan:  { label: 'Được công nhận', color: '#8B5CF6', icon: 'fa-medal',           bg: '#F5F3FF' },
+  BanNhap:       { label: 'Bản nháp',        color: '#6B7280', icon: 'fa-pen-to-square',  bg: '#F9FAFB' },
+  ChoTiepNhan:   { label: 'Chờ tiếp nhận',   color: '#F59E0B', icon: 'fa-clock',          bg: '#FFFBEB' },
+  DaTiepNhan:    { label: 'Đã tiếp nhận',    color: '#3B82F6', icon: 'fa-inbox',           bg: '#EFF6FF' },
+  TraLai:        { label: 'Trả lại',         color: '#EF4444', icon: 'fa-rotate-left',     bg: '#FEF2F2' },
+  Huy:           { label: 'Đã hủy',          color: '#9CA3AF', icon: 'fa-ban',             bg: '#F3F4F6' },
+  DuocCongNhan:  { label: 'Được công nhận',  color: '#8B5CF6', icon: 'fa-medal',           bg: '#F5F3FF' },
+};
+
+const DEFAULT_STATUS: typeof STATUS_CFG[TrangThai] = {
+  label: 'Không rõ', color: '#9CA3AF', icon: 'fa-question', bg: '#F3F4F6',
 };
 
 const ALL_TABS: Array<{ key: TrangThai | 'all'; label: string }> = [
   { key: 'all',          label: 'Tất cả' },
-  { key: 'DangSoanThao', label: 'Soạn thảo' },
-  { key: 'ChoDuyet',     label: 'Chờ duyệt' },
-  { key: 'DaDuyet',      label: 'Đã duyệt' },
-  { key: 'TuChoi',       label: 'Từ chối' },
+  { key: 'BanNhap',      label: 'Bản nháp' },
+  { key: 'ChoTiepNhan',  label: 'Chờ tiếp nhận' },
+  { key: 'DaTiepNhan',   label: 'Đã tiếp nhận' },
+  { key: 'TraLai',       label: 'Trả lại' },
   { key: 'DuocCongNhan', label: 'Công nhận' },
 ];
 
+const FILE_ICON: Record<string, string> = {
+  '.pdf': 'fa-file-pdf', '.doc': 'fa-file-word', '.docx': 'fa-file-word',
+  '.xls': 'fa-file-excel', '.xlsx': 'fa-file-excel',
+  '.png': 'fa-file-image', '.jpg': 'fa-file-image', '.jpeg': 'fa-file-image',
+};
 const FILE_COLORS: Record<string, string> = {
-  'fa-file-pdf':        '#EF4444',
-  'fa-file-excel':      '#10B981',
-  'fa-file-powerpoint': '#F59E0B',
-  'fa-file-lines':      '#6B7280',
+  'fa-file-pdf':   '#EF4444', 'fa-file-word':  '#3B82F6',
+  'fa-file-excel': '#10B981', 'fa-file-image': '#F59E0B',
+  'fa-file-lines': '#6B7280',
+};
+
+// Sinh các bước timeline từ status
+const buildSteps = (idea: IIdea) => {
+  const st = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
+  const ORDER: TrangThai[] = ['BanNhap', 'ChoTiepNhan', 'DaTiepNhan', 'DuocCongNhan'];
+  const stepDefs = [
+    { key: 'BanNhap',     label: 'Đã nộp hồ sơ',       date: idea.createdAt },
+    { key: 'ChoTiepNhan', label: 'Chờ tiếp nhận',       date: idea.submittedAt ?? idea.updatedAt },
+    { key: 'DaTiepNhan',  label: 'Đã tiếp nhận',        date: idea.updatedAt },
+    { key: 'DuocCongNhan',label: 'Công nhận & lưu kho', date: null },
+  ];
+  const idx = ORDER.indexOf(st);
+  return stepDefs.map((s, i) => ({
+    label: s.label,
+    date: s.date ? dayjs(s.date).format('DD/MM/YYYY') : '—',
+    done: i <= idx,
+    active: i === idx + 1,
+  }));
 };
 
 // ── Detail modal ───────────────────────────────────────────────────────────────
-const DetailModal = ({ item, onClose }: { item: IHoSo; onClose: () => void }) => {
-  const cfg = STATUS_CFG[item.trangThai];
+const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) => {
+  const statusKey = STATUS_MAP[item.status ?? ''] ?? 'ChoTiepNhan';
+  const cfg = STATUS_CFG[statusKey] ?? DEFAULT_STATUS;
+  const steps = buildSteps(item);
 
   return (
     <div
@@ -162,112 +90,75 @@ const DetailModal = ({ item, onClose }: { item: IHoSo; onClose: () => void }) =>
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-sm font-bold text-gray-600">{item.ma}</span>
+                <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{item.code ?? item.id?.slice(0, 8)}</span>
                 <span
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold"
-                  style={{ background: cfg.bg, color: cfg.color }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                  style={{ color: cfg.color, background: cfg.bg }}
                 >
-                  <i className={`fa-regular ${cfg.icon} text-xs`}></i>
+                  <i className={`fa-regular ${cfg.icon} text-[10px]`}></i>
                   {cfg.label}
                 </span>
               </div>
-              <h2 className="text-gray-900 font-bold text-lg leading-snug">{item.ten}</h2>
-              <div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-2">
-                <span><i className="fa-regular fa-user mr-1.5"></i>{item.nguoiDeXuat}</span>
-                <span><i className="fa-regular fa-building mr-1.5"></i>{item.donVi}</span>
-                <span><i className="fa-regular fa-tag mr-1.5"></i>{item.linhVuc}</span>
-                <span><i className="fa-regular fa-calendar mr-1.5"></i>Nộp: {item.ngayNop}</span>
-              </div>
+              <h2 className="text-lg font-bold text-gray-900">{item.title}</h2>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-800 text-2xl flex-shrink-0 mt-1"
-            >
-              <i className="fa-regular fa-xmark"></i>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 mt-1">
+              <i className="fa-regular fa-xmark text-xl"></i>
             </button>
           </div>
         </div>
 
+        {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {/* Rejection notice */}
-          {item.trangThai === 'TuChoi' && item.lyDoTuChoi && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-              <div className="flex items-start gap-2">
-                <i className="fa-regular fa-circle-exclamation text-red-600 mt-0.5 flex-shrink-0 text-base"></i>
-                <div>
-                  <div className="text-base font-bold text-red-800 mb-1">Lý do từ chối</div>
-                  <p className="text-base text-red-700">{item.lyDoTuChoi}</p>
-                </div>
+          {/* Info grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Lĩnh vực',         val: item.linhVuc },
+              { label: 'Người đề xuất',     val: item.nguoiDeXuat },
+              { label: 'Đơn vị công tác',   val: item.donViCongTac },
+              { label: 'Phạm vi áp dụng',   val: item.phamViApDung },
+            ].map(r => r.val ? (
+              <div key={r.label} className="bg-gray-50 rounded-lg px-3 py-2">
+                <div className="text-xs text-gray-400 mb-0.5">{r.label}</div>
+                <div className="text-sm font-medium text-gray-800">{r.val}</div>
               </div>
-            </div>
-          )}
-
-          {/* Mô tả vấn đề */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-1 h-5 rounded-full bg-portal-primary"></div>
-              <span className="text-base font-bold text-gray-800">Mô tả vấn đề</span>
-            </div>
-            <p className="text-base text-gray-700 leading-relaxed bg-gray-50 border border-gray-200 rounded-xl p-4">
-              {item.moTaVanDe}
-            </p>
+            ) : null)}
           </div>
 
-          {/* Nội dung đề xuất */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-1 h-5 rounded-full bg-blue-500"></div>
-              <span className="text-base font-bold text-gray-800">Nội dung đề xuất</span>
-            </div>
-            <p className="text-base text-gray-700 leading-relaxed bg-blue-50 border border-blue-100 rounded-xl p-4">
-              {item.noiDungDeXuat}
-            </p>
-          </div>
-
-          {/* Mục tiêu & Lợi ích */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+          {/* Text sections */}
+          {[
+            { label: 'Mô tả vấn đề',       val: item.problemDescription, color: '#3B82F6' },
+            { label: 'Nội dung đề xuất',    val: item.ideaContent,       color: '#10B981' },
+            { label: 'Mục tiêu kỳ vọng',    val: item.mucTieu,           color: '#8B5CF6' },
+            { label: 'Lợi ích dự kiến',     val: item.expectedBenefit,   color: '#F59E0B' },
+          ].map(s => s.val ? (
+            <div key={s.label}>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-1 h-5 rounded-full bg-amber-500"></div>
-                <span className="text-base font-bold text-gray-800">Mục tiêu</span>
+                <div className="w-1 h-5 rounded-full" style={{ background: s.color }}></div>
+                <span className="text-base font-bold text-gray-800">{s.label}</span>
               </div>
-              <p className="text-base text-gray-700 leading-relaxed bg-amber-50 border border-amber-100 rounded-xl p-4 h-full">
-                {item.mucTieu}
-              </p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-3">{s.val}</p>
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-1 h-5 rounded-full bg-green-500"></div>
-                <span className="text-base font-bold text-gray-800">Lợi ích dự kiến</span>
-              </div>
-              <p className="text-base text-gray-700 leading-relaxed bg-green-50 border border-green-100 rounded-xl p-4 h-full">
-                {item.loiIch}
-              </p>
-            </div>
-          </div>
+          ) : null)}
 
           {/* Timeline */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-1 h-5 rounded-full bg-purple-500"></div>
-              <span className="text-base font-bold text-gray-800">Tiến trình xét duyệt</span>
+              <div className="w-1 h-5 rounded-full bg-indigo-500"></div>
+              <span className="text-base font-bold text-gray-800">Tiến trình xử lý</span>
             </div>
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              {item.steps.map((s, i) => {
-                const isDone   = s.done;
-                const isActive = !s.done && s.active;
+            <div className="space-y-0 pl-3">
+              {steps.map((s, i) => {
+                const isDone = s.done;
+                const isActive = s.active;
                 return (
-                  <div key={i} className="flex gap-4 mb-3 last:mb-0">
-                    <div className="relative flex flex-col items-center">
+                  <div key={i} className="flex gap-3">
+                    <div className="flex flex-col items-center">
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center z-10 flex-shrink-0 border-2"
-                        style={
-                          isDone
-                            ? { background: '#006D88', borderColor: 'transparent' }
-                            : isActive
-                              ? { background: 'white', borderColor: '#F59E0B' }
-                              : { background: 'white', borderColor: '#D1D5DB' }
-                        }
+                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2"
+                        style={{
+                          background: isDone ? '#3B82F6' : isActive ? '#FEF3C7' : '#F3F4F6',
+                          borderColor: isDone ? '#3B82F6' : isActive ? '#F59E0B' : '#E5E7EB',
+                        }}
                       >
                         {isDone ? (
                           <i className="fa-regular fa-check text-white text-[10px]"></i>
@@ -277,16 +168,16 @@ const DetailModal = ({ item, onClose }: { item: IHoSo; onClose: () => void }) =>
                           <div className="w-2 h-2 rounded-full bg-gray-300"></div>
                         )}
                       </div>
-                      {i < item.steps.length - 1 && (
-                        <div className={`w-0.5 flex-1 mt-1 min-h-[14px] ${isDone ? 'bg-portal-primary/40' : 'bg-gray-300'}`}></div>
+                      {i < steps.length - 1 && (
+                        <div className={`w-0.5 flex-1 mt-1 min-h-[14px] ${isDone ? 'bg-blue-300' : 'bg-gray-200'}`}></div>
                       )}
                     </div>
-                    <div className="pb-1 pt-0.5">
-                      <div className={`text-base font-semibold ${isDone ? 'text-gray-800' : isActive ? 'text-amber-700' : 'text-gray-500'}`}>
+                    <div className="pb-3 pt-0.5">
+                      <div className={`text-sm font-semibold ${isDone ? 'text-gray-800' : isActive ? 'text-amber-700' : 'text-gray-400'}`}>
                         {s.label}
                       </div>
                       {s.date !== '—' && (
-                        <div className="text-sm text-gray-600 mt-0.5">
+                        <div className="text-xs text-gray-500 mt-0.5">
                           <i className="fa-regular fa-calendar mr-1"></i>{s.date}
                         </div>
                       )}
@@ -297,36 +188,36 @@ const DetailModal = ({ item, onClose }: { item: IHoSo; onClose: () => void }) =>
             </div>
           </div>
 
-          {/* Files */}
-          {item.files.length > 0 && (
+          {/* Attachments */}
+          {(item.attachments ?? []).length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-5 rounded-full bg-gray-500"></div>
                 <span className="text-base font-bold text-gray-800">Tài liệu đính kèm</span>
               </div>
               <div className="space-y-2">
-                {item.files.map((f, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <i
-                      className={`fa-regular ${f.icon} text-xl flex-shrink-0`}
-                      style={{ color: FILE_COLORS[f.icon] || '#6B7280' }}
-                    ></i>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-base font-medium text-gray-800 truncate">{f.name}</div>
-                      <div className="text-sm text-gray-600">{f.size}</div>
+                {item.attachments!.map((f, i) => {
+                  const icon = FILE_ICON[f.fileExt?.toLowerCase()] ?? 'fa-file-lines';
+                  const sizeMB = f.fileSize ? (f.fileSize / 1024 / 1024).toFixed(2) + ' MB' : '';
+                  return (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <i className={`fa-regular ${icon} text-xl flex-shrink-0`} style={{ color: FILE_COLORS[icon] || '#6B7280' }}></i>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-800 truncate">{f.fileName}</div>
+                        {sizeMB && <div className="text-xs text-gray-500">{sizeMB}</div>}
+                      </div>
                     </div>
-                    <button className="text-sm text-portal-primary hover:underline ml-2 shrink-0">Tải về</button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white">
+        <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white rounded-b-2xl">
           <button
-            className="px-5 py-2.5 text-base font-semibold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
             onClick={onClose}
           >
             Đóng
@@ -339,18 +230,89 @@ const DetailModal = ({ item, onClose }: { item: IHoSo; onClose: () => void }) =>
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export const TraCuuHoSoPage = () => {
+  const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<TrangThai | 'all'>('all');
   const [search, setSearch] = useState('');
-  const [detail, setDetail] = useState<IHoSo | null>(null);
+  const [detail, setDetail] = useState<IIdea | null>(null);
+  const [ideas, setIdeas] = useState<IIdea[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const fetchIdeas = useCallback(async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    try {
+      const res = await searchIdeas({
+        pageNumber: 1,
+        pageSize: 50,
+        submittedById: currentUser.id,
+      });
+
+      // Debug — xem raw response
+      console.log('[TraCuuHoSoPage] raw res:', res);
+
+      const raw = res.data as any;
+      if (!raw) { setIdeas([]); return; }
+
+      // Dạng 1: IPaginationResponse { data: IIdea[], totalCount, ... }
+      if (Array.isArray(raw.data)) {
+        setIdeas(raw.data);
+        setTotalCount(raw.totalCount ?? raw.data.length);
+        return;
+      }
+      // Dạng 2: IResult { succeeded, data: { data: IIdea[], totalCount } }
+      if (raw.succeeded !== undefined && raw.data) {
+        const inner = raw.data as any;
+        if (Array.isArray(inner.data)) {
+          setIdeas(inner.data);
+          setTotalCount(inner.totalCount ?? inner.data.length);
+          return;
+        }
+        if (Array.isArray(inner)) {
+          setIdeas(inner);
+          setTotalCount(inner.length);
+          return;
+        }
+      }
+      // Dạng 3: mảng trực tiếp
+      if (Array.isArray(raw)) {
+        setIdeas(raw);
+        setTotalCount(raw.length);
+        return;
+      }
+
+      console.warn('[TraCuuHoSoPage] Unexpected response shape:', raw);
+      setIdeas([]);
+    } catch (e) {
+      console.error('[TraCuuHoSoPage] fetchIdeas error:', e);
+      setIdeas([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser]);
+
+  useEffect(() => { fetchIdeas(); }, [fetchIdeas]);
 
   const filtered = useMemo(() => {
-    return MY_HO_SO.filter(h => {
-      const matchTab = activeTab === 'all' || h.trangThai === activeTab;
-      const matchSearch = h.ten.toLowerCase().includes(search.toLowerCase()) ||
-        h.ma.toLowerCase().includes(search.toLowerCase());
+    return ideas.filter(h => {
+      const statusKey = STATUS_MAP[h.status ?? ''] ?? 'ChoTiepNhan';
+      const matchTab = activeTab === 'all' || statusKey === activeTab;
+      const matchSearch = !search ||
+        h.title?.toLowerCase().includes(search.toLowerCase()) ||
+        h.code?.toLowerCase().includes(search.toLowerCase());
       return matchTab && matchSearch;
     });
-  }, [activeTab, search]);
+  }, [ideas, activeTab, search]);
+
+  // Tab counts
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: ideas.length };
+    ideas.forEach(h => {
+      const k = STATUS_MAP[h.status ?? ''] ?? 'ChoTiepNhan';
+      counts[k] = (counts[k] ?? 0) + 1;
+    });
+    return counts;
+  }, [ideas]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -379,38 +341,44 @@ export const TraCuuHoSoPage = () => {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {ALL_TABS.map(t => {
-            const count = t.key === 'all' ? MY_HO_SO.length : MY_HO_SO.filter(h => h.trangThai === t.key).length;
-            const cfg = t.key !== 'all' ? STATUS_CFG[t.key as TrangThai] : null;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setActiveTab(t.key)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
-                  activeTab === t.key
-                    ? 'bg-portal-primary text-white border-portal-primary'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-portal-primary hover:text-portal-primary'
-                }`}
-              >
-                {t.label}
-                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${activeTab === t.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+          {ALL_TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
+                activeTab === t.key
+                  ? 'bg-portal-primary text-white border-portal-primary'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-portal-primary hover:text-portal-primary'
+              }`}
+            >
+              {t.label}
+              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${activeTab === t.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                {tabCounts[t.key] ?? 0}
+              </span>
+            </button>
+          ))}
         </div>
 
-        {/* Cards */}
-        {filtered.length === 0 ? (
+        {/* Content */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Spin size="large" tip="Đang tải hồ sơ..." />
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <i className="fa-regular fa-folder-open text-5xl mb-4"></i>
-            <p className="text-base">Không có hồ sơ nào phù hợp</p>
+            <p className="text-base">
+              {ideas.length === 0 ? 'Bạn chưa có hồ sơ nào. ' : 'Không có hồ sơ nào phù hợp.'}
+            </p>
+            {ideas.length === 0 && (
+              <a href="/doi-moi/y-tuong" className="mt-3 text-portal-primary underline text-sm">Tạo ý tưởng mới →</a>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
             {filtered.map(h => {
-              const cfg = STATUS_CFG[h.trangThai];
+              const statusKey = STATUS_MAP[h.status ?? ''] ?? 'ChoTiepNhan';
+              const cfg = STATUS_CFG[statusKey] ?? DEFAULT_STATUS;
               return (
                 <div
                   key={h.id}
@@ -419,12 +387,16 @@ export const TraCuuHoSoPage = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs font-mono text-gray-400">{h.ma}</span>
-                      <span className="text-gray-300">·</span>
-                      <span className="text-xs text-gray-400">{h.linhVuc}</span>
+                      <span className="text-xs font-mono text-gray-400">{h.code ?? h.id?.slice(0, 8)}</span>
+                      {h.linhVuc && <>
+                        <span className="text-gray-300">·</span>
+                        <span className="text-xs text-gray-400">{h.linhVuc}</span>
+                      </>}
                     </div>
-                    <h3 className="text-base font-semibold text-gray-900 truncate">{h.ten}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">Nộp ngày {h.ngayNop}</p>
+                    <h3 className="text-base font-semibold text-gray-900 truncate">{h.title}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      Nộp ngày {h.createdAt ? dayjs(h.createdAt).format('DD/MM/YYYY') : '—'}
+                    </p>
                   </div>
                   <div className="flex-shrink-0 flex flex-col items-end gap-2">
                     <span
@@ -434,7 +406,9 @@ export const TraCuuHoSoPage = () => {
                       <i className={`fa-regular ${cfg.icon}`}></i>
                       {cfg.label}
                     </span>
-                    <span className="text-xs text-gray-400">Cập nhật {h.ngayCapNhat}</span>
+                    <span className="text-xs text-gray-400">
+                      Cập nhật {h.updatedAt ? dayjs(h.updatedAt).format('DD/MM/YYYY') : '—'}
+                    </span>
                   </div>
                 </div>
               );
