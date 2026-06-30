@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Spin } from 'antd';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Spin, Modal, message } from 'antd';
 import { useAuth } from '@/app/modules/auth';
-import { searchIdeas } from '@/app/services/ideaPortalApi';
+import { useNavigate } from 'react-router-dom';
+import { searchIdeas, deleteIdea, cancelIdea, recallIdea } from '@/app/services/ideaPortalApi';
 import type { IIdea } from '@/models/idea-portal';
 import dayjs from 'dayjs';
 
@@ -39,26 +40,15 @@ const ALL_TABS: Array<{ key: TrangThai | 'all'; label: string }> = [
   { key: 'DuocCongNhan', label: 'Công nhận' },
 ];
 
-const FILE_ICON: Record<string, string> = {
-  '.pdf': 'fa-file-pdf', '.doc': 'fa-file-word', '.docx': 'fa-file-word',
-  '.xls': 'fa-file-excel', '.xlsx': 'fa-file-excel',
-  '.png': 'fa-file-image', '.jpg': 'fa-file-image', '.jpeg': 'fa-file-image',
-};
-const FILE_COLORS: Record<string, string> = {
-  'fa-file-pdf':   '#EF4444', 'fa-file-word':  '#3B82F6',
-  'fa-file-excel': '#10B981', 'fa-file-image': '#F59E0B',
-  'fa-file-lines': '#6B7280',
-};
-
-// Sinh các bước timeline từ status
+// ── Timeline helper ────────────────────────────────────────────────────────────
 const buildSteps = (idea: IIdea) => {
   const st = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
   const ORDER: TrangThai[] = ['BanNhap', 'ChoTiepNhan', 'DaTiepNhan', 'DuocCongNhan'];
   const stepDefs = [
-    { key: 'BanNhap',     label: 'Đã nộp hồ sơ',       date: idea.createdAt },
-    { key: 'ChoTiepNhan', label: 'Chờ tiếp nhận',       date: idea.submittedAt ?? idea.updatedAt },
-    { key: 'DaTiepNhan',  label: 'Đã tiếp nhận',        date: idea.updatedAt },
-    { key: 'DuocCongNhan',label: 'Công nhận & lưu kho', date: null },
+    { key: 'BanNhap',      label: 'Đã nộp hồ sơ',       date: idea.createdAt },
+    { key: 'ChoTiepNhan',  label: 'Chờ tiếp nhận',       date: idea.submittedAt ?? idea.updatedAt },
+    { key: 'DaTiepNhan',   label: 'Đã tiếp nhận',        date: idea.updatedAt },
+    { key: 'DuocCongNhan', label: 'Công nhận & lưu kho', date: null },
   ];
   const idx = ORDER.indexOf(st);
   return stepDefs.map((s, i) => ({
@@ -69,7 +59,7 @@ const buildSteps = (idea: IIdea) => {
   }));
 };
 
-// ── Detail modal ───────────────────────────────────────────────────────────────
+// ── Detail Modal ───────────────────────────────────────────────────────────────
 const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) => {
   const statusKey = STATUS_MAP[item.status ?? ''] ?? 'ChoTiepNhan';
   const cfg = STATUS_CFG[statusKey] ?? DEFAULT_STATUS;
@@ -78,7 +68,7 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
   return (
     <div
       className="fixed inset-0 z-[1100] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.5)' }}
+      style={{ background: 'rgba(0,0,0,0.55)' }}
       onClick={onClose}
     >
       <div
@@ -86,138 +76,126 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 pt-5 pb-4 rounded-t-2xl">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{item.code ?? item.id?.slice(0, 8)}</span>
-                <span
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                  style={{ color: cfg.color, background: cfg.bg }}
-                >
-                  <i className={`fa-regular ${cfg.icon} text-[10px]`}></i>
-                  {cfg.label}
-                </span>
-              </div>
-              <h2 className="text-lg font-bold text-gray-900">{item.title}</h2>
+        <div className="px-7 py-6 border-b-2 border-gray-100 flex items-start justify-between gap-4 shrink-0">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-2">
+              <span
+                className="font-mono font-bold text-sm px-3 py-1 rounded-lg"
+                style={{ background: '#f1f2f4', color: '#374151' }}
+              >
+                {item.code ?? item.id?.slice(0, 8)}
+              </span>
+              <span
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold"
+                style={{ color: cfg.color, background: cfg.bg }}
+              >
+                <i className={`fa-regular ${cfg.icon}`} />
+                {cfg.label}
+              </span>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 mt-1">
-              <i className="fa-regular fa-xmark text-xl"></i>
-            </button>
+            <h2 className="text-2xl font-bold text-gray-900 leading-tight">{item.title}</h2>
           </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors shrink-0"
+          >
+            <i className="fa-regular fa-xmark text-lg" />
+          </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {/* Info grid */}
-          <div className="grid grid-cols-2 gap-3">
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-7 py-6 space-y-6">
+
+          {/* Timeline */}
+          <div className="bg-[#f8faff] rounded-xl p-5">
+            <p className="text-base font-bold text-gray-800 mb-4">📋 Tiến trình xử lý</p>
+            <div className="flex items-start">
+              {steps.map((s, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="flex items-center w-full">
+                    {i > 0 && (
+                      <div className={`flex-1 h-1 rounded ${s.done ? 'bg-[#003087]' : 'bg-gray-200'}`} />
+                    )}
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold border-2 text-sm
+                        ${s.done ? 'bg-[#003087] border-[#003087] text-white'
+                          : s.active ? 'bg-white border-[#003087] text-[#003087]'
+                          : 'bg-white border-gray-300 text-gray-400'}`}
+                    >
+                      {s.done ? <i className="fa-solid fa-check" /> : i + 1}
+                    </div>
+                    {i < steps.length - 1 && (
+                      <div className={`flex-1 h-1 rounded ${s.done ? 'bg-[#003087]' : 'bg-gray-200'}`} />
+                    )}
+                  </div>
+                  <p className={`text-sm text-center font-semibold mt-1
+                    ${s.done ? 'text-[#003087]' : s.active ? 'text-gray-800' : 'text-gray-400'}`}>
+                    {s.label}
+                  </p>
+                  <p className={`text-xs text-center font-medium ${s.done ? 'text-gray-600' : 'text-gray-400'}`}>
+                    {s.date}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Info fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { label: 'Lĩnh vực',         val: item.linhVuc },
-              { label: 'Người đề xuất',     val: item.nguoiDeXuat },
-              { label: 'Đơn vị công tác',   val: item.donViCongTac },
-              { label: 'Phạm vi áp dụng',   val: item.phamViApDung },
-            ].map(r => r.val ? (
-              <div key={r.label} className="bg-gray-50 rounded-lg px-3 py-2">
-                <div className="text-xs text-gray-400 mb-0.5">{r.label}</div>
-                <div className="text-sm font-medium text-gray-800">{r.val}</div>
+              { label: 'Người đề xuất',   value: item.nguoiDeXuat,   icon: 'fa-user' },
+              { label: 'Đơn vị',          value: item.donViCongTac,  icon: 'fa-building' },
+              { label: 'Lĩnh vực',        value: item.linhVuc,       icon: 'fa-tag' },
+              { label: 'Phạm vi áp dụng', value: item.phamViApDung,  icon: 'fa-map' },
+              { label: 'Ngày áp dụng',    value: item.ngayApDung ? dayjs(item.ngayApDung).format('DD/MM/YYYY') : null, icon: 'fa-calendar' },
+            ].filter(f => f.value).map(f => (
+              <div key={f.label} className="bg-gray-50 rounded-xl px-4 py-3">
+                <p className="text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1.5">
+                  <i className={`fa-regular ${f.icon}`} />
+                  {f.label}
+                </p>
+                <p className="text-base font-bold text-gray-900">{f.value}</p>
               </div>
-            ) : null)}
+            ))}
           </div>
 
           {/* Text sections */}
           {[
-            { label: 'Mô tả vấn đề',       val: item.problemDescription, color: '#3B82F6' },
-            { label: 'Nội dung đề xuất',    val: item.ideaContent,       color: '#10B981' },
-            { label: 'Mục tiêu kỳ vọng',    val: item.mucTieu,           color: '#8B5CF6' },
-            { label: 'Lợi ích dự kiến',     val: item.expectedBenefit,   color: '#F59E0B' },
-          ].map(s => s.val ? (
-            <div key={s.label}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-1 h-5 rounded-full" style={{ background: s.color }}></div>
-                <span className="text-base font-bold text-gray-800">{s.label}</span>
+            { title: '📝 Mô tả hiện trạng / vấn đề', value: item.problemDescription },
+            { title: '💡 Nội dung đề xuất',           value: item.ideaContent },
+            { title: '🎯 Mục tiêu kỳ vọng',           value: item.mucTieu },
+            { title: '📈 Lợi ích dự kiến',             value: item.expectedBenefit },
+          ].filter(s => s.value).map(s => (
+            <div key={s.title} className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
+                <p className="text-base font-bold text-gray-800">{s.title}</p>
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-3">{s.val}</p>
+              <p className="px-5 py-4 text-base text-gray-900 whitespace-pre-wrap leading-relaxed">{s.value}</p>
             </div>
-          ) : null)}
-
-          {/* Timeline */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1 h-5 rounded-full bg-indigo-500"></div>
-              <span className="text-base font-bold text-gray-800">Tiến trình xử lý</span>
-            </div>
-            <div className="space-y-0 pl-3">
-              {steps.map((s, i) => {
-                const isDone = s.done;
-                const isActive = s.active;
-                return (
-                  <div key={i} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2"
-                        style={{
-                          background: isDone ? '#3B82F6' : isActive ? '#FEF3C7' : '#F3F4F6',
-                          borderColor: isDone ? '#3B82F6' : isActive ? '#F59E0B' : '#E5E7EB',
-                        }}
-                      >
-                        {isDone ? (
-                          <i className="fa-regular fa-check text-white text-[10px]"></i>
-                        ) : isActive ? (
-                          <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
-                        ) : (
-                          <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                        )}
-                      </div>
-                      {i < steps.length - 1 && (
-                        <div className={`w-0.5 flex-1 mt-1 min-h-[14px] ${isDone ? 'bg-blue-300' : 'bg-gray-200'}`}></div>
-                      )}
-                    </div>
-                    <div className="pb-3 pt-0.5">
-                      <div className={`text-sm font-semibold ${isDone ? 'text-gray-800' : isActive ? 'text-amber-700' : 'text-gray-400'}`}>
-                        {s.label}
-                      </div>
-                      {s.date !== '—' && (
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          <i className="fa-regular fa-calendar mr-1"></i>{s.date}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          ))}
 
           {/* Attachments */}
-          {(item.attachments ?? []).length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-5 rounded-full bg-gray-500"></div>
-                <span className="text-base font-bold text-gray-800">Tài liệu đính kèm</span>
+          {Array.isArray((item as any).attachments) && (item as any).attachments.length > 0 && (
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
+                <p className="text-base font-bold text-gray-800">📎 Tập tin đính kèm</p>
               </div>
-              <div className="space-y-2">
-                {item.attachments!.map((f, i) => {
-                  const icon = FILE_ICON[f.fileExt?.toLowerCase()] ?? 'fa-file-lines';
-                  const sizeMB = f.fileSize ? (f.fileSize / 1024 / 1024).toFixed(2) + ' MB' : '';
-                  return (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <i className={`fa-regular ${icon} text-xl flex-shrink-0`} style={{ color: FILE_COLORS[icon] || '#6B7280' }}></i>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-800 truncate">{f.fileName}</div>
-                        {sizeMB && <div className="text-xs text-gray-500">{sizeMB}</div>}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="px-5 py-4 space-y-2">
+                {((item as any).attachments as any[]).map((a: any, i: number) => (
+                  <div key={i} className="flex items-center gap-3 text-base font-semibold text-[#0a65cc]">
+                    <i className="fa-regular fa-file-lines text-lg" />
+                    <span>{a.fileName ?? a.originalName ?? a.filePath}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white rounded-b-2xl">
+        <div className="px-7 py-5 border-t-2 border-gray-100 flex justify-end shrink-0">
           <button
-            className="px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-7 py-3 text-base font-bold text-gray-700 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
             onClick={onClose}
           >
             Đóng
@@ -231,58 +209,40 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
 // ── Main page ──────────────────────────────────────────────────────────────────
 export const TraCuuHoSoPage = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TrangThai | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [pendingSearch, setPendingSearch] = useState('');
   const [detail, setDetail] = useState<IIdea | null>(null);
   const [ideas, setIdeas] = useState<IIdea[]>([]);
   const [loading, setLoading] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [recallingId, setRecallingId] = useState<string | null>(null);
+  const searchRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const fetchIdeas = useCallback(async () => {
+  const fetchIdeas = useCallback(async (keyword = '') => {
     if (!currentUser) return;
     setLoading(true);
     try {
       const res = await searchIdeas({
         pageNumber: 1,
-        pageSize: 50,
+        pageSize: 100,
         submittedById: currentUser.id,
+        keyword: keyword || undefined,
       });
-
-      // Debug — xem raw response
-      console.log('[TraCuuHoSoPage] raw res:', res);
 
       const raw = res.data as any;
       if (!raw) { setIdeas([]); return; }
 
-      // Dạng 1: IPaginationResponse { data: IIdea[], totalCount, ... }
-      if (Array.isArray(raw.data)) {
-        setIdeas(raw.data);
-        setTotalCount(raw.totalCount ?? raw.data.length);
-        return;
-      }
-      // Dạng 2: IResult { succeeded, data: { data: IIdea[], totalCount } }
-      if (raw.succeeded !== undefined && raw.data) {
+      let list: IIdea[] = [];
+      if (Array.isArray(raw.data)) list = raw.data;
+      else if (raw.succeeded !== undefined && raw.data) {
         const inner = raw.data as any;
-        if (Array.isArray(inner.data)) {
-          setIdeas(inner.data);
-          setTotalCount(inner.totalCount ?? inner.data.length);
-          return;
-        }
-        if (Array.isArray(inner)) {
-          setIdeas(inner);
-          setTotalCount(inner.length);
-          return;
-        }
-      }
-      // Dạng 3: mảng trực tiếp
-      if (Array.isArray(raw)) {
-        setIdeas(raw);
-        setTotalCount(raw.length);
-        return;
-      }
+        if (Array.isArray(inner.data)) list = inner.data;
+        else if (Array.isArray(inner)) list = inner;
+      } else if (Array.isArray(raw)) list = raw;
 
-      console.warn('[TraCuuHoSoPage] Unexpected response shape:', raw);
-      setIdeas([]);
+      setIdeas(list);
     } catch (e) {
       console.error('[TraCuuHoSoPage] fetchIdeas error:', e);
       setIdeas([]);
@@ -293,18 +253,97 @@ export const TraCuuHoSoPage = () => {
 
   useEffect(() => { fetchIdeas(); }, [fetchIdeas]);
 
+  // Debounce search — gửi lên BE sau 500ms
+  const handleSearchChange = (val: string) => {
+    setPendingSearch(val);
+    setSearch(val);
+    clearTimeout(searchRef.current);
+    searchRef.current = setTimeout(() => fetchIdeas(val), 500);
+  };
+
+  // Xóa ý tưởng (bản nháp)
+  const handleDelete = (idea: IIdea) => {
+    Modal.confirm({
+      title: 'Xóa ý tưởng',
+      content: (
+        <p>Bạn có chắc muốn xóa <strong>"{idea.title}"</strong>? Hành động này không thể hoàn tác.</p>
+      ),
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        setDeletingId(idea.id);
+        try {
+          const res = await deleteIdea(idea.id);
+          if (res.status >= 400) {
+            // Fallback: cancel thay vì delete nếu BE không có DELETE endpoint
+            const cancelRes = await cancelIdea(idea.id, 'Người dùng xóa bản nháp');
+            if (cancelRes.status >= 400) {
+              message.error('Không thể xóa ý tưởng này!');
+              return;
+            }
+          }
+          message.success('Đã xóa ý tưởng!');
+          setIdeas(prev => prev.filter(i => i.id !== idea.id));
+        } catch {
+          message.error('Lỗi khi xóa!');
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
+  };
+
+  // Thu hồi ý tưởng đã nộp (Chờ tiếp nhận)
+  const handleRecall = (idea: IIdea) => {
+    Modal.confirm({
+      title: 'Thu hồi ý tưởng',
+      content: (
+        <div>
+          <p>Bạn có chắc muốn <strong>thu hồi</strong> ý tưởng <strong>"{idea.title}"</strong>?</p>
+          <p className="mt-2 text-amber-600 text-sm">⚠️ Ý tưởng sẽ được rút khỏi hàng chờ duyệt. Bạn có thể chỉnh sửa và nộp lại sau.</p>
+        </div>
+      ),
+      okText: 'Thu hồi',
+      okButtonProps: { style: { background: '#d97706', borderColor: '#d97706' } },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        setRecallingId(idea.id);
+        try {
+          const res = await recallIdea(idea.id, 'Người dùng thu hồi để chỉnh sửa');
+          if (res.status >= 400) {
+            // Fallback: thử cancelIdea nếu recall chưa có
+            const cancelRes = await cancelIdea(idea.id, 'Người dùng thu hồi để chỉnh sửa');
+            if (cancelRes.status >= 400) {
+              message.error('Không thể thu hồi ý tưởng này! Vui lòng liên hệ quản trị viên.');
+              return;
+            }
+            message.success('Đã hủy ý tưởng thành công!');
+          } else {
+            message.success('Đã thu hồi ý tưởng! Bạn có thể chỉnh sửa và nộp lại.');
+          }
+          await fetchIdeas(search);
+        } catch {
+          message.error('Lỗi khi thu hồi!');
+        } finally {
+          setRecallingId(null);
+        }
+      },
+    });
+  };
+
+  // Sửa ý tưởng — chuyển sang NopYTuongPage với ideaId
+  const handleEdit = (idea: IIdea) => {
+    navigate(`/doi-moi/y-tuong?ideaId=${idea.id}`);
+  };
+
   const filtered = useMemo(() => {
     return ideas.filter(h => {
       const statusKey = STATUS_MAP[h.status ?? ''] ?? 'ChoTiepNhan';
-      const matchTab = activeTab === 'all' || statusKey === activeTab;
-      const matchSearch = !search ||
-        h.title?.toLowerCase().includes(search.toLowerCase()) ||
-        h.code?.toLowerCase().includes(search.toLowerCase());
-      return matchTab && matchSearch;
+      return activeTab === 'all' || statusKey === activeTab;
     });
-  }, [ideas, activeTab, search]);
+  }, [ideas, activeTab]);
 
-  // Tab counts
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = { all: ideas.length };
     ideas.forEach(h => {
@@ -314,29 +353,56 @@ export const TraCuuHoSoPage = () => {
     return counts;
   }, [ideas]);
 
+  // accent color per status for left bar
+  const STATUS_ACCENT: Record<TrangThai, string> = {
+    BanNhap:      '#6B7280',
+    ChoTiepNhan:  '#F59E0B',
+    DaTiepNhan:   '#3B82F6',
+    TraLai:       '#EF4444',
+    Huy:          '#9CA3AF',
+    DuocCongNhan: '#8B5CF6',
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: '#f4f6fb' }}>
       {detail && <DetailModal item={detail} onClose={() => setDetail(null)} />}
 
       {/* Hero */}
-      <div className="bg-white border-b border-gray-200 py-8 px-4">
-        <div className="max-w-[1100px] mx-auto">
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Tra cứu hồ sơ</h1>
-          <p className="text-gray-500 text-base">Theo dõi tiến trình xử lý các hồ sơ bạn đã nộp</p>
+      <div className="bg-white border-b border-gray-200 py-10 px-4">
+        <div className="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-1.5">Tra cứu & Quản lý hồ sơ</h1>
+            <p className="text-gray-500 text-base">Xem tiến trình xử lý, hiệu chỉnh bản nháp, thu hồi hoặc xóa ý tưởng</p>
+          </div>
+          <button
+            onClick={() => navigate('/doi-moi/y-tuong')}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-base shrink-0"
+            style={{ background: 'linear-gradient(135deg,#003087 0%,#0046A6 100%)', borderBottom: '3px solid #C5A028' }}
+          >
+            <i className="fa-regular fa-lightbulb" />
+            Tạo ý tưởng mới
+          </button>
         </div>
       </div>
 
       <div className="max-w-[1100px] mx-auto px-4 py-8">
+
         {/* Search */}
-        <div className="relative mb-6">
-          <i className="fa-regular fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <div className="relative mb-5">
+          <i className="fa-regular fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
           <input
             type="text"
-            placeholder="Tìm theo tên hoặc mã hồ sơ..."
+            placeholder="Tìm theo tên ý tưởng hoặc mã hồ sơ..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-base focus:outline-none focus:border-portal-primary focus:ring-2 focus:ring-portal-primary/10"
+            onChange={e => handleSearchChange(e.target.value)}
+            className="w-full pl-11 pr-10 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-800 font-medium focus:outline-none focus:border-[#003087] focus:ring-2 focus:ring-blue-100 transition-all shadow-sm"
+            style={{ fontSize: '15px' }}
           />
+          {search && (
+            <button onClick={() => handleSearchChange('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <i className="fa-regular fa-xmark text-lg" />
+            </button>
+          )}
         </div>
 
         {/* Tabs */}
@@ -345,70 +411,174 @@ export const TraCuuHoSoPage = () => {
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                 activeTab === t.key
-                  ? 'bg-portal-primary text-white border-portal-primary'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-portal-primary hover:text-portal-primary'
+                  ? 'bg-[#003087] text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-[#003087]'
               }`}
             >
               {t.label}
-              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${activeTab === t.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                activeTab === t.key ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-600'
+              }`}>
                 {tabCounts[t.key] ?? 0}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Content */}
+        {/* List */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-24">
             <Spin size="large" tip="Đang tải hồ sơ..." />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <i className="fa-regular fa-folder-open text-5xl mb-4"></i>
-            <p className="text-base">
-              {ideas.length === 0 ? 'Bạn chưa có hồ sơ nào. ' : 'Không có hồ sơ nào phù hợp.'}
+          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl shadow-sm">
+            <i className="fa-regular fa-folder-open text-6xl text-gray-300 mb-5" />
+            <p className="text-xl font-bold text-gray-500 mb-1">
+              {ideas.length === 0 ? 'Bạn chưa có hồ sơ nào' : 'Không tìm thấy hồ sơ phù hợp'}
+            </p>
+            <p className="text-gray-400 text-base mb-5">
+              {ideas.length === 0 ? 'Hãy bắt đầu bằng cách tạo ý tưởng đầu tiên' : 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'}
             </p>
             {ideas.length === 0 && (
-              <a href="/doi-moi/y-tuong" className="mt-3 text-portal-primary underline text-sm">Tạo ý tưởng mới →</a>
+              <button
+                onClick={() => navigate('/doi-moi/y-tuong')}
+                className="px-6 py-3 rounded-xl font-bold text-white text-base"
+                style={{ background: '#003087' }}
+              >
+                <i className="fa-regular fa-lightbulb me-2" />Tạo ý tưởng mới
+              </button>
             )}
           </div>
         ) : (
           <div className="space-y-4">
             {filtered.map(h => {
-              const statusKey = STATUS_MAP[h.status ?? ''] ?? 'ChoTiepNhan';
-              const cfg = STATUS_CFG[statusKey] ?? DEFAULT_STATUS;
+              const statusKey  = STATUS_MAP[h.status ?? ''] ?? 'ChoTiepNhan';
+              const cfg        = STATUS_CFG[statusKey] ?? DEFAULT_STATUS;
+              const accentColor = STATUS_ACCENT[statusKey] ?? '#9CA3AF';
+              const isDraft    = statusKey === 'BanNhap';
+              const isWaiting  = statusKey === 'ChoTiepNhan';
+              const isDeleting  = deletingId === h.id;
+              const isRecalling = recallingId === h.id;
+
               return (
                 <div
                   key={h.id}
-                  className="bg-white border border-gray-200 rounded-xl p-5 flex items-start justify-between gap-4 hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => setDetail(h)}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex"
                 >
+                  {/* Left accent bar */}
+                  <div className="w-1.5 shrink-0 rounded-l-2xl" style={{ background: accentColor }} />
+
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs font-mono text-gray-400">{h.code ?? h.id?.slice(0, 8)}</span>
-                      {h.linhVuc && <>
-                        <span className="text-gray-300">·</span>
-                        <span className="text-xs text-gray-400">{h.linhVuc}</span>
-                      </>}
-                    </div>
-                    <h3 className="text-base font-semibold text-gray-900 truncate">{h.title}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      Nộp ngày {h.createdAt ? dayjs(h.createdAt).format('DD/MM/YYYY') : '—'}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                    <span
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
-                      style={{ color: cfg.color, background: cfg.bg }}
+                    {/* Main row */}
+                    <div
+                      className="px-6 py-5 flex items-start gap-4 cursor-pointer"
+                      onClick={() => setDetail(h)}
                     >
-                      <i className={`fa-regular ${cfg.icon}`}></i>
-                      {cfg.label}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      Cập nhật {h.updatedAt ? dayjs(h.updatedAt).format('DD/MM/YYYY') : '—'}
-                    </span>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        {/* Meta row */}
+                        <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+                          <span className="font-mono font-extrabold text-sm text-gray-700 bg-gray-100 px-2.5 py-1 rounded-lg tracking-wide">
+                            {h.code ?? h.id?.slice(0, 8)}
+                          </span>
+                          {h.linhVuc && (
+                            <span className="text-sm font-semibold text-[#0a65cc] bg-blue-50 px-2.5 py-1 rounded-lg">
+                              {h.linhVuc}
+                            </span>
+                          )}
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ml-auto"
+                            style={{ color: cfg.color, background: cfg.bg }}
+                          >
+                            <i className={`fa-regular ${cfg.icon}`} />
+                            {cfg.label}
+                          </span>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-xl font-bold text-gray-900 leading-tight mb-1.5">{h.title}</h3>
+
+                        {/* Preview */}
+                        {h.problemDescription && (
+                          <p className="text-base text-gray-500 line-clamp-1 mb-3">{h.problemDescription}</p>
+                        )}
+
+                        {/* Footer meta */}
+                        <div className="flex items-center gap-4 text-sm text-gray-400 font-medium flex-wrap">
+                          <span className="flex items-center gap-1.5">
+                            <i className="fa-regular fa-calendar" />
+                            {h.createdAt ? dayjs(h.createdAt).format('DD/MM/YYYY HH:mm') : '—'}
+                          </span>
+                          {h.updatedAt && h.updatedAt !== h.createdAt && (
+                            <span className="flex items-center gap-1.5">
+                              <i className="fa-regular fa-clock-rotate-left" />
+                              Cập nhật {dayjs(h.updatedAt).format('DD/MM/YYYY')}
+                            </span>
+                          )}
+                          {Array.isArray((h as any).attachments) && (h as any).attachments.length > 0 && (
+                            <span className="flex items-center gap-1.5">
+                              <i className="fa-regular fa-paperclip" />
+                              {(h as any).attachments.length} tệp
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1.5 text-gray-300 text-xs ml-auto">
+                            <i className="fa-regular fa-eye" /> Xem chi tiết
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action bar — Bản nháp */}
+                    {isDraft && (
+                      <div className="mx-6 mb-5 rounded-xl flex items-center gap-3 px-4 py-3" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
+                        <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+                          <i className="fa-regular fa-pen-to-square text-gray-500" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-600 flex-1">
+                          Bản nháp — chưa nộp
+                        </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleEdit(h); }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white transition-colors hover:opacity-90"
+                          style={{ background: '#003087' }}
+                        >
+                          <i className="fa-regular fa-pen-to-square" />
+                          Hiệu chỉnh
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDelete(h); }}
+                          disabled={isDeleting}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                        >
+                          {isDeleting
+                            ? <><i className="fa-solid fa-circle-notch fa-spin" /> Đang xóa...</>
+                            : <><i className="fa-regular fa-trash-can" /> Xóa</>}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Action bar — Chờ tiếp nhận */}
+                    {isWaiting && (
+                      <div className="mx-6 mb-5 rounded-xl flex items-center gap-3 px-4 py-3" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                          <i className="fa-regular fa-clock text-amber-600" />
+                        </div>
+                        <span className="text-sm font-semibold text-amber-800 flex-1">
+                          Đang chờ cán bộ tiếp nhận
+                        </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleRecall(h); }}
+                          disabled={isRecalling}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 transition-colors disabled:opacity-50"
+                        >
+                          {isRecalling
+                            ? <><i className="fa-solid fa-circle-notch fa-spin" /> Đang thu hồi...</>
+                            : <><i className="fa-regular fa-rotate-left" /> Thu hồi</>}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

@@ -11,11 +11,13 @@ import { ImportHangLoatForm } from './components/import-y-tuong/ImportHangLoatFo
 import { UserSelect } from '@/app/components/UserSelect';
 import {
   createIdea,
+  updateIdea,
   uploadIdeaFiles,
   submitIdea,
   getIdeaTemplates,
+  getIdeaDetail,
 } from '@/app/services/ideaPortalApi';
-import type { IIdeaTemplate, IAttachmentUploadResult } from '@/models/idea-portal';
+import type { IIdea, IIdeaTemplate, IAttachmentUploadResult } from '@/models/idea-portal';
 
 type KhoiTaoCach = 'new' | 'template' | 'import';
 
@@ -51,22 +53,69 @@ export const NopYTuongPage = () => {
   const isTemplate = useMemo(() => khoiTaoCach === 'template', [khoiTaoCach]);
   const [draftData, setDraftData] = useState<Record<string, any> | null>(null);
   const [searchParams] = useSearchParams();
+  const [editMode, setEditMode] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
 
-  // Auto-detect import mode from URL param ?mode=import
+  // Auto-detect import mode OR edit mode from URL params
   useEffect(() => {
     const mode = searchParams.get('mode');
+    const ideaId = searchParams.get('ideaId');
+
+    if (ideaId) {
+      // Edit mode: load idea from server
+      setLoadingEdit(true);
+      setCreatedIdeaId(ideaId);
+      setEditMode(true);
+      setKhoiTaoCach('new');
+      getIdeaDetail(ideaId)
+        .then(res => {
+          const idea: IIdea = (res.data as any)?.data ?? res.data as IIdea;
+          if (!idea) { message.error('Không tìm thấy ý tưởng!'); return; }
+          form.setFieldsValue({
+            tenYTuong:     idea.title,
+            moTaVanDe:     idea.problemDescription,
+            noiDungDeXuat: idea.ideaContent,
+            mucTieu:       idea.mucTieu,
+            linhVuc:       idea.linhVuc,
+            nguoiDeXuat:   idea.nguoiDeXuat,
+            donViCongTac:  idea.donViCongTac,
+            phamViApDung:  idea.phamViApDung,
+            loiIchDuKien:  idea.expectedBenefit,
+            receiverId:    idea.receiverId,
+            thoiGianApDung: idea.ngayApDung ? dayjs(idea.ngayApDung) : undefined,
+            templateId:    idea.templateId,
+          });
+          setStep(2);
+          message.success('Đã tải ý tưởng để chỉnh sửa!');
+        })
+        .catch(() => message.error('Không thể tải ý tưởng!'))
+        .finally(() => setLoadingEdit(false));
+      return;
+    }
+
     if (mode === 'import') {
       setKhoiTaoCach('import');
       setStep(2);
     }
   }, [searchParams]);
 
-  // Load draft
+  // Load draft — BỎ QUA nếu đang ở edit mode (có ?ideaId)
   useEffect(() => {
+    if (searchParams.get('ideaId')) return; // edit mode từ server — không load draft
     const saved = localStorage.getItem('yTuongDraft');
-    if (saved) {
-      try { setDraftData(JSON.parse(saved)); } catch { /* ignore */ }
-    }
+    if (!saved) return;
+    try {
+      const parsed: Record<string, any> = JSON.parse(saved);
+      setDraftData(parsed);
+      if (parsed.ideaId) setCreatedIdeaId(parsed.ideaId);
+      const formVals = { ...parsed };
+      delete formVals.ideaId;
+      delete formVals.timestamp;
+      if (formVals.thoiGianApDung) {
+        formVals.thoiGianApDung = dayjs(formVals.thoiGianApDung);
+      }
+      form.setFieldsValue(formVals);
+    } catch { /* ignore */ }
   }, []);
 
   // Load templates
@@ -124,6 +173,18 @@ export const NopYTuongPage = () => {
     return result;
   };
 
+  // Helper: extract ID từ mọi cấu trúc response có thể của BE
+  const extractId = (resData: any): string => {
+    if (!resData) return '';
+    const d = resData?.data;
+    // IResult<IIdea>: { data: { id | Id } }
+    if (d && typeof d === 'object') return d.id ?? d.Id ?? '';
+    // IResult<string>: { data: "guid-string" }
+    if (typeof d === 'string' && d.length > 0) return d;
+    // Direct IIdea: { id | Id }
+    return resData.id ?? resData.Id ?? '';
+  };
+
   // Helper: xử lý lỗi 400 từ ASP.NET ValidationProblemDetails
   const handleApiError = (res: any) => {
     const errBody = res?.data as any;
@@ -143,7 +204,7 @@ export const NopYTuongPage = () => {
 
   // Lưu nháp → POST /api/v1/ideas (tạo mới hoặc PUT nếu đã có ID)
   const saveDraft = async () => {
-    const values = form.getFieldsValue();
+    const values = form.getFieldsValue(true);
     if (!values.tenYTuong) { message.warning('Vui lòng nhập tên ý tưởng trước khi lưu nháp.'); return; }
 
     setSubmitting(true);
@@ -154,13 +215,14 @@ export const NopYTuongPage = () => {
       let savedId = createdIdeaId;
       if (savedId) {
         // Đã lưu trước → PUT
-        const res = await (await import('@/app/services/ideaPortalApi')).updateIdea(savedId, payload);
+        const res = await updateIdea(savedId, payload);
         if (res.status >= 400) { handleApiError(res); return; }
       } else {
         // Lần đầu → POST
         const res = await createIdea(payload);
         if (res.status >= 400 || !res.data) { handleApiError(res); return; }
-        const id = (res.data as any)?.data?.id ?? (res.data as any)?.id;
+        console.log('[saveDraft] createIdea response:', JSON.stringify(res.data));
+        const id = extractId(res.data);
         if (id) { savedId = id; setCreatedIdeaId(id); }
       }
 
@@ -178,7 +240,8 @@ export const NopYTuongPage = () => {
   };
 
   const handlePreview = () => {
-    form.validateFields().then((values) => {
+    form.validateFields().then(() => {
+      const values = form.getFieldsValue(true);
       setPreviewData({ ...values, attachmentCount: fileList.length });
       setStep(3);
     }).catch(() => {
@@ -194,19 +257,29 @@ export const NopYTuongPage = () => {
     setSubmitting(true);
 
     try {
-      let ideaId = createdIdeaId;
+      // Ưu tiên state, fallback về ID đã lưu trong draft localStorage
+      let ideaId = createdIdeaId || (draftData?.ideaId ?? '');
 
       if (!ideaId) {
-        // Chưa lưu nháp → tạo mới trước
-        const values = form.getFieldsValue();
+        // Chưa lưu nháp → dùng previewData (đã validate khi handlePreview) hoặc re-validate
+        const values = previewData ?? form.getFieldsValue(true);
+        if (!values?.tenYTuong) {
+          message.error('Thiếu thông tin ý tưởng — vui lòng quay lại điền đầy đủ!');
+          setStep(2);
+          return;
+        }
         const attachments = await ensureUploaded();
         const payload = buildPayload(values, attachments);
 
         const createRes = await createIdea(payload);
         if (createRes.status >= 400 || !createRes.data) { handleApiError(createRes); return; }
+        console.log('[onFinish] createIdea response:', JSON.stringify(createRes.data));
 
-        ideaId = (createRes.data as any)?.data?.id ?? (createRes.data as any)?.id ?? '';
-        if (!ideaId) { message.error('Không lấy được ID ý tưởng vừa tạo!'); return; }
+        ideaId = extractId(createRes.data);
+        if (!ideaId) {
+          message.error('Không lấy được ID ý tưởng vừa tạo! Xem Console để biết cấu trúc response.');
+          return;
+        }
         setCreatedIdeaId(ideaId);
       }
 
@@ -229,9 +302,11 @@ export const NopYTuongPage = () => {
       setDraftData(null);
       message.success('Gửi ý tưởng thành công!');
       setStep(4);
-    } catch (err) {
-      console.error(err);
-      message.error('Đã có lỗi xảy ra, vui lòng thử lại!');
+    } catch (err: any) {
+      if (err?.message !== 'validation') {
+        console.error(err);
+        message.error('Đã có lỗi xảy ra, vui lòng thử lại!');
+      }
     } finally {
       setSubmitting(false);
       setUploadProgress(0);
@@ -263,12 +338,26 @@ export const NopYTuongPage = () => {
     );
   }
 
+  if (loadingEdit) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <Spin size="large" tip="Đang tải ý tưởng để chỉnh sửa..." />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#f7f8fa] min-h-screen py-10">
       <div className="max-w-[1200px] mx-auto px-4 lg:px-8 w-full">
         <div className="bg-white rounded-xl p-6 lg:p-8 shadow-2xs border border-gray-100">
-          <h1 className="text-2xl lg:text-3xl font-medium text-[#18191c] mb-2">Khởi tạo ý tưởng</h1>
-          <p className="text-gray-500 mb-8">Khởi tạo ý tưởng mới hoặc import hàng loạt từ file Excel/CSV/API.</p>
+          <h1 className="text-2xl lg:text-3xl font-medium text-[#18191c] mb-2">
+            {editMode ? 'Chỉnh sửa ý tưởng' : 'Khởi tạo ý tưởng'}
+          </h1>
+          <p className="text-gray-500 mb-8">
+            {editMode
+              ? 'Chỉnh sửa và cập nhật thông tin ý tưởng trước khi nộp.'
+              : 'Khởi tạo ý tưởng mới hoặc import hàng loạt từ file Excel/CSV/API.'}
+          </p>
 
           {/* Step indicator */}
           {khoiTaoCach === 'import' ? (
@@ -473,13 +562,18 @@ export const NopYTuongPage = () => {
               </div>
 
               <Space>
-                <Button onClick={() => setStep(1)}>Quay lại</Button>
+                {!editMode && <Button onClick={() => setStep(1)}>Quay lại</Button>}
+                {editMode && (
+                  <Button onClick={() => window.history.back()}>
+                    <i className="fa-regular fa-arrow-left me-2" />Quay lại danh sách
+                  </Button>
+                )}
                 <Button
                   onClick={saveDraft}
                   style={{ backgroundColor: '#13c2c2', borderColor: '#13c2c2', color: 'white' }}
                 >
-                  <i className="fa-regular fa-floppy-disk me-2"></i>
-                  Lưu nháp
+                  <i className="fa-regular fa-floppy-disk me-2" />
+                  {editMode ? 'Lưu thay đổi' : 'Lưu nháp'}
                 </Button>
                 <Button type="primary" onClick={handlePreview}>
                   Xem trước
@@ -487,8 +581,22 @@ export const NopYTuongPage = () => {
               </Space>
 
               {draftData && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-600">
-                  💾 Đã lưu nháp lần cuối: <strong>{draftData.timestamp}</strong>
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-600 flex items-center justify-between gap-3">
+                  <span>💾 Đã khôi phục bản nháp — lưu lần cuối: <strong>{draftData.timestamp}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const { ideaId: _id, timestamp: _ts, thoiGianApDung, ...rest } = draftData as any;
+                      form.setFieldsValue({
+                        ...rest,
+                        thoiGianApDung: thoiGianApDung ? dayjs(thoiGianApDung) : undefined,
+                      });
+                      message.success('Đã khôi phục dữ liệu từ bản nháp!');
+                    }}
+                    className="text-blue-600 underline font-medium whitespace-nowrap text-xs"
+                  >
+                    Khôi phục lại
+                  </button>
                 </div>
               )}
             </Form>

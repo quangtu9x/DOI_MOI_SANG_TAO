@@ -4,6 +4,9 @@ import { Tag, Divider, Button, Modal, Input, message, Upload } from 'antd';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import { MOCK_Y_TUONG_DATA, TRANG_THAI_DISPLAY, TrangThaiYTuong } from './QuanLyYTuongDMSTPage';
+import { TuongTacSection } from '@/app/components/tuong-tac/TuongTacSection';
+import { LoaiDoiTuong } from '@/app/models/knowledge-hub';
+import { useAuth } from '@/app/modules/auth';
 
 const MOCK_HISTORY: Record<string, { action: string; user: string; time: string; note: string; dot: string }[]> = {
   '1': [
@@ -56,6 +59,7 @@ const MOCK_FILES: Record<string, { name: string; size: string; type: string }[]>
 export const ChiTietYTuongPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const idea = MOCK_Y_TUONG_DATA.find(i => i.id === id);
   const [approveModal, setApproveModal] = useState(false);
   const [rejectModal, setRejectModal] = useState(false);
@@ -190,6 +194,22 @@ export const ChiTietYTuongPage: React.FC = () => {
                 ) : (
                   <div className="text-muted text-center py-4">Chưa có tài liệu đính kèm</div>
                 )}
+              </div>
+            </div>
+            {/* Tương tác & Bình luận — IV.2.2 */}
+            <div className="card">
+              <div className="card-header border-0 pt-4 pb-2">
+                <h4 className="card-title fw-semibold text-gray-700">
+                  <i className="fa-regular fa-comments me-2" />Tương tác & Bình luận
+                </h4>
+              </div>
+              <div className="card-body">
+                <TuongTacSection
+                  loaiDoiTuong={LoaiDoiTuong.YTuong}
+                  doiTuongId={id!}
+                  initialLikes={idea.luotThich ?? 0}
+                  currentUserId={currentUser?.id}
+                />
               </div>
             </div>
           </div>

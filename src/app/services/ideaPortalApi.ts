@@ -1,4 +1,4 @@
-import { requestGET, requestPOST, requestPUT, requestUploadFile } from '@/utils/baseAPI';
+import { requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile } from '@/utils/baseAPI';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   IIdea,
@@ -37,6 +37,13 @@ export const returnIdea = (id: string, remark = '') =>
 
 export const cancelIdea = (id: string, remark = '') =>
   requestPOST<IResult<unknown>>(`IdeaStatus/${id}/cancel`, { remark } as IIdeaStatusActionRequest);
+
+// Thu hồi ý tưởng đã nộp (Chờ tiếp nhận → Bản nháp / Hủy)
+export const recallIdea = (id: string, remark = '') =>
+  requestPOST<IResult<unknown>>(`IdeaStatus/${id}/recall`, { remark } as IIdeaStatusActionRequest);
+
+export const deleteIdea = (id: string) =>
+  requestDELETE<IResult<unknown>>(`ideas/${id}`);
 
 export const markIdeaAsTemplate = (id: string) =>
   requestPUT<IResult<unknown>>(`IdeaStatus/${id}/la-y-tuong-mau`, true);

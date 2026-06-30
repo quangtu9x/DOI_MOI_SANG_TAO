@@ -36,6 +36,7 @@ export interface IYTuong {
   lyDoTuChoi?: string;
   fileCount?: number;
   ghiChu?: string;
+  luotThich?: number;
 }
 
 // Mock data — Vietnam Airlines context

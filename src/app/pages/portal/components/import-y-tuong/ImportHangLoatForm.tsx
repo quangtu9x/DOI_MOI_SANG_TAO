@@ -8,7 +8,6 @@ import dayjs from 'dayjs';
 import { requestPOST } from '@/utils/baseAPI';
 
 const { Dragger } = Upload;
-const { TabPane } = Tabs;
 
 export interface ImportedRecord {
   key: string;
@@ -31,9 +30,10 @@ interface SendResult {
   message: string;
 }
 
+// Internal keys khớp với ImportedRecord — dùng để nhận dạng row 2 trong file mẫu
 const TEMPLATE_FIELD_NAMES = new Set([
-  'title', 'linhVuc', 'problemDescription', 'ideaContent',
-  'mucTieu', 'nguoiDeXuat', 'donViCongTac', 'phamViApDung', 'expectedBenefit',
+  'tenYTuong', 'linhVuc', 'moTaVanDe', 'noiDungDeXuat',
+  'mucTieu', 'nguoiDeXuat', 'donViCongTac', 'phamViApDung', 'loiIchDuKien',
 ]);
 
 const isFieldNamesRow = (row: any): boolean => {
@@ -102,17 +102,43 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
   const [sendDone, setSendDone] = useState(false);
 
   const downloadTemplate = () => {
+    // Row 1: tiêu đề hiển thị (Vietnamese)
+    // Row 2: tên trường nội bộ — khớp với ImportedRecord keys — parser dùng để bỏ qua
+    // Row 3–4: dữ liệu mẫu
     const FIELD_NAMES = [
-      'title', 'linhVuc', 'problemDescription', 'ideaContent',
-      'mucTieu', 'nguoiDeXuat', 'donViCongTac', 'phamViApDung', 'expectedBenefit',
+      'tenYTuong', 'linhVuc', 'moTaVanDe', 'noiDungDeXuat',
+      'mucTieu', 'nguoiDeXuat', 'donViCongTac', 'phamViApDung', 'loiIchDuKien',
     ];
-    const wsData = [EXPECTED_HEADERS, FIELD_NAMES];
+    const SAMPLE_1 = [
+      'Triển khai kiosk check-in tự phục vụ tại sân bay',
+      'Chuyển đổi số - Dịch vụ hành khách',
+      'Nhân viên check-in nhập thủ công nhiều thông tin, gây chậm trễ trong giờ cao điểm và dễ xảy ra sai sót.',
+      'Lắp đặt màn hình tự phục vụ (self-service kiosk) tích hợp hệ thống DCS, cho phép hành khách tự làm thủ tục check-in, in thẻ lên máy bay.',
+      'Giảm 40% thời gian chờ; tăng năng suất nhân viên 30%; cải thiện điểm hài lòng hành khách.',
+      'Nguyễn Văn An',
+      'Ban Dịch vụ Mặt đất',
+      'Toàn bộ sân bay khai thác của VNA',
+      'Tiết kiệm ~30% chi phí nhân công quầy check-in; nâng NPS hành khách lên +15 điểm.',
+    ];
+    const SAMPLE_2 = [
+      'AI dự đoán nhu cầu nhiên liệu tối ưu theo tuyến bay',
+      'Khai thác kỹ thuật - Tối ưu chi phí',
+      'Dự toán nhiên liệu hiện dựa trên kinh nghiệm phi công và bảng tính cố định, chưa tính biến động thời tiết và tải trọng thực tế theo thời gian thực.',
+      'Xây dựng module AI tích hợp dữ liệu thời tiết, lịch sử chuyến bay và tải trọng thực để tính toán lượng nhiên liệu tối ưu tự động cho từng chuyến bay.',
+      'Giảm 3–5% nhiên liệu dư thừa mỗi chuyến; tiết kiệm tương đương hàng tỷ đồng/năm; giảm phát thải CO₂.',
+      'Trần Minh Hoàng',
+      'Ban Kỹ thuật Bay',
+      'Đội bay nội địa và quốc tế',
+      'Ước tính tiết kiệm 5–8 triệu USD/năm; giảm phát thải CO₂ ~3,000 tấn/năm.',
+    ];
+
+    const wsData = [EXPECTED_HEADERS, FIELD_NAMES, SAMPLE_1, SAMPLE_2];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     ws['!cols'] = [
-      { wch: 30 }, { wch: 25 }, { wch: 40 },
-      { wch: 40 }, { wch: 35 }, { wch: 25 },
-      { wch: 25 }, { wch: 25 }, { wch: 35 },
+      { wch: 40 }, { wch: 28 }, { wch: 50 },
+      { wch: 50 }, { wch: 45 }, { wch: 22 },
+      { wch: 25 }, { wch: 30 }, { wch: 45 },
     ];
     XLSX.utils.book_append_sheet(wb, ws, 'MauNhapLieu');
     XLSX.writeFile(wb, 'Mau_Import_Y_Tuong.xlsx');
@@ -489,94 +515,107 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
       {!sending && !sendDone && (
         <>
           <Card className="mb-6">
-            <Tabs activeKey={activeTab} onChange={setActiveTab}>
-              <TabPane
-                tab={<span className='px-2'><FileExcelOutlined /> Import từ Excel / CSV</span>}
-                key="file"
-              >
-                <div className="py-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">1</div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">Tải file mẫu</p>
-                      <p className="text-sm text-gray-500">Tải file Excel mẫu, điền thông tin ý tưởng theo đúng cấu trúc.</p>
-                    </div>
-                    <Button icon={<DownloadOutlined />} onClick={downloadTemplate}>Tải file mẫu</Button>
-                  </div>
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  key: 'file',
+                  label: <span className="px-2"><FileExcelOutlined /> Import từ Excel / CSV</span>,
+                  children: (
+                    <div className="py-6">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">1</div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800">Tải file mẫu</p>
+                          <p className="text-sm text-gray-500">
+                            Tải file Excel mẫu (đã có 2 ví dụ), điền thêm ý tưởng từ dòng 3 trở đi.
+                          </p>
+                        </div>
+                        <Button icon={<DownloadOutlined />} onClick={downloadTemplate}>Tải file mẫu</Button>
+                      </div>
 
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">2</div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800 mb-1">Tải lên file dữ liệu</p>
-                      <p className="text-sm text-gray-500 mb-4">Kéo thả hoặc chọn file Excel (.xlsx, .xls) hoặc CSV (.csv) đã điền dữ liệu.</p>
-                      <Dragger {...uploadProps}>
-                        <p className="ant-upload-drag-icon"><InboxOutlined /></p>
-                        <p className="ant-upload-text">Nhấp hoặc kéo file vào đây</p>
-                        <p className="ant-upload-hint">Hỗ trợ .xlsx, .xls, .csv · Tối đa 1000 bản ghi</p>
-                      </Dragger>
+                      <div className="flex items-start gap-4 mb-6">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">2</div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800 mb-1">Tải lên file dữ liệu</p>
+                          <p className="text-sm text-gray-500 mb-4">Kéo thả hoặc chọn file Excel (.xlsx, .xls) hoặc CSV (.csv) đã điền dữ liệu.</p>
+                          <Dragger {...uploadProps}>
+                            <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                            <p className="ant-upload-text">Nhấp hoặc kéo file vào đây</p>
+                            <p className="ant-upload-hint">Hỗ trợ .xlsx, .xls, .csv · Tối đa 1000 bản ghi</p>
+                          </Dragger>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </TabPane>
-
-              <TabPane
-                tab={<span className='px-2'><LinkOutlined /> Import từ API</span>}
-                key="api"
-              >
-                <div className="py-4">
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">URL API (trả về JSON)</label>
-                    <div className="flex gap-3">
-                      <input
-                        type="url"
-                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="https://example.com/api/y-tuong"
-                        value={apiUrl}
-                        onChange={(e) => setApiUrl(e.target.value)}
-                      />
-                      <Button type="primary" icon={<LinkOutlined />} loading={importing} onClick={handleApiImport}>
-                        Lấy dữ liệu
-                      </Button>
+                  ),
+                },
+                {
+                  key: 'api',
+                  label: <span className="px-2"><LinkOutlined /> Import từ API</span>,
+                  children: (
+                    <div className="py-4">
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">URL API (trả về JSON)</label>
+                        <div className="flex gap-3">
+                          <input
+                            type="url"
+                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="https://example.com/api/y-tuong"
+                            value={apiUrl}
+                            onChange={(e) => setApiUrl(e.target.value)}
+                          />
+                          <Button type="primary" icon={<LinkOutlined />} loading={importing} onClick={handleApiImport}>
+                            Lấy dữ liệu
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2">
+                          API cần trả về mảng JSON hoặc object có chứa trường "data".
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                      API cần trả về mảng JSON hoặc object có chứa trường "data".
-                    </p>
-                  </div>
-                </div>
-              </TabPane>
-
-              <TabPane
-                tab={<span className='px-2'><FileProtectOutlined /> Tích hợp hệ thống</span>}
-                key="integration"
-              >
-                <div className="py-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-                    <i className="fa-solid fa-cloud-arrow-up text-4xl text-blue-400 mb-4 block"></i>
-                    <h4 className="font-semibold text-blue-800 mb-2">Tích hợp hệ thống qua API</h4>
-                    <p className="text-blue-600 text-sm mb-4">
-                      Hệ thống hỗ trợ tích hợp với các hệ thống bên ngoài qua REST API.
-                      Vui lòng liên hệ quản trị viên để được cấp API key và tài liệu tích hợp.
-                    </p>
-                    <div className="bg-white rounded p-4 text-left border border-blue-100">
-                      <p className="text-xs text-gray-500 font-mono mb-2">POST /api/v1/y-tuong/import</p>
-                      <p className="text-xs text-gray-500 font-mono mb-2">Content-Type: application/json</p>
-                      <pre className="text-xs text-gray-600 bg-gray-50 p-3 rounded overflow-x-auto">
+                  ),
+                },
+                {
+                  key: 'integration',
+                  label: <span className="px-2"><FileProtectOutlined /> Tích hợp hệ thống</span>,
+                  children: (
+                    <div className="py-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                        <i className="fa-solid fa-cloud-arrow-up text-4xl text-blue-400 mb-4 block" />
+                        <h4 className="font-semibold text-blue-800 mb-2">Tích hợp hệ thống qua API</h4>
+                        <p className="text-blue-600 text-sm mb-4">
+                          Hệ thống hỗ trợ tích hợp với các hệ thống bên ngoài qua REST API.
+                          Vui lòng liên hệ quản trị viên để được cấp API key và tài liệu tích hợp.
+                        </p>
+                        <div className="bg-white rounded p-4 text-left border border-blue-100">
+                          <p className="text-xs text-gray-500 font-mono mb-2">POST /api/v1/ideas/import-batch</p>
+                          <p className="text-xs text-gray-500 font-mono mb-2">Content-Type: application/json</p>
+                          <pre className="text-xs text-gray-600 bg-gray-50 p-3 rounded overflow-x-auto">
 {`{
   "apiKey": "your-api-key",
   "items": [
     {
-      "tenYTuong": "Tên ý tưởng",
-      "linhVuc": "Lĩnh vực",
-      ...
+      "tenYTuong": "Tên ý tưởng (*)",
+      "linhVuc": "Lĩnh vực (*)",
+      "moTaVanDe": "Mô tả hiện trạng",
+      "noiDungDeXuat": "Nội dung đề xuất",
+      "mucTieu": "Mục tiêu kỳ vọng",
+      "nguoiDeXuat": "Họ tên người đề xuất",
+      "donViCongTac": "Đơn vị công tác",
+      "phamViApDung": "Phạm vi áp dụng",
+      "loiIchDuKien": "Lợi ích dự kiến"
     }
   ]
 }`}
-                      </pre>
+                          </pre>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </TabPane>
-            </Tabs>
+                  ),
+                },
+              ]}
+            />
           </Card>
 
           {/* Preview imported data */}

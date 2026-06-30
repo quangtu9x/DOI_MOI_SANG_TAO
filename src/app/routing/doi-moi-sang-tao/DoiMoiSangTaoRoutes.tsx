@@ -7,6 +7,11 @@ import { ChiTietYTuongPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/
 import { QuyTrinhDuyetPage } from '@/app/pages/doi-moi-sang-tao/quy-trinh-duyet/QuyTrinhDuyetPage';
 import { ThongBaoDMSTPage } from '@/app/pages/doi-moi-sang-tao/thong-bao/ThongBaoDMSTPage';
 import { KhoTriThucPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/KhoTriThucPage';
+import { ThuVienTaiLieuPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/thu-vien/ThuVienTaiLieuPage';
+import { DanhBaChuyenGiaPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia/DanhBaChuyenGiaPage';
+import { CongDongPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/cong-dong/CongDongPage';
+import { NewsFeedPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed/NewsFeedPage';
+import { TimKiemPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/tim-kiem/TimKiemPage';
 import { BaoCaoPage } from '@/app/pages/doi-moi-sang-tao/bao-cao/BaoCaoPage';
 import { QuanLyNguoiDungPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-nguoi-dung/QuanLyNguoiDungPage';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
@@ -48,8 +53,14 @@ export const DoiMoiSangTaoRoutes: FC = () => {
       {/* Thông báo */}
       <Route path="thong-bao" element={<ThongBaoDMSTPage />} />
 
-      {/* Kho tri thức */}
-      <Route path="kho-tri-thuc" element={<KhoTriThucPage />} />
+      {/* Kho tri thức — shell + sub-routes */}
+      <Route path="kho-tri-thuc" element={<KhoTriThucPage />}>
+        <Route path="thu-vien"   element={<ThuVienTaiLieuPage />} />
+        <Route path="chuyen-gia" element={<DanhBaChuyenGiaPage />} />
+        <Route path="cong-dong"  element={<CongDongPage />} />
+        <Route path="news-feed"  element={<NewsFeedPage />} />
+        <Route path="tim-kiem"   element={<TimKiemPage />} />
+      </Route>
 
       {/* Báo cáo — reviewer + admin only */}
       <Route path="bao-cao" element={<ReviewerRoute element={<BaoCaoPage />} />} />
