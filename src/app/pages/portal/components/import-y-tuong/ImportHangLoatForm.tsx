@@ -4,6 +4,7 @@ import { DownloadOutlined, InboxOutlined, LinkOutlined, FileExcelOutlined, FileP
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
 import * as XLSX from 'xlsx';
+import { zipSync } from 'fflate';
 import dayjs from 'dayjs';
 import { requestPOST } from '@/utils/baseAPI';
 
@@ -42,9 +43,9 @@ const isFieldNamesRow = (row: any): boolean => {
 };
 
 const EXPECTED_HEADERS = [
-  'Tên ý tưởng',
+  'Tên ý tưởng (*)',
   'Lĩnh vực',
-  'Mô tả hiện trạng/vấn đề',
+  'Mô tả hiện trạng / vấn đề',
   'Nội dung ý tưởng đề xuất',
   'Mục tiêu và giá trị kỳ vọng',
   'Người đề xuất',
@@ -58,6 +59,7 @@ const COLUMN_MAP: Record<string, string> = {
   'tên ý tưởng (*)': 'tenYTuong',
   'tenytuong': 'tenYTuong',
   'lĩnh vực': 'linhVuc',
+  'lĩnh vực (*)': 'linhVuc',
   'linhvuc': 'linhVuc',
   'mô tả hiện trạng/vấn đề': 'moTaVanDe',
   'mô tả hiện trạng': 'moTaVanDe',
@@ -83,6 +85,174 @@ const COLUMN_MAP: Record<string, string> = {
   'loiichdukien': 'loiIchDuKien',
 };
 
+// ── XLSX builder (fflate ZIP + raw OOXML) ────────────────────────────────────
+// Tạo file .xlsx chuẩn với font TNR, border, màu nền — không cần package ngoài ngoài fflate
+
+const xmlEsc = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const buildTemplateXlsx = (): Uint8Array => {
+  const CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+
+  const RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+  const WORKBOOK = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="MauNhapLieu" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+  const WORKBOOK_RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  // Styles:
+  //   Font  0 = TNR 11 normal black
+  //   Font  1 = TNR 12 bold white        → row 1 header
+  //   Font  2 = TNR 10 bold navy         → row 2 field names
+  //   Font  3 = TNR 11 bold black        → data cells A/B (tên + lĩnh vực)
+  //   Fill  0 = none (required)
+  //   Fill  1 = gray125 (required)
+  //   Fill  2 = solid #003087 navy       → row 1
+  //   Fill  3 = solid #DCE6F1 lightblue  → row 2
+  //   Border 0 = no border
+  //   Border 1 = thin black all sides
+  //   CellXf 0 = default
+  //   CellXf 1 = header   (font1, fill2, border1, center+wrap)
+  //   CellXf 2 = fieldname (font2, fill3, border1, center+wrap)
+  //   CellXf 3 = data normal (font0, fill0, border1, left+wrap)
+  //   CellXf 4 = data bold   (font3, fill0, border1, left+wrap)
+  const thinBorder = `<left style="thin"><color rgb="FF000000"/></left>
+      <right style="thin"><color rgb="FF000000"/></right>
+      <top style="thin"><color rgb="FF000000"/></top>
+      <bottom style="thin"><color rgb="FF000000"/></bottom>`;
+  const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="4">
+    <font><sz val="11"/><name val="Times New Roman"/></font>
+    <font><sz val="12"/><b/><color rgb="FFFFFFFF"/><name val="Times New Roman"/></font>
+    <font><sz val="10"/><b/><color rgb="FF003087"/><name val="Times New Roman"/></font>
+    <font><sz val="11"/><b/><name val="Times New Roman"/></font>
+  </fonts>
+  <fills count="4">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF003087"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFDCE6F1"/></patternFill></fill>
+  </fills>
+  <borders count="2">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>${thinBorder}<diagonal/></border>
+  </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="5">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="center" vertical="center" wrapText="1"/>
+    </xf>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="center" vertical="center" wrapText="1"/>
+    </xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="left" vertical="center" wrapText="1"/>
+    </xf>
+    <xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="left" vertical="center" wrapText="1"/>
+    </xf>
+  </cellXfs>
+</styleSheet>`;
+
+  const COLS = ['A','B','C','D','E','F','G','H','I'];
+  const cell = (col: string, row: number, val: string, s: number) =>
+    `<c r="${col}${row}" s="${s}" t="inlineStr"><is><t>${xmlEsc(val)}</t></is></c>`;
+
+  const makeRow = (r: number, vals: string[], ht: number, styles: number[]) =>
+    `<row r="${r}" ht="${ht}" customHeight="1">${
+      vals.map((v, i) => cell(COLS[i], r, v, styles[i])).join('')
+    }</row>`;
+
+  const S_HDR  = Array(9).fill(1);
+  const S_FLD  = Array(9).fill(2);
+  const S_DATA = (i: number) => i < 2 ? 4 : 3;  // A/B bold, rest normal
+
+  const ROW1 = ['Tên ý tưởng (*)','Lĩnh vực','Mô tả hiện trạng / vấn đề',
+    'Nội dung ý tưởng đề xuất','Mục tiêu và giá trị kỳ vọng',
+    'Người đề xuất','Đơn vị công tác','Phạm vi áp dụng','Lợi ích dự kiến'];
+  const ROW2 = ['tenYTuong','linhVuc','moTaVanDe','noiDungDeXuat','mucTieu',
+    'nguoiDeXuat','donViCongTac','phamViApDung','loiIchDuKien'];
+  const ROW3 = [
+    'Triển khai kiosk check-in tự phục vụ tại sân bay',
+    'Chuyển đổi số - Dịch vụ hành khách',
+    'Nhân viên check-in nhập thủ công nhiều thông tin, gây chậm trễ giờ cao điểm và dễ xảy ra sai sót.',
+    'Lắp đặt màn hình tự phục vụ (self-service kiosk) tích hợp DCS, cho phép hành khách tự làm thủ tục check-in.',
+    'Giảm 40% thời gian chờ; tăng năng suất nhân viên 30%; cải thiện điểm hài lòng hành khách.',
+    'Nguyễn Văn An','Ban Dịch vụ Mặt đất','Toàn bộ sân bay khai thác của VNA',
+    'Tiết kiệm ~30% chi phí nhân công; nâng NPS hành khách lên +15 điểm.',
+  ];
+  const ROW4 = [
+    'AI dự đoán nhu cầu nhiên liệu tối ưu theo tuyến bay',
+    'Khai thác kỹ thuật - Tối ưu chi phí',
+    'Dự toán nhiên liệu dựa trên kinh nghiệm phi công và bảng tính cố định, chưa tính biến động thời tiết thực tế.',
+    'Xây dựng module AI tích hợp dữ liệu thời tiết và lịch sử chuyến bay để tính toán lượng nhiên liệu tối ưu tự động.',
+    'Giảm 3–5% nhiên liệu dư thừa mỗi chuyến; tiết kiệm hàng tỷ đồng/năm; giảm phát thải CO₂.',
+    'Trần Minh Hoàng','Ban Kỹ thuật Bay','Đội bay nội địa và quốc tế',
+    'Ước tính tiết kiệm 5–8 triệu USD/năm; giảm phát thải CO₂ ~3,000 tấn/năm.',
+  ];
+
+  const SHEET = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetViews>
+    <sheetView workbookViewId="0">
+      <pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/>
+    </sheetView>
+  </sheetViews>
+  <sheetFormatPr defaultRowHeight="15"/>
+  <cols>
+    <col min="1" max="1" width="38" customWidth="1"/>
+    <col min="2" max="2" width="26" customWidth="1"/>
+    <col min="3" max="3" width="48" customWidth="1"/>
+    <col min="4" max="4" width="48" customWidth="1"/>
+    <col min="5" max="5" width="42" customWidth="1"/>
+    <col min="6" max="6" width="22" customWidth="1"/>
+    <col min="7" max="7" width="24" customWidth="1"/>
+    <col min="8" max="8" width="28" customWidth="1"/>
+    <col min="9" max="9" width="42" customWidth="1"/>
+  </cols>
+  <sheetData>
+    ${makeRow(1, ROW1, 36, S_HDR)}
+    ${makeRow(2, ROW2, 24, S_FLD)}
+    ${makeRow(3, ROW3, 55, ROW3.map((_, i) => S_DATA(i)))}
+    ${makeRow(4, ROW4, 55, ROW4.map((_, i) => S_DATA(i)))}
+  </sheetData>
+</worksheet>`;
+
+  const enc = new TextEncoder();
+  const zip = zipSync({
+    '[Content_Types].xml':       enc.encode(CONTENT_TYPES),
+    '_rels/.rels':                enc.encode(RELS),
+    'xl/workbook.xml':            enc.encode(WORKBOOK),
+    'xl/_rels/workbook.xml.rels': enc.encode(WORKBOOK_RELS),
+    'xl/worksheets/sheet1.xml':   enc.encode(SHEET),
+    'xl/styles.xml':              enc.encode(STYLES),
+  }, { level: 0 });
+
+  return zip;
+};
+
 interface ImportHangLoatFormProps {
   onBack: () => void;
   onSubmit: (records: ImportedRecord[]) => void;
@@ -102,47 +272,21 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
   const [sendDone, setSendDone] = useState(false);
 
   const downloadTemplate = () => {
-    // Row 1: tiêu đề hiển thị (Vietnamese)
-    // Row 2: tên trường nội bộ — khớp với ImportedRecord keys — parser dùng để bỏ qua
-    // Row 3–4: dữ liệu mẫu
-    const FIELD_NAMES = [
-      'tenYTuong', 'linhVuc', 'moTaVanDe', 'noiDungDeXuat',
-      'mucTieu', 'nguoiDeXuat', 'donViCongTac', 'phamViApDung', 'loiIchDuKien',
-    ];
-    const SAMPLE_1 = [
-      'Triển khai kiosk check-in tự phục vụ tại sân bay',
-      'Chuyển đổi số - Dịch vụ hành khách',
-      'Nhân viên check-in nhập thủ công nhiều thông tin, gây chậm trễ trong giờ cao điểm và dễ xảy ra sai sót.',
-      'Lắp đặt màn hình tự phục vụ (self-service kiosk) tích hợp hệ thống DCS, cho phép hành khách tự làm thủ tục check-in, in thẻ lên máy bay.',
-      'Giảm 40% thời gian chờ; tăng năng suất nhân viên 30%; cải thiện điểm hài lòng hành khách.',
-      'Nguyễn Văn An',
-      'Ban Dịch vụ Mặt đất',
-      'Toàn bộ sân bay khai thác của VNA',
-      'Tiết kiệm ~30% chi phí nhân công quầy check-in; nâng NPS hành khách lên +15 điểm.',
-    ];
-    const SAMPLE_2 = [
-      'AI dự đoán nhu cầu nhiên liệu tối ưu theo tuyến bay',
-      'Khai thác kỹ thuật - Tối ưu chi phí',
-      'Dự toán nhiên liệu hiện dựa trên kinh nghiệm phi công và bảng tính cố định, chưa tính biến động thời tiết và tải trọng thực tế theo thời gian thực.',
-      'Xây dựng module AI tích hợp dữ liệu thời tiết, lịch sử chuyến bay và tải trọng thực để tính toán lượng nhiên liệu tối ưu tự động cho từng chuyến bay.',
-      'Giảm 3–5% nhiên liệu dư thừa mỗi chuyến; tiết kiệm tương đương hàng tỷ đồng/năm; giảm phát thải CO₂.',
-      'Trần Minh Hoàng',
-      'Ban Kỹ thuật Bay',
-      'Đội bay nội địa và quốc tế',
-      'Ước tính tiết kiệm 5–8 triệu USD/năm; giảm phát thải CO₂ ~3,000 tấn/năm.',
-    ];
-
-    const wsData = [EXPECTED_HEADERS, FIELD_NAMES, SAMPLE_1, SAMPLE_2];
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    ws['!cols'] = [
-      { wch: 40 }, { wch: 28 }, { wch: 50 },
-      { wch: 50 }, { wch: 45 }, { wch: 22 },
-      { wch: 25 }, { wch: 30 }, { wch: 45 },
-    ];
-    XLSX.utils.book_append_sheet(wb, ws, 'MauNhapLieu');
-    XLSX.writeFile(wb, 'Mau_Import_Y_Tuong.xlsx');
-    message.success('Đã tải xuống file mẫu!');
+    try {
+      const zip  = buildTemplateXlsx();
+      const blob = new Blob([zip], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href     = url;
+      link.download = 'Mau_Import_Y_Tuong.xlsx';
+      link.click();
+      URL.revokeObjectURL(url);
+      message.success('Đã tải xuống file mẫu!');
+    } catch {
+      message.error('Không tạo được file mẫu!');
+    }
   };
 
   const normalizeHeaders = (headers: string[]): string[] => {
