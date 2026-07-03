@@ -217,7 +217,9 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     setDetailOpen(true); setDetailLoading(true);
     try {
       const res = await getTaiLieu(id);
-      setDetail(safeItem<ITaiLieu>(res));
+      const normalized = normalizeTL(safeItem<any>(res));
+      setDetail(normalized);
+      setItems(prev => prev.map(it => it.id === id ? { ...it, luotXem: (it.luotXem ?? 0) + 1 } : it));
       const vRes = await searchPhienBans({ taiLieuId: id, pageNumber: 1, pageSize: 20, orderBy: ['soPhienBan desc'] });
       setVersions(safeList<any>(vRes));
       const dkRes = await searchTaiLieuDinhKems({ taiLieuId: id, pageNumber: 1, pageSize: 50 });
