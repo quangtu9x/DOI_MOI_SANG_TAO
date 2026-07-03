@@ -274,7 +274,7 @@ export const ImportHangLoatForm = ({ onBack, onSubmit }: ImportHangLoatFormProps
   const downloadTemplate = () => {
     try {
       const zip  = buildTemplateXlsx();
-      const blob = new Blob([zip], {
+      const blob = new Blob([zip as BlobPart], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       const url  = URL.createObjectURL(blob);
