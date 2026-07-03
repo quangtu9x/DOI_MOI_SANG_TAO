@@ -45,9 +45,10 @@ export const YTuongSection: React.FC = () => {
       try {
         const response = await requestGET(`ideas?userId=${currentUser.id}`);
         if (response?.status === 200) {
-          const items: IYTuong[] = response.data?.data ?? response.data ?? [];
+          const rd = response.data as any;
+          const items: IYTuong[] = rd?.data ?? rd ?? [];
           setData(items);
-          setTotalCount(response.data?.totalCount ?? items.length);
+          setTotalCount(rd?.totalCount ?? items.length);
         } else {
           setData([]);
           setTotalCount(0);

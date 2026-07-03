@@ -4,7 +4,7 @@
 // Khớp 1-1 với Postman Collection "TD.QLNVKH — Knowledge Hub API v2"
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile } from '@/utils/baseAPI';
+import { requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile, requestDownloadFile } from '@/utils/baseAPI';
 import type { IAttachmentUploadResult } from '@/models/idea-portal';
 import type {
   IPaginationResponse,
@@ -51,6 +51,15 @@ import type {
   IUpdateBinhLuanRequest,
   IThichRequest,
   INewsFeedItem,
+  IKTDashboardStats,
+  IKTLeaderboardTaiLieu,
+  IKTLeaderboardChuyenGia,
+  IKTLeaderboardCongDong,
+  IKTLeaderboardNguoiDung,
+  IKTBaoCaoFilter,
+  IKTBaoCaoTongHop,
+  IKTBaoCaoDongGop,
+  IKTBaoCaoTaiLieu,
 } from '@/app/models/knowledge-hub';
 
 // HOST_API đã bao gồm /api/v1/ — KHÔNG thêm prefix v1/ vào các endpoint
@@ -135,34 +144,32 @@ export const goiYTuKhoa = (prefix: string) =>
   requestGET<string[]>(`TimKiems/goi-y?prefix=${encodeURIComponent(prefix)}`);
 
 // ── 3. Chuyên Gia ─────────────────────────────────────────────────────────────
-// Route KTChuyenGias (Knowledge Hub) — tách khỏi ChuyenGias của module NguonLuc
-// để tránh trùng route giữa 2 controller cùng tên.
 
 /** Tìm kiếm chuyên gia */
 export const searchChuyenGias = (req: ISearchChuyenGiaRequest) =>
-  requestPOST<IPaginationResponse<IChuyenGia[]>>(`KTChuyenGias/search`, req);
+  requestPOST<IPaginationResponse<IChuyenGia[]>>(`qltt/ChuyenGias/search`, req);
 
 /** Hồ sơ chuyên gia */
 export const getChuyenGia = (id: string) =>
-  requestGET<IChuyenGia>(`KTChuyenGias/${id}`);
+  requestGET<IChuyenGia>(`qltt/ChuyenGias/${id}`);
 
 /** Tài liệu của chuyên gia */
 export const getTaiLieuChuyenGia = (id: string, pageNumber = 1, pageSize = 10) =>
   requestGET<IPaginationResponse<ITaiLieu[]>>(
-    `KTChuyenGias/${id}/tai-lieu?pageNumber=${pageNumber}&pageSize=${pageSize}`
+    `qltt/ChuyenGias/${id}/tai-lieu?pageNumber=${pageNumber}&pageSize=${pageSize}`
   );
 
 /** Tạo hồ sơ chuyên gia mới (Admin) */
 export const createChuyenGia = (req: ICreateChuyenGiaRequest) =>
-  requestPOST<IResult<string>>(`KTChuyenGias`, req);
+  requestPOST<IResult<string>>(`qltt/ChuyenGias`, req);
 
 /** Cập nhật hồ sơ chuyên gia (Admin) */
 export const updateChuyenGia = (id: string, req: IUpdateChuyenGiaRequest) =>
-  requestPUT<IResult<boolean>>(`KTChuyenGias/${id}`, req);
+  requestPUT<IResult<boolean>>(`qltt/ChuyenGias/${id}`, req);
 
 /** Xóa chuyên gia (Admin) */
 export const deleteChuyenGia = (id: string) =>
-  requestDELETE<IResult<boolean>>(`KTChuyenGias/${id}`);
+  requestDELETE<IResult<boolean>>(`qltt/ChuyenGias/${id}`);
 
 // ── 4. Cộng Đồng ──────────────────────────────────────────────────────────────
 
@@ -348,3 +355,72 @@ export const uploadTaiLieuFile = async (
   }
   return null;
 };
+
+// ── 14. Analytics (Phase 2A) ──────────────────────────────────────────────────
+
+/** Dashboard tổng hợp — trả dữ liệu theo vai trò người dùng */
+export const getKTDashboard = (nam?: number, linhVucKHCNId?: string) => {
+  const params = new URLSearchParams();
+  if (nam !== undefined) params.append('nam', String(nam));
+  if (linhVucKHCNId) params.append('linhVucKHCNId', linhVucKHCNId);
+  const qs = params.toString();
+  return requestGET<IResult<IKTDashboardStats>>(`KTAnalytics/dashboard${qs ? `?${qs}` : ''}`);
+};
+
+/** Top-N tài liệu nổi bật theo lượt xem */
+export const getKTLeaderboardTaiLieu = (top = 10) =>
+  requestGET<IResult<IKTLeaderboardTaiLieu[]>>(`KTAnalytics/leaderboard/tai-lieu?top=${top}`);
+
+/** Top-N chuyên gia theo điểm đánh giá trung bình */
+export const getKTLeaderboardChuyenGia = (top = 10) =>
+  requestGET<IResult<IKTLeaderboardChuyenGia[]>>(`KTAnalytics/leaderboard/chuyen-gia?top=${top}`);
+
+/** Top-N cộng đồng thực hành theo số thành viên */
+export const getKTLeaderboardCongDong = (top = 10) =>
+  requestGET<IResult<IKTLeaderboardCongDong[]>>(`KTAnalytics/leaderboard/cong-dong?top=${top}`);
+
+/** Top-N người đóng góp theo số tài liệu đã xuất bản */
+export const getKTLeaderboardNguoiDung = (top = 10) =>
+  requestGET<IResult<IKTLeaderboardNguoiDung[]>>(`KTAnalytics/leaderboard/nguoi-dung?top=${top}`);
+
+// ── 15. BaoCao (Phase 3B) ─────────────────────────────────────────────────────
+
+const buildBaoCaoQS = (
+  filter: IKTBaoCaoFilter & { pageNumber?: number; pageSize?: number },
+): string => {
+  const p = new URLSearchParams();
+  if (filter.tuNgay)        p.append('tuNgay',        filter.tuNgay);
+  if (filter.denNgay)       p.append('denNgay',       filter.denNgay);
+  if (filter.linhVucKHCNId) p.append('linhVucKHCNId', filter.linhVucKHCNId);
+  if (filter.loaiTaiLieu)   p.append('loaiTaiLieu',   filter.loaiTaiLieu);
+  if (filter.trangThai)     p.append('trangThai',     filter.trangThai);
+  if (filter.donViCode)     p.append('donViCode',     filter.donViCode);
+  if (filter.pageNumber)    p.append('pageNumber',    String(filter.pageNumber));
+  if (filter.pageSize)      p.append('pageSize',      String(filter.pageSize));
+  const qs = p.toString();
+  return qs ? `?${qs}` : '';
+};
+
+/** Báo cáo tổng hợp KPI kho tri thức */
+export const getKTBaoCaoTongHop = (filter: IKTBaoCaoFilter) =>
+  requestGET<IResult<IKTBaoCaoTongHop>>(`KTBaoCao/tong-hop${buildBaoCaoQS(filter)}`);
+
+/** Báo cáo đóng góp người dùng */
+export const getKTBaoCaoDongGop = (filter: IKTBaoCaoFilter) =>
+  requestGET<IResult<IKTBaoCaoDongGop[]>>(`KTBaoCao/dong-gop${buildBaoCaoQS(filter)}`);
+
+/** Danh sách tài liệu có lọc và phân trang */
+export const getKTBaoCaoTaiLieu = (
+  filter: IKTBaoCaoFilter & { pageNumber?: number; pageSize?: number },
+) =>
+  requestGET<IResult<IPaginationResponse<IKTBaoCaoTaiLieu[]>>>(
+    `KTBaoCao/tai-lieu${buildBaoCaoQS(filter)}`,
+  );
+
+/** Xuất Excel: báo cáo tổng hợp KPI */
+export const exportKTBaoCaoTongHopExcel = (filter: IKTBaoCaoFilter) =>
+  requestDownloadFile('KTBaoCao/export-tong-hop', filter);
+
+/** Xuất Excel: báo cáo đóng góp người dùng */
+export const exportKTBaoCaoDongGopExcel = (filter: IKTBaoCaoFilter) =>
+  requestDownloadFile('KTBaoCao/export-dong-gop', filter);

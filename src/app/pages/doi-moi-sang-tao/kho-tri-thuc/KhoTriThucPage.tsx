@@ -2,17 +2,33 @@ import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
+import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 
-const NAV_ITEMS = [
-  { to: 'thu-vien',   label: 'Thư viện tài liệu',   icon: 'fa-books' },
-  { to: 'chuyen-gia', label: 'Danh bạ chuyên gia',   icon: 'fa-user-tie' },
-  { to: 'cong-dong',  label: 'Cộng đồng',             icon: 'fa-users' },
-  { to: 'news-feed',  label: 'Bảng tin',               icon: 'fa-newspaper' },
-  { to: 'tim-kiem',   label: 'Tìm kiếm',              icon: 'fa-magnifying-glass' },
+const BASE_NAV_ITEMS = [
+  { to: 'analytics',  label: 'Thống kê',              icon: 'fa-chart-column',      reviewerOnly: false },
+  { to: 'thu-vien',   label: 'Thư viện tài liệu',     icon: 'fa-books',             reviewerOnly: false },
+  { to: 'chuyen-gia', label: 'Danh bạ chuyên gia',    icon: 'fa-user-tie',          reviewerOnly: false },
+  { to: 'cong-dong',  label: 'Cộng đồng',              icon: 'fa-users',             reviewerOnly: false },
+  { to: 'news-feed',  label: 'News Feed',               icon: 'fa-newspaper',         reviewerOnly: false },
+  { to: 'tim-kiem',   label: 'Tìm kiếm',               icon: 'fa-magnifying-glass',  reviewerOnly: false },
+  { to: 'bao-cao',    label: 'Báo cáo',                icon: 'fa-file-chart-column', reviewerOnly: true  },
 ];
+
+const NAV_ITEM_DESC: Record<string, string> = {
+  analytics:  'Dashboard tổng hợp, KPI và bảng xếp hạng',
+  'thu-vien': 'Tìm kiếm, xem và quản lý tài liệu nội bộ',
+  'chuyen-gia': 'Tìm chuyên gia, gửi yêu cầu tư vấn',
+  'cong-dong':  'Tham gia thảo luận, chia sẻ kinh nghiệm',
+  'news-feed':  'Nội dung mới nhất được cá nhân hóa',
+  'tim-kiem':   'Tìm kiếm xuyên suốt tài liệu và chuyên gia',
+  'bao-cao':    'Báo cáo KPI, đóng góp và xuất Excel/PDF',
+};
 
 export const KhoTriThucPage: React.FC = () => {
   const { pathname } = useLocation();
+  const { isReviewer } = useDMSTRole();
+
+  const NAV_ITEMS = BASE_NAV_ITEMS.filter(n => !n.reviewerOnly || isReviewer);
   const isShell = !NAV_ITEMS.some(n => pathname.includes(n.to));
 
   if (!isShell) {
@@ -21,7 +37,7 @@ export const KhoTriThucPage: React.FC = () => {
       <div>
         {/* Sub-page tab nav */}
         <div className="d-flex border-bottom mb-1" style={{ background: 'var(--kt-card-bg, #fff)' }}>
-          <div className="container-fluid px-5 py-0 d-flex gap-1">
+          <div className="container-fluid px-5 py-0 d-flex gap-1 flex-wrap">
             {NAV_ITEMS.map(item => (
               <NavLink
                 key={item.to}
@@ -72,13 +88,7 @@ export const KhoTriThucPage: React.FC = () => {
                       </div>
                     </div>
                     <h6 className="fw-bold text-gray-800 mb-2">{item.label}</h6>
-                    <p className="text-muted fs-7 mb-0">
-                      {item.to === 'thu-vien'   && 'Tìm kiếm, xem và quản lý tài liệu nội bộ'}
-                      {item.to === 'chuyen-gia' && 'Tìm chuyên gia, gửi yêu cầu tư vấn'}
-                      {item.to === 'cong-dong'  && 'Tham gia thảo luận, chia sẻ kinh nghiệm'}
-                      {item.to === 'news-feed'  && 'Nội dung mới nhất được cá nhân hóa'}
-                      {item.to === 'tim-kiem'   && 'Tìm kiếm xuyên suốt tài liệu và chuyên gia'}
-                    </p>
+                    <p className="text-muted fs-7 mb-0">{NAV_ITEM_DESC[item.to] ?? ''}</p>
                   </div>
                 </div>
               </NavLink>

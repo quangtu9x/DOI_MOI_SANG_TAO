@@ -3,7 +3,7 @@ import { Input, Button, Tag, Spin, Empty, Avatar, Tabs, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { timKiem, searchChuyenGias } from '@/app/services/khoTriThucApi';
+import { timKiem, searchChuyenGias, goiYTuKhoa } from '@/app/services/khoTriThucApi';
 import type { ITaiLieuSearchResult, IChuyenGia } from '@/app/models/knowledge-hub';
 import { LoaiTaiLieu, TrangThaiTaiLieu } from '@/app/models/knowledge-hub';
 
@@ -34,6 +34,8 @@ const TRANG_THAI_COLOR: Record<TrangThaiTaiLieu, string> = {
   [TrangThaiTaiLieu.DaXuatBan]:   '#52c41a',
   [TrangThaiTaiLieu.TuChoi]:      '#ff4d4f',
 };
+
+const FALLBACK_SUGGESTIONS = ['đổi mới', 'quy trình', 'LEAN', 'chuyển đổi số', 'tiết kiệm', 'nâng cao chất lượng'];
 
 const AVATAR_COLORS = ['#1677ff','#52c41a','#fa8c16','#eb2f96','#722ed1','#13c2c2'];
 const getAvatarColor = (name: string) => AVATAR_COLORS[(name ?? '').charCodeAt(0) % AVATAR_COLORS.length];
@@ -74,6 +76,7 @@ export const TimKiemPage: React.FC = () => {
   const [activeQuery, setActiveQuery] = useState('');
   const [loading, setLoading]         = useState(false);
   const [activeTab, setActiveTab]     = useState('tai-lieu');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // Results
   const [tailieux, setTailieux]       = useState<ITaiLieuSearchResult[]>([]);
@@ -81,7 +84,25 @@ export const TimKiemPage: React.FC = () => {
   const [chuyenGias, setChuyenGias]   = useState<IChuyenGia[]>([]);
   const [chuyenGiasTotal, setChuyenGiasTotal] = useState(0);
 
-  const inputRef = useRef<any>(null);
+  const inputRef      = useRef<any>(null);
+  const suggestTimer  = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    clearTimeout(suggestTimer.current);
+    if (val.trim().length >= 1) {
+      suggestTimer.current = setTimeout(async () => {
+        try {
+          const res = await goiYTuKhoa(val.trim());
+          const list: string[] = Array.isArray(res) ? res : ((res as any)?.data ?? []);
+          setSuggestions(list.slice(0, 6));
+        } catch { /* ignore */ }
+      }, 300);
+    } else {
+      setSuggestions([]);
+    }
+  };
 
   const handleSearch = useCallback(async (kw: string) => {
     const q = kw.trim();
@@ -133,7 +154,7 @@ export const TimKiemPage: React.FC = () => {
               ref={inputRef}
               size="large"
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={handleQueryChange}
               placeholder="Nhập từ khóa tìm kiếm..."
               prefix={<i className="fa-regular fa-search text-muted me-1" />}
               onPressEnter={() => handleSearch(query)}
@@ -154,7 +175,7 @@ export const TimKiemPage: React.FC = () => {
           {/* Suggested tags */}
           {!hasSearched && (
             <div className="mt-4 d-flex flex-wrap gap-2 justify-content-center">
-              {['đổi mới', 'quy trình', 'LEAN', 'chuyển đổi số', 'tiết kiệm', 'nâng cao chất lượng'].map(t => (
+              {(query.trim() && suggestions.length > 0 ? suggestions : FALLBACK_SUGGESTIONS).map(t => (
                 <Button key={t} size="small" type="default" style={{ borderRadius: 20 }}
                   onClick={() => { setQuery(t); handleSearch(t); }}>
                   {t}

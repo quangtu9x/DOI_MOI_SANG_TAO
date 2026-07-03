@@ -159,9 +159,9 @@ export const ProfilePage = () => {
                                     { id: "y-tuong", label: "Ý tưởng của tôi", icon: Lightbulb },
                                     // "Nhiệm vụ NCKH", "Sáng kiến", "Dự án CNTT" — ẩn, giai đoạn sau
                                 ].map((item) => {
-                                    const isVisible = !item.purpose
+                                    const isVisible = !(item as any).purpose
                                         || currentUser?.type !== UserType.FromPortal
-                                        || currentUser?.purposes?.includes(item.purpose)
+                                        || currentUser?.purposes?.includes((item as any).purpose)
 
                                     if (!isVisible) return null
 
@@ -325,15 +325,15 @@ export const ProfilePage = () => {
                                 <YTuongSection />
                             )}
 
-                            {activeSection === "initiative" && (
+                            {(activeSection as string) === "initiative" && (
                                 <InitiativeSection />
                             )}
 
-                            {activeSection === "it-project" && (
+                            {(activeSection as string) === "it-project" && (
                                 <ITProjectSection />
                             )}
 
-                            {activeSection === "research" && (
+                            {(activeSection as string) === "research" && (
                                 <ResearchSection />
                             )}
                         </div>

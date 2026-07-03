@@ -114,6 +114,12 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
   const [nxLoading, setNxLoading] = useState(false);
   const [nxForm] = Form.useForm();
 
+  // ── Từ chối tư vấn (modal nhập lý do)
+  const [tuChoiModalOpen, setTuChoiModalOpen] = useState(false);
+  const [tuChoiTargetId, setTuChoiTargetId]   = useState<string | null>(null);
+  const [tuChoiLoading, setTuChoiLoading]     = useState(false);
+  const [tuChoiForm] = Form.useForm();
+
   // ── Load list
   const load = useCallback(async (kw = keyword, pg = page) => {
     setLoading(true);
@@ -141,15 +147,14 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
       const cgRes = await getChuyenGia(id);
       setProfile(safeItem<IChuyenGia>(cgRes));
 
-      // These endpoints don't exist yet in BE — will return empty gracefully
-      const [tl, nx, tv] = await Promise.allSettled([
+      const [tl, nx, tv] = await Promise.all([
         getTaiLieuChuyenGia(id, 1, 10),
         searchNhanXets({ chuyenGiaId: id, pageNumber: 1, pageSize: 20 }),
         searchTuVans({ chuyenGiaId: id, pageNumber: 1, pageSize: 20 }),
       ]);
-      setProfDocs(tl.status === 'fulfilled' ? safeList<ITaiLieu>(tl.value) : []);
-      setProfReviews(nx.status === 'fulfilled' ? safeList<INhanXetChuyenGia>(nx.value) : []);
-      setTuVans(tv.status === 'fulfilled' ? safeList<IYeuCauTuVan>(tv.value) : []);
+      setProfDocs(safeList<ITaiLieu>(tl));
+      setProfReviews(safeList<INhanXetChuyenGia>(nx));
+      setTuVans(safeList<IYeuCauTuVan>(tv));
     } catch { message.error('Không tải được hồ sơ chuyên gia'); }
     finally { setProfLoading(false); }
   };
@@ -228,9 +233,24 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
     try { await xacNhanTuVan(id); message.success('Đã xác nhận'); openProfile(profile!.id); }
     catch { message.error('Lỗi'); }
   };
-  const handleTuChoiTV = async (id: string) => {
-    try { await tuChoiTuVan({ id, lyDo: 'Ngoài phạm vi chuyên môn' }); message.success('Đã từ chối'); openProfile(profile!.id); }
-    catch { message.error('Lỗi'); }
+  const handleTuChoiTV = (id: string) => {
+    setTuChoiTargetId(id);
+    tuChoiForm.resetFields();
+    setTuChoiModalOpen(true);
+  };
+  const submitTuChoi = async () => {
+    try {
+      const { lyDo } = await tuChoiForm.validateFields();
+      setTuChoiLoading(true);
+      await tuChoiTuVan({ id: tuChoiTargetId!, lyDo });
+      message.success('Đã từ chối yêu cầu tư vấn');
+      setTuChoiModalOpen(false);
+      openProfile(profile!.id);
+    } catch (e: any) {
+      if (!e?.errorFields) message.error('Lỗi khi từ chối');
+    } finally {
+      setTuChoiLoading(false);
+    }
   };
   const handleHoanTat = async (id: string) => {
     try { await hoanTatTuVan(id); message.success('Đã hoàn tất'); openProfile(profile!.id); }
@@ -263,8 +283,8 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
         <div className="card-body">
           {/* Header */}
           <div className="d-flex align-items-center mb-4">
-            {cg.hinhDaiDien ? (
-              <img src={cg.hinhDaiDien} alt={cg.hoTen} className="rounded-circle"
+            {(cg as any).hinhDaiDien ? (
+              <img src={(cg as any).hinhDaiDien} alt={cg.hoTen} className="rounded-circle"
                 style={{ width: 56, height: 56, objectFit: 'cover' }} />
             ) : (
               <Avatar size={56} style={{ backgroundColor: getAvatarColor(cg.hoTen), fontSize: 22, flexShrink: 0 }}>
@@ -396,8 +416,8 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
         title={profile && (
           <div className="d-flex align-items-center justify-content-between pe-8">
             <div className="d-flex align-items-center gap-3">
-              {profile.hinhDaiDien ? (
-                <img src={profile.hinhDaiDien} alt={profile.hoTen} className="rounded-circle"
+              {(profile as any).hinhDaiDien ? (
+                <img src={(profile as any).hinhDaiDien} alt={profile.hoTen} className="rounded-circle"
                   style={{ width: 48, height: 48, objectFit: 'cover' }} />
               ) : (
                 <Avatar size={48} style={{ backgroundColor: getAvatarColor(profile.hoTen ?? ''), fontSize: 20 }}>
@@ -685,6 +705,32 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
           <Form.Item name="noiDung" label="Nhận xét"
             rules={[{ required: true, message: 'Nhập nội dung nhận xét' }]}>
             <TextArea rows={4} placeholder="Chia sẻ trải nghiệm của bạn..." maxLength={2000} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* ── Từ chối tư vấn Modal ──────────────────────────────────────────────── */}
+      <Modal
+        open={tuChoiModalOpen}
+        onCancel={() => setTuChoiModalOpen(false)}
+        title={<span><i className="fa-regular fa-circle-xmark me-2 text-danger" />Từ chối yêu cầu tư vấn</span>}
+        onOk={submitTuChoi}
+        okText="Xác nhận từ chối"
+        cancelText="Hủy"
+        confirmLoading={tuChoiLoading}
+        okButtonProps={{ danger: true }}
+        width={480}
+      >
+        <Form form={tuChoiForm} layout="vertical" className="mt-4">
+          <Form.Item
+            name="lyDo"
+            label="Lý do từ chối"
+            rules={[
+              { required: true, message: 'Vui lòng nhập lý do từ chối' },
+              { max: 1024, message: 'Tối đa 1024 ký tự' },
+            ]}
+          >
+            <TextArea rows={4} placeholder="Nhập lý do từ chối..." maxLength={1024} showCount />
           </Form.Item>
         </Form>
       </Modal>
