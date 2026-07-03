@@ -3,6 +3,7 @@ import {
     AppConfigPage,
     CategoryGroupPage,
     CategoryPage,
+    CauHinhTruongYTuongPage,
     ChuDauTuPage,
     ChuongTrinhNVKHPage,
     ChuyenNganhPage,
@@ -138,6 +139,10 @@ export const CatalogRoutes = () => {
                 <Route
                     path="thanh-phan-ho-so"
                     element={<ThanhPhanHoSoPage />}
+                />
+                <Route
+                    path="cau-hinh-truong-y-tuong"
+                    element={<CauHinhTruongYTuongPage />}
                 />
                 <Route path="*" element={<Navigate to="/error/404/system" replace />} />
             </Route>

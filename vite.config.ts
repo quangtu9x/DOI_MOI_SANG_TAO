@@ -25,6 +25,7 @@ export default defineConfig({
     host: true,
     port: 3011,
     strictPort: true,
+    allowedHosts: ['dmst.hanhchinhcong.net'],
     watch: {
       ignored: ['**/src/assets/@fortawesome/**'],
     },

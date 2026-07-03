@@ -44,7 +44,7 @@ const registrationSchema = [
       .required('Xác nhận mật khẩu là bắt buộc')
       .oneOf([Yup.ref('password')], 'Mật khẩu không khớp'),
     organizationUnitId: Yup.string().when('purposes', {
-      is: (purposes: string[]) => purposes?.includes('vondan'),
+      is: (purposes: UserPurpose[]) => purposes?.includes(UserPurpose.DuAnCNTT),
       then: (schema) => schema.required('Đơn vị là bắt buộc'),
       otherwise: (schema) => schema.optional(),
     }),
@@ -140,7 +140,7 @@ export function Registration() {
   };
 
   return (
-    <div className='w-lg-900px px-20'>
+    <div className='w-100'>
       <div className='text-center mb-11'>
         <h1 className='text-gray-900 fw-bolder mb-3'>ĐĂNG KÝ TÀI KHOẢN</h1>
       </div>
@@ -150,9 +150,9 @@ export function Registration() {
         id='kt_modal_create_app_stepper'
       >
         {/* begin::Aside*/}
-        <div className='d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px'>
+        <div className='d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-250px'>
           {/* begin::Nav*/}
-          <div className='stepper-nav ps-lg-10'>
+          <div className='stepper-nav'>
             {/* begin::Step 1*/}
             <div className={clsx('stepper-item', { current: currentStep === 0 })} data-kt-stepper-element='nav'>
               <div className='stepper-wrapper'>
@@ -302,6 +302,18 @@ export function Registration() {
 
                 <div className='fv-row'>
                   <div className='d-flex flex-column'>
+                    <label className='form-check form-check-custom form-check-solid mb-10'>
+                      <input
+                        className='form-check-input'
+                        type='checkbox'
+                        checked={formik.values.purposes.includes(UserPurpose.DoiMoiSangTao)}
+                        onChange={() => handlePurposeChange(UserPurpose.DoiMoiSangTao)}
+                      />
+                      <span className='form-check-label fw-semibold text-gray-700 fs-6'>
+                        Tham gia Đổi mới sáng tạo (gửi ý tưởng, sáng kiến, kho tri thức)
+                      </span>
+                    </label>
+
                     <label className='form-check form-check-custom form-check-solid mb-10'>
                       <input
                         className='form-check-input'

@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { to: 'thu-vien',   label: 'Thư viện tài liệu',   icon: 'fa-books' },
   { to: 'chuyen-gia', label: 'Danh bạ chuyên gia',   icon: 'fa-user-tie' },
   { to: 'cong-dong',  label: 'Cộng đồng',             icon: 'fa-users' },
-  { to: 'news-feed',  label: 'News Feed',              icon: 'fa-newspaper' },
+  { to: 'news-feed',  label: 'Bảng tin',               icon: 'fa-newspaper' },
   { to: 'tim-kiem',   label: 'Tìm kiếm',              icon: 'fa-magnifying-glass' },
 ];
 

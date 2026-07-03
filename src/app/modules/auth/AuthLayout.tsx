@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { toAbsoluteUrl } from '../../../_metronic/helpers'
 
 const VNA_BLUE = '#003087'
@@ -25,6 +25,10 @@ const FEATURES = [
 ]
 
 const AuthLayout = () => {
+  // Trang đăng ký (stepper 2 cột) cần panel form rộng hơn trang đăng nhập
+  const { pathname } = useLocation()
+  const isWide = pathname.includes('registration')
+
   useEffect(() => {
     const root = document.getElementById('root')
     if (root) root.style.height = '100%'
@@ -80,6 +84,9 @@ const AuthLayout = () => {
             flex: none;
             padding: 48px 64px;
           }
+          .vna-form-panel--wide {
+            width: 58%;
+          }
           .vna-brand-panel {
             display: flex;
             flex-direction: column;
@@ -117,14 +124,14 @@ const AuthLayout = () => {
         </div>
 
         {/* ── Form panel ── */}
-        <div className='vna-form-panel'>
+        <div className={`vna-form-panel${isWide ? ' vna-form-panel--wide' : ''}`}>
           {/* Top accent stripe */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, height: 4,
             background: `linear-gradient(90deg, ${VNA_BLUE} 0%, ${VNA_GOLD} 100%)`,
           }} />
 
-          <div style={{ width: '100%', maxWidth: 460 }}>
+          <div style={{ width: '100%', maxWidth: isWide ? 780 : 460 }}>
             <Outlet />
           </div>
 

@@ -21,6 +21,9 @@ import type {
   ITaiLieuPhienBan,
   ISearchPhienBanRequest,
   ICreatePhienBanRequest,
+  ITaiLieuDinhKem,
+  ISearchDinhKemRequest,
+  ICreateDinhKemRequest,
   IChuyenGia,
   ICreateChuyenGiaRequest,
   IUpdateChuyenGiaRequest,
@@ -101,6 +104,24 @@ export const getRankingTaiLieus = (pageNumber = 1, pageSize = 10, linhVucKHCNId?
 export const deleteTaiLieu = (id: string) =>
   requestDELETE<IResult<boolean>>(`TaiLieus/${id}`);
 
+// ── 1b. Tài Liệu Đính Kèm (nhiều file/link cho một tài liệu) ─────────────────
+
+/** Danh sách đính kèm của một tài liệu */
+export const searchTaiLieuDinhKems = (req: ISearchDinhKemRequest) =>
+  requestPOST<IPaginationResponse<ITaiLieuDinhKem[]>>(`TaiLieuDinhKems/search`, req);
+
+/** Thêm file/liên kết đính kèm */
+export const createTaiLieuDinhKem = (req: ICreateDinhKemRequest) =>
+  requestPOST<IResult<string>>(`TaiLieuDinhKems`, req);
+
+/** Xóa đính kèm */
+export const deleteTaiLieuDinhKem = (id: string) =>
+  requestDELETE<IResult<boolean>>(`TaiLieuDinhKems/${id}`);
+
+/** URL tải xuống file đính kèm */
+export const getTaiLieuDinhKemDownloadUrl = (id: string): string =>
+  `${(window as any).__BASE_API__ ?? '/api'}/api/v1/TaiLieuDinhKems/${id}/download`;
+
 // ── 2. Tìm Kiếm Full-text ─────────────────────────────────────────────────────
 
 /** Tìm kiếm toàn văn */
@@ -114,32 +135,34 @@ export const goiYTuKhoa = (prefix: string) =>
   requestGET<string[]>(`TimKiems/goi-y?prefix=${encodeURIComponent(prefix)}`);
 
 // ── 3. Chuyên Gia ─────────────────────────────────────────────────────────────
+// Route KTChuyenGias (Knowledge Hub) — tách khỏi ChuyenGias của module NguonLuc
+// để tránh trùng route giữa 2 controller cùng tên.
 
 /** Tìm kiếm chuyên gia */
 export const searchChuyenGias = (req: ISearchChuyenGiaRequest) =>
-  requestPOST<IPaginationResponse<IChuyenGia[]>>(`ChuyenGias/search`, req);
+  requestPOST<IPaginationResponse<IChuyenGia[]>>(`KTChuyenGias/search`, req);
 
 /** Hồ sơ chuyên gia */
 export const getChuyenGia = (id: string) =>
-  requestGET<IChuyenGia>(`ChuyenGias/${id}`);
+  requestGET<IChuyenGia>(`KTChuyenGias/${id}`);
 
 /** Tài liệu của chuyên gia */
 export const getTaiLieuChuyenGia = (id: string, pageNumber = 1, pageSize = 10) =>
   requestGET<IPaginationResponse<ITaiLieu[]>>(
-    `ChuyenGias/${id}/tai-lieu?pageNumber=${pageNumber}&pageSize=${pageSize}`
+    `KTChuyenGias/${id}/tai-lieu?pageNumber=${pageNumber}&pageSize=${pageSize}`
   );
 
 /** Tạo hồ sơ chuyên gia mới (Admin) */
 export const createChuyenGia = (req: ICreateChuyenGiaRequest) =>
-  requestPOST<IResult<string>>(`ChuyenGias`, req);
+  requestPOST<IResult<string>>(`KTChuyenGias`, req);
 
 /** Cập nhật hồ sơ chuyên gia (Admin) */
 export const updateChuyenGia = (id: string, req: IUpdateChuyenGiaRequest) =>
-  requestPUT<IResult<boolean>>(`ChuyenGias/${id}`, req);
+  requestPUT<IResult<boolean>>(`KTChuyenGias/${id}`, req);
 
 /** Xóa chuyên gia (Admin) */
 export const deleteChuyenGia = (id: string) =>
-  requestDELETE<IResult<boolean>>(`ChuyenGias/${id}`);
+  requestDELETE<IResult<boolean>>(`KTChuyenGias/${id}`);
 
 // ── 4. Cộng Đồng ──────────────────────────────────────────────────────────────
 

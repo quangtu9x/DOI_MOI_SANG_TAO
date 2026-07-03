@@ -26,6 +26,14 @@ export enum LoaiTaiLieu {
   BaiHocKinhNghiem = 6,
 }
 
+/** Loại nguồn tham chiếu của tài liệu (bài học kinh nghiệm gắn với dự án/sáng kiến) */
+export enum LoaiNguonThamChieu {
+  DuAn     = 1,
+  SangKien = 2,
+  YTuong   = 3,
+  NhiemVu  = 4,
+}
+
 /** Loại bài viết trong cộng đồng */
 export enum LoaiBaiViet {
   ThaoCuan = 1,
@@ -92,6 +100,9 @@ export interface ITaiLieu {
   trangThai:        TrangThaiTaiLieu;
   linhVucKHCNId?:   string;
   donViId?:         string;
+  loaiNguonThamChieu?: LoaiNguonThamChieu | null;
+  nguonThamChieuId?:   string | null;
+  tenNguonThamChieu?:  string | null;
   urlNgoai?:        string;
   duongDanLuuTru?:  string;
   tenGoc?:          string;
@@ -113,6 +124,8 @@ export interface ISearchTaiLieuRequest extends IPageRequest {
   tacGiaId?:      string | null;
   linhVucKHCNId?: string | null;
   donViId?:       string | null;
+  loaiNguonThamChieu?: LoaiNguonThamChieu | null;
+  nguonThamChieuId?:   string | null;
   tagIds?:        string[];
 }
 
@@ -127,11 +140,16 @@ export interface ICreateTaiLieuRequest {
   tenGoc?:         string | null;
   kichThuocBytes?: number | null;
   mimeType?:       string | null;
+  loaiNguonThamChieu?: LoaiNguonThamChieu | null;
+  nguonThamChieuId?:   string | null;
+  tenNguonThamChieu?:  string | null;
   tags?:           string[];
 }
 
 export interface IUpdateTaiLieuRequest extends ICreateTaiLieuRequest {
   id: string;
+  /** true → BE cập nhật lại nguồn tham chiếu theo 3 field loai/nguon/ten (cho phép xóa bằng null) */
+  capNhatNguonThamChieu?: boolean;
 }
 
 export interface ITuChoiRequest {
@@ -165,6 +183,36 @@ export interface ICreatePhienBanRequest {
   tenGoc?:         string;
   kichThuocBytes?: number;
   mimeType?:       string;
+}
+
+// ── Tài Liệu Đính Kèm (nhiều file/link cho một tài liệu) ─────────────────────
+
+export interface ITaiLieuDinhKem {
+  id:              string;
+  taiLieuId:       string;
+  thongTinFile?: {
+    duongDanLuuTru: string;
+    tenGoc:         string;
+    kichThuocBytes: number;
+    mimeType:       string;
+  } | null;
+  urlNgoai?:       string | null;
+  moTa?:           string | null;
+  createdOn?:      string;
+}
+
+export interface ISearchDinhKemRequest extends IPageRequest {
+  taiLieuId: string;
+}
+
+export interface ICreateDinhKemRequest {
+  taiLieuId:       string;
+  duongDanLuuTru?: string | null;
+  tenGoc?:         string | null;
+  kichThuocBytes?: number | null;
+  mimeType?:       string | null;
+  urlNgoai?:       string | null;
+  moTa?:           string | null;
 }
 
 // ── Tìm Kiếm Full-text ────────────────────────────────────────────────────────

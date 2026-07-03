@@ -50,9 +50,10 @@ export enum UserType {
 }
 
 export enum UserPurpose {
-  NhiemVuKhoaHoc = 1, 
-  SangKienKhoaHoc = 2, 
-  DuAnCNTT = 3, 
+  NhiemVuKhoaHoc = 1,
+  SangKienKhoaHoc = 2,
+  DuAnCNTT = 3,
+  DoiMoiSangTao = 4,
 }
 
 export interface IUserDto {

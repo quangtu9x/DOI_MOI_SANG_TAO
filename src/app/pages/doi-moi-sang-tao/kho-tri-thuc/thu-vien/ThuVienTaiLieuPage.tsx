@@ -20,12 +20,17 @@ import {
   getRankingTaiLieus,
   searchPhienBans,
   uploadTaiLieuFile,
+  searchTaiLieuDinhKems,
+  createTaiLieuDinhKem,
+  deleteTaiLieuDinhKem,
+  getTaiLieuDinhKemDownloadUrl,
 } from '@/app/services/khoTriThucApi';
 import type {
   ITaiLieu,
   ISearchTaiLieuRequest,
+  ITaiLieuDinhKem,
 } from '@/app/models/knowledge-hub';
-import { TrangThaiTaiLieu, LoaiTaiLieu } from '@/app/models/knowledge-hub';
+import { TrangThaiTaiLieu, LoaiTaiLieu, LoaiNguonThamChieu } from '@/app/models/knowledge-hub';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -78,6 +83,13 @@ const TRANG_THAI_COLOR: Record<TrangThaiTaiLieu, string> = {
   [TrangThaiTaiLieu.ChoXetDuyet]: 'processing',
   [TrangThaiTaiLieu.DaXuatBan]:   'success',
   [TrangThaiTaiLieu.TuChoi]:      'error',
+};
+
+const NGUON_LABEL: Record<LoaiNguonThamChieu, string> = {
+  [LoaiNguonThamChieu.DuAn]:     'Dự án',
+  [LoaiNguonThamChieu.SangKien]: 'Sáng kiến',
+  [LoaiNguonThamChieu.YTuong]:   'Ý tưởng',
+  [LoaiNguonThamChieu.NhiemVu]:  'Nhiệm vụ',
 };
 
 const MIME_ICON: Record<string, string> = {
@@ -140,6 +152,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [detailOpen, setDetailOpen]     = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [versions, setVersions]         = useState<any[]>([]);
+  const [dinhKems, setDinhKems]         = useState<ITaiLieuDinhKem[]>([]);
 
   // form
   const [formOpen, setFormOpen]         = useState(false);
@@ -151,6 +164,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [uploadFile, setUploadFile]     = useState<RcFile | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading]       = useState(false);
+  const [extraFiles, setExtraFiles]     = useState<RcFile[]>([]);
 
   // từ chối
   const [tuChoiOpen, setTuChoiOpen]     = useState(false);
@@ -206,20 +220,33 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       setDetail(safeItem<ITaiLieu>(res));
       const vRes = await searchPhienBans({ taiLieuId: id, pageNumber: 1, pageSize: 20, orderBy: ['soPhienBan desc'] });
       setVersions(safeList<any>(vRes));
+      const dkRes = await searchTaiLieuDinhKems({ taiLieuId: id, pageNumber: 1, pageSize: 50 });
+      setDinhKems(safeList<ITaiLieuDinhKem>(dkRes));
     } catch { message.error('Không tải được chi tiết tài liệu'); }
     finally { setDetailLoading(false); }
+  };
+
+  const handleDeleteDinhKem = async (dkId: string) => {
+    try {
+      await deleteTaiLieuDinhKem(dkId);
+      message.success('Đã xóa đính kèm');
+      if (detail) {
+        const dkRes = await searchTaiLieuDinhKems({ taiLieuId: detail.id, pageNumber: 1, pageSize: 50 });
+        setDinhKems(safeList<ITaiLieuDinhKem>(dkRes));
+      }
+    } catch { message.error('Không xóa được đính kèm'); }
   };
 
   // ── Form
   const openCreate = () => {
     setFormMode('create'); form.resetFields();
-    setUploadFile(null); setUploadProgress(0);
+    setUploadFile(null); setUploadProgress(0); setExtraFiles([]);
     form.setFieldsValue({ loaiTaiLieu: LoaiTaiLieu.HuongDan });
     setFormOpen(true);
   };
   const openEdit = (item: ITaiLieu) => {
     setFormMode('edit'); form.resetFields();
-    setUploadFile(null); setUploadProgress(0);
+    setUploadFile(null); setUploadProgress(0); setExtraFiles([]);
     form.setFieldsValue({
       ...item,
       tags: item.tags?.join(', '),
@@ -264,6 +291,9 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         moTa: values.moTa,
         loaiTaiLieu: values.loaiTaiLieu,
         urlNgoai: values.urlNgoai || null,
+        loaiNguonThamChieu: values.loaiNguonThamChieu ?? null,
+        tenNguonThamChieu: values.loaiNguonThamChieu ? (values.tenNguonThamChieu || null) : null,
+        nguonThamChieuId: values.loaiNguonThamChieu ? (values.nguonThamChieuId || null) : null,
         tags,
         duongDanLuuTru: duongDanLuuTru || null,
         tenGoc: tenGoc || null,
@@ -271,14 +301,37 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         mimeType: mimeType || null,
       };
 
+      let taiLieuId: string | null = null;
       if (formMode === 'create') {
-        await createTaiLieu(payload);
+        const res = await createTaiLieu(payload);
+        taiLieuId = safeItem<string>(res);
         message.success('Tạo tài liệu thành công');
       } else {
         const editId = form.getFieldValue('id');
-        await updateTaiLieu(editId, { ...payload, id: editId });
+        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true });
+        taiLieuId = editId;
         message.success('Cập nhật thành công');
       }
+
+      // Upload các file đính kèm bổ sung (IV.1.4 — nhiều định dạng cho một tài liệu)
+      if (taiLieuId && extraFiles.length > 0) {
+        let failed = 0;
+        for (const f of extraFiles) {
+          try {
+            const uploaded = await uploadTaiLieuFile(f);
+            if (!uploaded) { failed++; continue; }
+            await createTaiLieuDinhKem({
+              taiLieuId,
+              duongDanLuuTru: uploaded.filePath,
+              tenGoc: uploaded.originalName ?? uploaded.fileName ?? f.name,
+              kichThuocBytes: uploaded.fileSize ?? f.size,
+              mimeType: f.type || 'application/octet-stream',
+            });
+          } catch { failed++; }
+        }
+        if (failed > 0) message.warning(`${failed} file đính kèm upload thất bại`);
+      }
+
       setFormOpen(false); loadItems();
     } catch (e: any) {
       if (e?.errorFields) return;
@@ -335,16 +388,27 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         <div className="card-body d-flex flex-column p-4">
           {/* Header row */}
           <div className="d-flex justify-content-between align-items-start mb-3">
-            <div className="d-flex align-items-center gap-2">
-              {item.duongDanLuuTru || item.tenGoc
-                ? <i className={`fa-regular ${getFileIcon(item.mimeType)} fs-3`} />
-                : item.urlNgoai
-                ? <i className="fa-regular fa-link text-info fs-3" />
-                : <i className="fa-regular fa-file-lines text-muted fs-3" />
-              }
-              <Tag color={LOAI_COLOR[item.loaiTaiLieu]} style={{ margin: 0 }}>
-                {LOAI_LABEL[item.loaiTaiLieu]}
-              </Tag>
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-flex align-items-center justify-content-center rounded-2 bg-light"
+                style={{ width: 42, height: 42, flexShrink: 0 }}>
+                {item.duongDanLuuTru || item.tenGoc
+                  ? <i className={`fa-regular ${getFileIcon(item.mimeType)} fs-4`} />
+                  : item.urlNgoai
+                  ? <i className="fa-regular fa-link text-info fs-4" />
+                  : <i className="fa-regular fa-file-lines text-muted fs-4" />
+                }
+              </div>
+              <div className="d-flex flex-column gap-1">
+                <Tag color={LOAI_COLOR[item.loaiTaiLieu]} style={{ margin: 0, width: 'fit-content' }}>
+                  {LOAI_LABEL[item.loaiTaiLieu]}
+                </Tag>
+                {item.loaiNguonThamChieu && (
+                  <span className="text-muted fs-9">
+                    <i className="fa-regular fa-diagram-project me-1" />
+                    {NGUON_LABEL[item.loaiNguonThamChieu]}{item.tenNguonThamChieu ? `: ${item.tenNguonThamChieu}` : ''}
+                  </span>
+                )}
+              </div>
             </div>
             <Badge status={TRANG_THAI_COLOR[item.trangThai] as any} text={TRANG_THAI_LABEL[item.trangThai]} />
           </div>
@@ -368,6 +432,18 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             {(item.tags ?? []).length > 3 && <Tag style={{ fontSize: 11 }}>+{(item.tags ?? []).length - 3}</Tag>}
           </div>
 
+          {/* Author + date */}
+          <div className="text-muted fs-8 mb-2 d-flex align-items-center gap-2">
+            <i className="fa-regular fa-user" />
+            <span>{item.tacGia?.hoTen ?? '—'}</span>
+            {item.createdOn && (
+              <>
+                <span>·</span>
+                <span>{new Date(item.createdOn).toLocaleDateString('vi-VN')}</span>
+              </>
+            )}
+          </div>
+
           {/* Footer */}
           <div className="d-flex justify-content-between align-items-center border-top pt-3 mt-auto">
             <div className="text-muted fs-8 d-flex gap-3">
@@ -380,10 +456,17 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                   <i className="fa-regular fa-eye" />
                 </Button>
               </Tooltip>
-              {isAdmin && (
+              {(isAdmin || item.trangThai === TrangThaiTaiLieu.NhapLieu) && (
                 <Tooltip title="Chỉnh sửa">
                   <Button size="small" onClick={() => openEdit(item)}>
                     <i className="fa-regular fa-pen" />
+                  </Button>
+                </Tooltip>
+              )}
+              {item.trangThai === TrangThaiTaiLieu.NhapLieu && (
+                <Tooltip title="Nộp kiểm duyệt">
+                  <Button size="small" type="primary" ghost onClick={() => handleNop(item.id)}>
+                    <i className="fa-regular fa-paper-plane" />
                   </Button>
                 </Tooltip>
               )}
@@ -393,6 +476,13 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                   <Button size="small" danger onClick={() => openTuChoi(item.id)}>Từ chối</Button>
                 </>
               )}
+              {isAdmin && (
+                <Popconfirm title="Xóa tài liệu này?" onConfirm={() => handleDelete(item.id)}>
+                  <Tooltip title="Xóa">
+                    <Button size="small" danger><i className="fa-regular fa-trash" /></Button>
+                  </Tooltip>
+                </Popconfirm>
+              )}
             </div>
           </div>
         </div>
@@ -401,6 +491,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   );
 
   const totalPages = Math.ceil(total / searchReq.pageSize);
+  const maxViews = Math.max(...ranking.map(r => r.luotXem ?? 0), 1);
 
   return (
     <>
@@ -410,116 +501,213 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       ]}>Thư viện tài liệu</PageTitle>
 
       <Content>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={[
-            {
-              key: 'danh-sach',
-              label: <span><i className="fa-regular fa-folder-open me-2" />Danh sách</span>,
-              children: (
-                <>
-                  {/* Toolbar */}
-                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5">
-                    <div className="d-flex gap-2 flex-wrap">
-                      <Input.Search placeholder="Tìm kiếm tài liệu..." onSearch={onSearch} style={{ width: 240 }} allowClear />
-                      <Select placeholder="Loại tài liệu" allowClear onChange={onLoaiChange} style={{ width: 170 }}>
-                        {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
-                      </Select>
-                      <Select placeholder="Trạng thái" allowClear onChange={onTrangThaiChange} style={{ width: 150 }}>
-                        {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
-                      </Select>
-                    </div>
-                    {isAdmin && (
+        {/* Hero header */}
+        <div className="mb-5 overflow-hidden shadow-sm"
+          style={{
+            backgroundImage: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%)',
+            backgroundColor: '#1e3a8a',
+            borderRadius: 12,
+          }}>
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 px-6 py-6">
+            <div className="d-flex align-items-center gap-4">
+              <div className="d-flex align-items-center justify-content-center rounded-3"
+                style={{ width: 56, height: 56, backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                <i className="fa-regular fa-book-open fs-2" style={{ color: '#fff' }} />
+              </div>
+              <div>
+                <h3 className="mb-1" style={{ color: '#fff' }}>Thư viện tài liệu ĐMST</h3>
+                <span className="fs-7" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                  Hướng dẫn · Playbook · Biểu mẫu · Nghiên cứu · Case study · Bài học kinh nghiệm
+                </span>
+              </div>
+            </div>
+            <Button size="large" onClick={openCreate}
+              style={{ background: '#fff', color: '#1e3a8a', fontWeight: 600, border: 'none' }}
+              icon={<i className="fa-regular fa-plus me-1" />}>
+              Thêm tài liệu
+            </Button>
+          </div>
+        </div>
+
+        {/* Tab pills */}
+        <div className="d-inline-flex bg-light rounded-pill p-1 gap-1 mb-5">
+          <Button
+            shape="round"
+            type={activeTab === 'danh-sach' ? 'primary' : 'text'}
+            onClick={() => setActiveTab('danh-sach')}
+            icon={<i className="fa-regular fa-folder-open me-1" />}
+          >
+            Danh sách
+          </Button>
+          <Button
+            shape="round"
+            type={activeTab === 'ranking' ? 'primary' : 'text'}
+            onClick={() => setActiveTab('ranking')}
+            icon={<i className="fa-regular fa-trophy me-1" />}
+          >
+            Xếp hạng
+          </Button>
+        </div>
+
+        {/* ── Tab: Danh sách ─────────────────────────────────────────────────── */}
+        {activeTab === 'danh-sach' && (
+          <>
+            {/* Toolbar */}
+            <div className="card border-0 shadow-sm mb-5">
+              <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 py-4">
+                <div className="d-flex gap-2 flex-wrap">
+                  <Input.Search placeholder="Tìm kiếm tài liệu..." onSearch={onSearch} style={{ width: 260 }} allowClear />
+                  <Select placeholder="Loại tài liệu" allowClear onChange={onLoaiChange} style={{ width: 180 }}>
+                    {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                  </Select>
+                  <Select placeholder="Trạng thái" allowClear onChange={onTrangThaiChange} style={{ width: 160 }}>
+                    {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                  </Select>
+                </div>
+                <div className="text-muted fs-8">
+                  <span className="badge badge-light-primary me-2">{total} tài liệu</span>
+                  Trang {searchReq.pageNumber}/{Math.max(1, totalPages)}
+                </div>
+              </div>
+            </div>
+
+            {/* Grid */}
+            <Spin spinning={loading}>
+              {items.length === 0 && !loading ? (
+                <div className="text-center py-10">
+                  <Empty description={
+                    <div>
+                      <div className="text-gray-600 mb-3">Chưa có tài liệu nào. Hãy là người đầu tiên chia sẻ tri thức!</div>
                       <Button type="primary" icon={<i className="fa-regular fa-plus me-1" />} onClick={openCreate}>
-                        Thêm tài liệu
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Stats bar */}
-                  <div className="d-flex gap-3 mb-4 text-muted fs-8">
-                    <span>{total} tài liệu</span>
-                    <span>·</span>
-                    <span>Trang {searchReq.pageNumber}/{Math.max(1, totalPages)}</span>
-                  </div>
-
-                  {/* Grid */}
-                  <Spin spinning={loading}>
-                    {items.length === 0 && !loading ? (
-                      <Empty description="Không có tài liệu phù hợp" className="py-10" />
-                    ) : (
-                      <div className="row g-0">{items.map(renderCard)}</div>
-                    )}
-                  </Spin>
-
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="d-flex justify-content-center mt-5 gap-2">
-                      <Button size="small" disabled={searchReq.pageNumber <= 1} onClick={() => onPageChange(searchReq.pageNumber - 1)}>
-                        <i className="fa-regular fa-chevron-left" />
-                      </Button>
-                      <span className="align-self-center fs-7">Trang {searchReq.pageNumber} / {totalPages}</span>
-                      <Button size="small" disabled={searchReq.pageNumber >= totalPages} onClick={() => onPageChange(searchReq.pageNumber + 1)}>
-                        <i className="fa-regular fa-chevron-right" />
+                        Thêm tài liệu ngay
                       </Button>
                     </div>
-                  )}
-                </>
-              ),
-            },
-            {
-              key: 'ranking',
-              label: <span><i className="fa-regular fa-trophy me-2 mx-2" />Xếp hạng</span>,
-              children: (
-                <Spin spinning={rankLoading}>
-                  {ranking.length === 0 && !rankLoading ? (
-                    <Empty description="Chưa có dữ liệu xếp hạng" className="py-10" />
-                  ) : (
-                    <div className="card">
-                      <div className="card-body p-0">
-                        <table className="table table-row-dashed table-row-gray-300 align-middle mb-0">
-                          <thead>
-                            <tr className="text-muted fw-semibold fs-7 text-uppercase">
-                              <th className="ps-4" style={{ width: 50 }}>#</th>
-                              <th>Tài liệu</th>
-                              <th>Loại</th>
-                              <th>Tác giả</th>
-                              <th className="text-end pe-4">Lượt xem</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {ranking.map((item, idx) => (
-                              <tr key={item.id} className="cursor-pointer" onClick={() => openDetail(item.id)}>
-                                <td className="ps-4">
-                                  {idx === 0 ? <i className="fa-solid fa-trophy text-warning fs-5" />
-                                   : idx === 1 ? <i className="fa-solid fa-trophy text-secondary fs-5" />
-                                   : idx === 2 ? <i className="fa-solid fa-trophy" style={{ color: '#cd7f32' }} />
-                                   : <span className="text-muted fw-semibold">{idx + 1}</span>}
-                                </td>
-                                <td>
-                                  <div className="fw-semibold text-gray-800">{item.tieuDe}</div>
-                                  <div className="text-muted fs-8">{(item.tags ?? []).slice(0, 2).join(' · ')}</div>
-                                </td>
-                                <td><Tag color={LOAI_COLOR[item.loaiTaiLieu]}>{LOAI_LABEL[item.loaiTaiLieu]}</Tag></td>
-                                <td className="text-muted fs-7">{item.tacGia?.hoTen ?? '—'}</td>
-                                <td className="text-end pe-4">
+                  } />
+                </div>
+              ) : (
+                <div className="row g-0">{items.map(renderCard)}</div>
+              )}
+            </Spin>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="d-flex justify-content-center mt-5 gap-2">
+                <Button size="small" disabled={searchReq.pageNumber <= 1} onClick={() => onPageChange(searchReq.pageNumber - 1)}>
+                  <i className="fa-regular fa-chevron-left" />
+                </Button>
+                <span className="align-self-center fs-7">Trang {searchReq.pageNumber} / {totalPages}</span>
+                <Button size="small" disabled={searchReq.pageNumber >= totalPages} onClick={() => onPageChange(searchReq.pageNumber + 1)}>
+                  <i className="fa-regular fa-chevron-right" />
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Tab: Xếp hạng ──────────────────────────────────────────────────── */}
+        {activeTab === 'ranking' && (
+          <Spin spinning={rankLoading}>
+            {ranking.length === 0 && !rankLoading ? (
+              <Empty description="Chưa có dữ liệu xếp hạng" className="py-10" />
+            ) : (
+              <>
+                {/* Podium top 3 */}
+                <div className="row g-4 mb-5">
+                  {ranking.slice(0, 3).map((item, idx) => {
+                    const medalColor = ['#f59e0b', '#94a3b8', '#cd7f32'][idx];
+                    const cardBg = [
+                      'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                      'linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%)',
+                      'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                    ][idx];
+                    return (
+                      <div key={item.id} className="col-md-4">
+                        <div className="shadow-sm h-100"
+                          style={{
+                            backgroundImage: cardBg,
+                            backgroundColor: '#fff',
+                            borderRadius: 12,
+                            cursor: 'pointer',
+                            transition: 'transform 0.15s',
+                          }}
+                          onClick={() => openDetail(item.id)}
+                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; }}
+                        >
+                          <div className="p-4">
+                            <div className="d-flex justify-content-between align-items-start mb-3">
+                              <div className="d-flex align-items-center justify-content-center rounded-circle bg-white shadow-sm"
+                                style={{ width: 44, height: 44 }}>
+                                <i className="fa-solid fa-trophy fs-4" style={{ color: medalColor }} />
+                              </div>
+                              <span className="badge badge-light fw-bold fs-7">#{idx + 1}</span>
+                            </div>
+                            <div className="fw-bold text-gray-800 mb-1"
+                              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 40 }}>
+                              {item.tieuDe}
+                            </div>
+                            <div className="text-muted fs-8 mb-3">
+                              <i className="fa-regular fa-user me-1" />{item.tacGia?.hoTen ?? '—'}
+                            </div>
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Tag color={LOAI_COLOR[item.loaiTaiLieu]} style={{ margin: 0 }}>{LOAI_LABEL[item.loaiTaiLieu]}</Tag>
+                              <span className="badge badge-light-primary fw-bold">
+                                <i className="fa-regular fa-eye me-1" />{item.luotXem ?? 0}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Table for the rest */}
+                {ranking.length > 3 && (
+                  <div className="card border-0 shadow-sm">
+                    <div className="card-body p-0">
+                      <table className="table table-row-dashed table-row-gray-300 align-middle mb-0">
+                        <thead>
+                          <tr className="text-muted fw-semibold fs-7 text-uppercase">
+                            <th className="ps-4" style={{ width: 50 }}>#</th>
+                            <th>Tài liệu</th>
+                            <th>Loại</th>
+                            <th>Tác giả</th>
+                            <th className="text-end pe-4" style={{ width: 200 }}>Lượt xem</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ranking.slice(3).map((item, i) => (
+                            <tr key={item.id} className="cursor-pointer" onClick={() => openDetail(item.id)}>
+                              <td className="ps-4"><span className="text-muted fw-semibold">{i + 4}</span></td>
+                              <td>
+                                <div className="fw-semibold text-gray-800">{item.tieuDe}</div>
+                                <div className="text-muted fs-8">{(item.tags ?? []).slice(0, 2).join(' · ')}</div>
+                              </td>
+                              <td><Tag color={LOAI_COLOR[item.loaiTaiLieu]}>{LOAI_LABEL[item.loaiTaiLieu]}</Tag></td>
+                              <td className="text-muted fs-7">{item.tacGia?.hoTen ?? '—'}</td>
+                              <td className="text-end pe-4">
+                                <div className="d-flex align-items-center justify-content-end gap-2">
+                                  <Progress
+                                    percent={Math.round(((item.luotXem ?? 0) / maxViews) * 100)}
+                                    size="small" showInfo={false} style={{ width: 90 }}
+                                  />
                                   <span className="badge badge-light-primary fw-bold">
                                     <i className="fa-regular fa-eye me-1" />{item.luotXem ?? 0}
                                   </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  )}
-                </Spin>
-              ),
-            },
-          ]}
-        />
+                  </div>
+                )}
+              </>
+            )}
+          </Spin>
+        )}
       </Content>
 
       {/* ── Detail Modal ─────────────────────────────────────────────────────── */}
@@ -546,13 +734,13 @@ export const ThuVienTaiLieuPage: React.FC = () => {
               Tải xuống
             </Button>
           ),
-          isAdmin && detail && (
+          detail && (isAdmin || detail.trangThai === TrangThaiTaiLieu.NhapLieu) && (
             <Button key="edit" onClick={() => { setDetailOpen(false); openEdit(detail); }}>
               <i className="fa-regular fa-pen me-1" />Chỉnh sửa
             </Button>
           ),
-          canApprove && detail?.trangThai === TrangThaiTaiLieu.NhapLieu && (
-            <Button key="nop" onClick={() => handleNop(detail.id)}>
+          detail?.trangThai === TrangThaiTaiLieu.NhapLieu && (
+            <Button key="nop" type="primary" ghost onClick={() => handleNop(detail.id)}>
               <i className="fa-regular fa-paper-plane me-1" />Nộp kiểm duyệt
             </Button>
           ),
@@ -639,11 +827,74 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                         )}
                       </div>
 
+                      {detail.loaiNguonThamChieu && (
+                        <div className="mb-4">
+                          <div className="text-muted fs-8 mb-1">Nguồn tham chiếu</div>
+                          <div>
+                            <Tag color="gold">{NGUON_LABEL[detail.loaiNguonThamChieu]}</Tag>
+                            <span className="fw-semibold">{detail.tenNguonThamChieu ?? '—'}</span>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="mb-2">
                         <div className="text-muted fs-8 mb-1">Tags</div>
                         <div>{(detail.tags ?? []).map(t => <Tag key={t} color="blue">{t}</Tag>)}</div>
                       </div>
                     </>
+                  ),
+                },
+                {
+                  key: 'dinh-kem',
+                  label: <span>Đính kèm <span className="badge badge-light-primary ms-1">{dinhKems.length}</span></span>,
+                  children: (
+                    dinhKems.length === 0 ? <Empty description="Chưa có đính kèm bổ sung" className="py-6" /> : (
+                      <table className="table table-sm table-row-dashed align-middle mb-0">
+                        <thead>
+                          <tr className="text-muted fw-semibold fs-8">
+                            <th>Tên file / Liên kết</th><th>Kích thước</th><th>Ngày tạo</th><th className="text-end">Thao tác</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dinhKems.map(dk => (
+                            <tr key={dk.id}>
+                              <td className="fs-7">
+                                {dk.thongTinFile ? (
+                                  <>
+                                    <i className={`fa-regular ${getFileIcon(dk.thongTinFile.mimeType)} me-1`} />
+                                    {dk.thongTinFile.tenGoc}
+                                  </>
+                                ) : dk.urlNgoai ? (
+                                  <a href={dk.urlNgoai} target="_blank" rel="noopener noreferrer">
+                                    <i className="fa-regular fa-link me-1" />{dk.urlNgoai}
+                                  </a>
+                                ) : '—'}
+                              </td>
+                              <td className="text-muted fs-8">{formatBytes(dk.thongTinFile?.kichThuocBytes)}</td>
+                              <td className="text-muted fs-8">{dk.createdOn ? new Date(dk.createdOn).toLocaleDateString('vi-VN') : '—'}</td>
+                              <td className="text-end">
+                                {dk.thongTinFile && (
+                                  <Button size="small" type="link"
+                                    onClick={() => {
+                                      const a = document.createElement('a');
+                                      a.href = getTaiLieuDinhKemDownloadUrl(dk.id);
+                                      a.download = dk.thongTinFile?.tenGoc ?? 'dinh-kem';
+                                      a.click();
+                                    }}>
+                                    <i className="fa-regular fa-download" />
+                                  </Button>
+                                )}
+                                {isAdmin && (
+                                  <Popconfirm title="Xóa đính kèm này?" onConfirm={() => handleDeleteDinhKem(dk.id)}>
+                                    <Button size="small" type="link" danger><i className="fa-regular fa-trash" /></Button>
+                                  </Popconfirm>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
                   ),
                 },
                 {
@@ -725,6 +976,43 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             <TextArea rows={3} placeholder="Mô tả nội dung tài liệu..." />
           </Form.Item>
 
+          <Divider orientation="left" style={{ fontSize: 13, color: '#888' }}>
+            Nguồn tham chiếu (dự án / sáng kiến đã triển khai)
+          </Divider>
+
+          <Form.Item name="nguonThamChieuId" hidden><Input /></Form.Item>
+          <div className="row">
+            <div className="col-6">
+              <Form.Item name="loaiNguonThamChieu" label="Loại nguồn">
+                <Select allowClear placeholder="Không gắn nguồn">
+                  {Object.entries(NGUON_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                </Select>
+              </Form.Item>
+            </div>
+            <div className="col-6">
+              <Form.Item
+                noStyle
+                shouldUpdate={(prev, cur) => prev.loaiNguonThamChieu !== cur.loaiNguonThamChieu}
+              >
+                {({ getFieldValue }) => (
+                  <Form.Item
+                    name="tenNguonThamChieu"
+                    label="Tên nguồn tham chiếu"
+                    rules={getFieldValue('loaiNguonThamChieu')
+                      ? [{ required: true, message: 'Nhập tên nguồn tham chiếu' }]
+                      : []}
+                  >
+                    <Input
+                      placeholder="VD: Dự án ABC giai đoạn 2"
+                      disabled={!getFieldValue('loaiNguonThamChieu')}
+                      maxLength={1024}
+                    />
+                  </Form.Item>
+                )}
+              </Form.Item>
+            </div>
+          </div>
+
           <Divider orientation="left" style={{ fontSize: 13, color: '#888' }}>Tệp đính kèm</Divider>
 
           {/* File upload */}
@@ -769,6 +1057,32 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                 <Tag color="green" style={{ fontSize: 11 }}>File hiện tại</Tag>
               </div>
             )}
+
+            {/* Đính kèm bổ sung — gộp chung mục Tệp đính kèm */}
+            <div className="mt-3">
+              <Upload
+                multiple
+                beforeUpload={(file) => {
+                  setExtraFiles(prev => [...prev, file]);
+                  return false; // prevent auto-upload
+                }}
+                onRemove={(file) => {
+                  setExtraFiles(prev => prev.filter(f => f.uid !== file.uid));
+                }}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.png,.jpg,.jpeg,.gif"
+                fileList={extraFiles.map(f => ({
+                  uid: f.uid,
+                  name: f.name,
+                  status: 'done',
+                  size: f.size,
+                  type: f.type,
+                } as UploadFile))}
+              >
+                <Button size="small" icon={<i className="fa-regular fa-paperclip me-1" />}>
+                  Chọn thêm file đính kèm
+                </Button>
+              </Upload>
+            </div>
           </div>
 
           <Form.Item name="urlNgoai" label="Liên kết ngoài (tuỳ chọn)">

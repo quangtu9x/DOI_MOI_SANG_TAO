@@ -90,6 +90,11 @@ const sidebarSystemConfig = [
         requiredAll: [P.of(R.Catalogs, 'View')]
       },
       {
+        to: '/admins/catalogs/cau-hinh-truong-y-tuong',
+        title: 'Cấu hình trường thông tin ý tưởng',
+        requiredAll: [P.of(R.Catalogs, 'View')]
+      },
+      {
         to: '/admins/catalogs/user-guides',
         title: 'Hướng dẫn sử dụng',
         requiredAll: [P.of(R.Catalogs, 'View')]
