@@ -126,29 +126,29 @@ export const goiYTuKhoa = (prefix: string) =>
 
 /** Tìm kiếm chuyên gia */
 export const searchChuyenGias = (req: ISearchChuyenGiaRequest) =>
-  requestPOST<IPaginationResponse<IChuyenGia[]>>(`ChuyenGias/search`, req);
+  requestPOST<IPaginationResponse<IChuyenGia[]>>(`qltt/ChuyenGias/search`, req);
 
 /** Hồ sơ chuyên gia */
 export const getChuyenGia = (id: string) =>
-  requestGET<IChuyenGia>(`ChuyenGias/${id}`);
+  requestGET<IChuyenGia>(`qltt/ChuyenGias/${id}`);
 
 /** Tài liệu của chuyên gia */
 export const getTaiLieuChuyenGia = (id: string, pageNumber = 1, pageSize = 10) =>
   requestGET<IPaginationResponse<ITaiLieu[]>>(
-    `ChuyenGias/${id}/tai-lieu?pageNumber=${pageNumber}&pageSize=${pageSize}`
+    `qltt/ChuyenGias/${id}/tai-lieu?pageNumber=${pageNumber}&pageSize=${pageSize}`
   );
 
 /** Tạo hồ sơ chuyên gia mới (Admin) */
 export const createChuyenGia = (req: ICreateChuyenGiaRequest) =>
-  requestPOST<IResult<string>>(`ChuyenGias`, req);
+  requestPOST<IResult<string>>(`qltt/ChuyenGias`, req);
 
 /** Cập nhật hồ sơ chuyên gia (Admin) */
 export const updateChuyenGia = (id: string, req: IUpdateChuyenGiaRequest) =>
-  requestPUT<IResult<boolean>>(`ChuyenGias/${id}`, req);
+  requestPUT<IResult<boolean>>(`qltt/ChuyenGias/${id}`, req);
 
 /** Xóa chuyên gia (Admin) */
 export const deleteChuyenGia = (id: string) =>
-  requestDELETE<IResult<boolean>>(`ChuyenGias/${id}`);
+  requestDELETE<IResult<boolean>>(`qltt/ChuyenGias/${id}`);
 
 // ── 4. Cộng Đồng ──────────────────────────────────────────────────────────────
 
