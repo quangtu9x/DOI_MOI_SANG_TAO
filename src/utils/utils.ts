@@ -265,7 +265,7 @@ function getFilenameFromContentDisposition(header: string): string {
  */
 export function saveBlobAsFile(response: AxiosResponse<Blob>): void {
   const blob = new Blob([response.data], {
-    type: response.headers['content-type'] || 'application/octet-stream',
+    type: (response.headers['content-type'] as string | undefined) || 'application/octet-stream',
   });
 
   // Lấy filename

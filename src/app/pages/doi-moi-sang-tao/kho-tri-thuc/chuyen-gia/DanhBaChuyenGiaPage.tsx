@@ -141,15 +141,14 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
       const cgRes = await getChuyenGia(id);
       setProfile(safeItem<IChuyenGia>(cgRes));
 
-      // These endpoints don't exist yet in BE — will return empty gracefully
-      const [tl, nx, tv] = await Promise.allSettled([
+      const [tl, nx, tv] = await Promise.all([
         getTaiLieuChuyenGia(id, 1, 10),
         searchNhanXets({ chuyenGiaId: id, pageNumber: 1, pageSize: 20 }),
         searchTuVans({ chuyenGiaId: id, pageNumber: 1, pageSize: 20 }),
       ]);
-      setProfDocs(tl.status === 'fulfilled' ? safeList<ITaiLieu>(tl.value) : []);
-      setProfReviews(nx.status === 'fulfilled' ? safeList<INhanXetChuyenGia>(nx.value) : []);
-      setTuVans(tv.status === 'fulfilled' ? safeList<IYeuCauTuVan>(tv.value) : []);
+      setProfDocs(safeList<ITaiLieu>(tl));
+      setProfReviews(safeList<INhanXetChuyenGia>(nx));
+      setTuVans(safeList<IYeuCauTuVan>(tv));
     } catch { message.error('Không tải được hồ sơ chuyên gia'); }
     finally { setProfLoading(false); }
   };
@@ -263,8 +262,8 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
         <div className="card-body">
           {/* Header */}
           <div className="d-flex align-items-center mb-4">
-            {cg.hinhDaiDien ? (
-              <img src={cg.hinhDaiDien} alt={cg.hoTen} className="rounded-circle"
+            {(cg as any).hinhDaiDien ? (
+              <img src={(cg as any).hinhDaiDien} alt={cg.hoTen} className="rounded-circle"
                 style={{ width: 56, height: 56, objectFit: 'cover' }} />
             ) : (
               <Avatar size={56} style={{ backgroundColor: getAvatarColor(cg.hoTen), fontSize: 22, flexShrink: 0 }}>
@@ -396,8 +395,8 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
         title={profile && (
           <div className="d-flex align-items-center justify-content-between pe-8">
             <div className="d-flex align-items-center gap-3">
-              {profile.hinhDaiDien ? (
-                <img src={profile.hinhDaiDien} alt={profile.hoTen} className="rounded-circle"
+              {(profile as any).hinhDaiDien ? (
+                <img src={(profile as any).hinhDaiDien} alt={profile.hoTen} className="rounded-circle"
                   style={{ width: 48, height: 48, objectFit: 'cover' }} />
               ) : (
                 <Avatar size={48} style={{ backgroundColor: getAvatarColor(profile.hoTen ?? ''), fontSize: 20 }}>

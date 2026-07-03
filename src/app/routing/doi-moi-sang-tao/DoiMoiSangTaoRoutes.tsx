@@ -12,6 +12,8 @@ import { DanhBaChuyenGiaPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/c
 import { CongDongPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/cong-dong/CongDongPage';
 import { NewsFeedPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed/NewsFeedPage';
 import { TimKiemPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/tim-kiem/TimKiemPage';
+import { KTAnalyticsPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/analytics/KTAnalyticsPage';
+import { KTBaoCaoPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/bao-cao/KTBaoCaoPage';
 import { BaoCaoPage } from '@/app/pages/doi-moi-sang-tao/bao-cao/BaoCaoPage';
 import { QuanLyNguoiDungPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-nguoi-dung/QuanLyNguoiDungPage';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
@@ -55,11 +57,13 @@ export const DoiMoiSangTaoRoutes: FC = () => {
 
       {/* Kho tri thức — shell + sub-routes */}
       <Route path="kho-tri-thuc" element={<KhoTriThucPage />}>
+        <Route path="analytics"  element={<KTAnalyticsPage />} />
         <Route path="thu-vien"   element={<ThuVienTaiLieuPage />} />
         <Route path="chuyen-gia" element={<DanhBaChuyenGiaPage />} />
         <Route path="cong-dong"  element={<CongDongPage />} />
         <Route path="news-feed"  element={<NewsFeedPage />} />
         <Route path="tim-kiem"   element={<TimKiemPage />} />
+        <Route path="bao-cao"    element={<ReviewerRoute element={<KTBaoCaoPage />} />} />
       </Route>
 
       {/* Báo cáo — reviewer + admin only */}

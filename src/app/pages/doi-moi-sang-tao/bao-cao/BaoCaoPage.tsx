@@ -208,7 +208,7 @@ export const BaoCaoPage: React.FC = () => {
           <div className="card-body py-3">
             <Table
               columns={columns}
-              dataSource={[...REPORT_DATA, ...summaryRow]}
+              dataSource={[...REPORT_DATA, ...summaryRow] as typeof REPORT_DATA}
               rowKey="stt"
               pagination={false}
               bordered

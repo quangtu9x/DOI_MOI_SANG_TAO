@@ -417,3 +417,151 @@ export interface INewsFeedItem {
   tags?:       string[];
   createdOn?:  string;
 }
+
+// ── Analytics (Phase 2A) ──────────────────────────────────────────────────────
+
+export interface IKTByLoai {
+  loaiTen:  string;
+  soLuong:  number;
+}
+
+export interface IKTTrendThang {
+  nam:          number;
+  thang:        number;
+  soTaiLieuMoi: number;
+  soBaiVietMoi: number;
+}
+
+export interface IKTDashboardStats {
+  tongSoTaiLieu:      number;
+  taiLieuDaXuatBan:   number;
+  taiLieuChoXetDuyet: number;
+  taiLieuNhapLieu:    number;
+  tongLuotXem:        number;
+  tongLuotThich:      number;
+  tongBinhLuan:       number;
+  tongSoChuyenGia:    number;
+  yeuCauTuVanCho:     number;
+  diemTrungBinhHT:    number;
+  tongSoCongDong:     number;
+  tongSoThanhVien:    number;
+  tongSoBaiViet:      number;
+  taiLieuTheoLoai:    IKTByLoai[];
+  trendTheoThang:     IKTTrendThang[];
+  orgUnitCode:        string | null;
+  roleScope:          'all' | 'unit' | 'personal';
+}
+
+export interface IKTLeaderboardTaiLieu {
+  xepHang:     number;
+  taiLieuId:   string;
+  tieuDe:      string;
+  loaiTaiLieu: string | null;
+  luotXem:     number;
+  luotThich:   number;
+}
+
+export interface IKTLeaderboardChuyenGia {
+  xepHang:       number;
+  chuyenGiaId:   string;
+  hoTen:         string;
+  linhVuc:       string | null;
+  diemTrungBinh: number;
+  soLuotNhanXet: number;
+}
+
+export interface IKTLeaderboardCongDong {
+  xepHang:      number;
+  congDongId:   string;
+  ten:          string;
+  soThanhVien:  number;
+  soBaiViet:    number;
+}
+
+export interface IKTLeaderboardNguoiDung {
+  xepHang:       number;
+  userId:        string;
+  tenNguoiDung:  string;
+  donVi:         string | null;
+  soTaiLieu:     number;
+  tongLuotXem:   number;
+}
+
+// ── BaoCao (Phase 3B) ─────────────────────────────────────────────────────────
+
+export interface IKTBaoCaoFilter {
+  tuNgay?:        string;
+  denNgay?:       string;
+  linhVucKHCNId?: string;
+  loaiTaiLieu?:   string;
+  trangThai?:     string;
+  donViCode?:     string;
+}
+
+export interface IKTBaoCaoTheoThang {
+  nam:        number;
+  thang:      number;
+  taiLieuMoi: number;
+  tuVanMoi:   number;
+  luotXem:    number;
+}
+
+export interface IKTBaoCaoTheoLoai {
+  loaiTen:     string;
+  soLuong:     number;
+  tongLuotXem: number;
+  phanTram:    number;
+}
+
+export interface IKTBaoCaoTheoDonVi {
+  donViCode:   string;
+  soTaiLieu:   number;
+  soXuatBan:   number;
+  tongLuotXem: number;
+}
+
+export interface IKTBaoCaoTongHop {
+  tongTaiLieu:      number;
+  taiLieuXuatBan:   number;
+  taiLieuChoDuyet:  number;
+  taiLieuNhapLieu:  number;
+  tongLuotXem:      number;
+  tongLuotThich:    number;
+  tongBinhLuan:     number;
+  tongYeuCauTuVan:  number;
+  yeuCauDaHoanTat:  number;
+  theoThang:        IKTBaoCaoTheoThang[];
+  theoLoai:         IKTBaoCaoTheoLoai[];
+  theoDonVi:        IKTBaoCaoTheoDonVi[];
+  tuNgay:           string | null;
+  denNgay:          string | null;
+  roleScope:        'all' | 'unit' | 'personal';
+  donViCode:        string | null;
+}
+
+export interface IKTBaoCaoDongGop {
+  userId:               string;
+  tenNguoiDung:         string;
+  donVi:                string | null;
+  email:                string | null;
+  soTaiLieuTong:        number;
+  soTaiLieuXuatBan:     number;
+  soBaiViet:            number;
+  tongLuotXem:          number;
+  tiLeDuyetPhanTram:    number;
+  ngayDongGopGanNhat:   string | null;
+}
+
+export interface IKTBaoCaoTaiLieu {
+  id:            string;
+  tieuDe:        string;
+  loaiTaiLieu:   string;
+  trangThai:     string;
+  tacGia:        string;
+  donVi:         string | null;
+  ngayTao:       string | null;
+  ngayXuatBan:   string | null;
+  luotXem:       number;
+  soLuotThich:   number;
+  soBinhLuan:    number;
+}
