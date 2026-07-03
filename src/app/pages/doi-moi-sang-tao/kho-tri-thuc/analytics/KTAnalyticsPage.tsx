@@ -444,7 +444,7 @@ export const KTAnalyticsPage: React.FC = () => {
                 {
                   key: 'tai-lieu',
                   label: (
-                    <span><i className="fa-regular fa-fire me-1 text-danger" />Tài liệu hot</span>
+                    <span><i className="fa-regular fa-fire me-1" />Tài liệu hot</span>
                   ),
                   children: (
                     <Table
@@ -460,7 +460,7 @@ export const KTAnalyticsPage: React.FC = () => {
                 {
                   key: 'chuyen-gia',
                   label: (
-                    <span><i className="fa-regular fa-star me-1 text-warning" />Chuyên gia</span>
+                    <span><i className="fa-regular fa-star me-1" />Chuyên gia</span>
                   ),
                   children: (
                     <Table
@@ -476,7 +476,7 @@ export const KTAnalyticsPage: React.FC = () => {
                 {
                   key: 'cong-dong',
                   label: (
-                    <span><i className="fa-regular fa-users me-1 text-success" />Cộng đồng</span>
+                    <span><i className="fa-regular fa-users me-1" />Cộng đồng</span>
                   ),
                   children: (
                     <Table
@@ -492,7 +492,7 @@ export const KTAnalyticsPage: React.FC = () => {
                 {
                   key: 'nguoi-dung',
                   label: (
-                    <span><i className="fa-regular fa-award me-1 text-primary" />Người đóng góp</span>
+                    <span><i className="fa-regular fa-award me-1" />Người đóng góp</span>
                   ),
                   children: (
                     <Table
