@@ -421,7 +421,7 @@ export const CongDongPage: React.FC = () => {
             onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
           >
             <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
-            <span className="fs-8">{bv.luotThich ?? 0}</span>
+            <span className="fs-8">{Math.max(0, bv.soLuotThich ?? 0)}</span>
           </button>
           <button className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
             onClick={() => openPost(bv.id)}>
@@ -478,6 +478,7 @@ export const CongDongPage: React.FC = () => {
             )}
           </div>
         )}
+        </div>
       </div>
     );
   };
