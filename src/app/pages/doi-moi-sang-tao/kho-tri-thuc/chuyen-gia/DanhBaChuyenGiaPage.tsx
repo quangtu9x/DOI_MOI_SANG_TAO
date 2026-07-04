@@ -280,40 +280,44 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
   const renderCard = (cg: IChuyenGia) => (
     <div key={cg.id} className="col-md-6 col-xl-4 mb-4">
       <div className="card border-0 shadow-sm h-100" style={{ transition: 'box-shadow 0.2s, transform 0.15s' }}>
-        <div className="card-body">
-          {/* Header */}
+        <div className="card-body d-flex flex-column">
+
+          {/* Header — fixed 3-line layout */}
           <div className="d-flex align-items-center mb-4">
             {(cg as any).hinhDaiDien ? (
               <img src={(cg as any).hinhDaiDien} alt={cg.hoTen} className="rounded-circle"
-                style={{ width: 56, height: 56, objectFit: 'cover' }} />
+                style={{ width: 56, height: 56, objectFit: 'cover', flexShrink: 0 }} />
             ) : (
               <Avatar size={56} style={{ backgroundColor: getAvatarColor(cg.hoTen), fontSize: 22, flexShrink: 0 }}>
                 {getAvatarChar(cg.hoTen)}
               </Avatar>
             )}
-            <div className="ms-3 min-w-0">
-              <div className="fw-bold text-gray-800 fs-6">{cg.hoTen}</div>
-              {cg.laChuyenGiaNgoai && <Tag color="orange" style={{ fontSize: 11 }}>Chuyên gia ngoài</Tag>}
-              {cg.email && <div className="text-muted fs-8 text-truncate">{cg.email}</div>}
+            <div className="ms-3 min-w-0 flex-grow-1">
+              <div className="fw-bold text-gray-800 fs-6 text-truncate">{cg.hoTen}</div>
+              {/* Badge row — giữ chiều cao dù không có tag */}
+              <div style={{ minHeight: 24, lineHeight: '24px' }}>
+                {cg.laChuyenGiaNgoai && <Tag color="orange" style={{ fontSize: 11 }}>Chuyên gia ngoài</Tag>}
+              </div>
+              {/* Email row — luôn hiển thị, placeholder khi trống */}
+              <div className="text-muted fs-8 text-truncate" style={{ minHeight: 18 }}>
+                {cg.email ?? <span className="text-muted opacity-0">placeholder</span>}
+              </div>
             </div>
           </div>
 
-          {/* Chuyên môn & lĩnh vực */}
-          {cg.donViCongTac && (
-            <div className="text-gray-700 fs-7 mb-1 d-flex align-items-center gap-1 text-truncate">
-              <i className="fa-regular fa-building text-primary flex-shrink-0" />{cg.donViCongTac}
-            </div>
-          )}
-          {cg.chuyenMon && (
-            <div className="text-gray-700 fs-7 mb-1 d-flex align-items-center gap-1">
-              <i className="fa-regular fa-graduation-cap text-primary" />{cg.chuyenMon}
-            </div>
-          )}
-          {cg.linhVuc && (
-            <div className="text-muted fs-7 mb-3 d-flex align-items-center gap-1">
-              <i className="fa-regular fa-tag" />{cg.linhVuc}
-            </div>
-          )}
+          {/* Info rows — luôn 3 dòng, placeholder '—' khi thiếu */}
+          <div className="text-gray-700 fs-7 mb-1 d-flex align-items-center gap-1">
+            <i className="fa-regular fa-building text-primary flex-shrink-0" />
+            <span className="text-truncate">{cg.donViCongTac || <span className="text-muted">—</span>}</span>
+          </div>
+          <div className="text-gray-700 fs-7 mb-1 d-flex align-items-center gap-1">
+            <i className="fa-regular fa-graduation-cap text-primary flex-shrink-0" />
+            <span className="text-truncate">{cg.chuyenMon || <span className="text-muted">—</span>}</span>
+          </div>
+          <div className="text-muted fs-7 mb-3 d-flex align-items-center gap-1">
+            <i className="fa-regular fa-tag flex-shrink-0" />
+            <span className="text-truncate">{cg.linhVuc || '—'}</span>
+          </div>
 
           <Divider className="my-3" />
 
@@ -333,8 +337,8 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="d-flex gap-2">
+          {/* Action buttons — luôn ở cuối card nhờ mt-auto */}
+          <div className="d-flex gap-2 mt-auto">
             <Button type="primary" ghost size="small" className="flex-grow-1"
               onClick={() => openProfile(cg.id)}>
               <i className="fa-regular fa-user me-1" />Xem hồ sơ
@@ -358,6 +362,7 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
               </>
             )}
           </div>
+
         </div>
       </div>
     </div>

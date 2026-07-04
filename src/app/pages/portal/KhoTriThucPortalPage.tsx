@@ -71,15 +71,22 @@ export const KhoTriThucPortalPage = () => {
   const [kSearch, setKSearch]     = useState('');
   const [kLinhVuc, setKLinhVuc]   = useState('');
   const [detail, setDetail]       = useState<IKhoTri | null>(null);
+  const [khoItems, setKhoItems]   = useState<IKhoTri[]>(MOCK_KHO);
 
-  const kFiltered = useMemo(() => MOCK_KHO.filter(k => {
+  const openDetail = (item: IKhoTri) => {
+    const updated = { ...item, luotXem: item.luotXem + 1 };
+    setKhoItems(prev => prev.map(k => k.id === item.id ? updated : k));
+    setDetail(updated);
+  };
+
+  const kFiltered = useMemo(() => khoItems.filter(k => {
     const matchLV = !kLinhVuc || k.linhVuc === kLinhVuc;
     const matchQ  = !kSearch
       || k.ten.toLowerCase().includes(kSearch.toLowerCase())
       || k.ma.toLowerCase().includes(kSearch.toLowerCase())
       || k.tags.some(t => t.toLowerCase().includes(kSearch.toLowerCase()));
     return matchLV && matchQ;
-  }), [kSearch, kLinhVuc]);
+  }), [kSearch, kLinhVuc, khoItems]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -108,12 +115,12 @@ export const KhoTriThucPortalPage = () => {
           <div className="flex items-center gap-4 text-base text-gray-600">
             <span>
               <i className="fa-regular fa-books mr-1.5 text-portal-primary"></i>
-              <strong className="text-lg">{MOCK_KHO.length}</strong> tri thức công nhận
+              <strong className="text-lg">{khoItems.length}</strong> tri thức công nhận
             </span>
             <span className="text-gray-400">|</span>
             <span>
               <i className="fa-regular fa-eye mr-1.5 text-green-500"></i>
-              <strong className="text-lg">{MOCK_KHO.reduce((s, k) => s + k.luotXem, 0)}</strong> lượt xem
+              <strong className="text-lg">{khoItems.reduce((s, k) => s + k.luotXem, 0)}</strong> lượt xem
             </span>
           </div>
           <div className="flex gap-2">
@@ -157,7 +164,7 @@ export const KhoTriThucPortalPage = () => {
                 <div
                   key={item.id}
                   className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer flex flex-col group"
-                  onClick={() => setDetail(item)}
+                  onClick={() => openDetail(item)}
                 >
                   <div className="h-1.5 rounded-t-xl" style={{ background: color }}></div>
                   <div className="p-6 flex flex-col flex-1">
