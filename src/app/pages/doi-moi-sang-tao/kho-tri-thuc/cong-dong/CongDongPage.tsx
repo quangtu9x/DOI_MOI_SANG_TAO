@@ -309,7 +309,7 @@ export const CongDongPage: React.FC = () => {
       });
       if (type === LoaiDoiTuong.BaiViet) {
         setPosts(prev => prev.map(p => p.id === id
-          ? { ...p, luotThich: Math.max(0, (p.luotThich ?? 0) + (liked ? 1 : -1)), daTuThich: liked }
+          ? { ...p, soLuotThich: Math.max(0, (p.soLuotThich ?? 0) + (liked ? 1 : -1)), daTuThich: liked }
           : p
         ));
         if (postDetailOpen && postDetail?.id === id) openPost(id);
@@ -393,7 +393,7 @@ export const CongDongPage: React.FC = () => {
             onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
           >
             <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
-            <span className="fs-8">{Math.max(0, bv.luotThich ?? 0)}</span>
+            <span className="fs-8">{Math.max(0, bv.soLuotThich ?? 0)}</span>
           </button>
           <button className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
             onClick={() => openPost(bv.id)}>
@@ -624,7 +624,7 @@ export const CongDongPage: React.FC = () => {
                   onClick={() => handleLike(LoaiDoiTuong.BaiViet, postDetail.id)}
                 >
                   <i className={`fa-${likedIds.has(postDetail.id) || postDetail.daTuThich ? 'solid' : 'regular'} fa-heart`} />
-                  {postDetail.luotThich ?? 0} Thích
+                  {Math.max(0, postDetail.soLuotThich ?? 0)} Thích
                 </button>
                 {isAdmin && (
                   <Button size="small" onClick={() => { setPostDetailOpen(false); openBvEdit(postDetail); }}>
