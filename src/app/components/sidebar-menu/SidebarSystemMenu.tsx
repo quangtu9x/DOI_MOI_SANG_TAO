@@ -99,66 +99,19 @@ const sidebarSystemConfig = [
         title: 'Hướng dẫn sử dụng',
         requiredAll: [P.of(R.Catalogs, 'View')]
       },
-      {
-        to: '/admins/catalogs/chuong-trinh-nvkh',
-        title: 'Chương trình NVKH',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/loai-nvkh',
-        title: 'Loại hình NVKH',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/nguon-ngan-sach',
-        title: 'Nguồn ngân sách',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/chuyen-nganh',
-        title: 'Chuyên ngành',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/loai-tai-lieu-nvkh',
-        title: 'Loại tài liệu NCKH',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/chu-dau-tu',
-        title: 'Chủ đầu tư',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/tinh-thanh-pho',
-        title: 'Danh mục tỉnh, thành phố',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/phuong-xa',
-        title: 'Danh mục phường, xã',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/nha-thau',
-        title: 'Danh mục nhà thầu',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/nguon-von-dau-tu',
-        title: 'Danh mục nguồn vốn đầu tư',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/loai-du-an',
-        title: 'Danh mục loại dự án',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
-      {
-        to: '/admins/catalogs/nhom-du-an',
-        title: 'Danh mục nhóm dự án',
-        requiredAll: [P.of(R.Catalogs, 'View')]
-      },
+      // ── Ẩn các danh mục thuộc module NVKH / dự án CNTT / địa bàn — không dùng cho DMST (giai đoạn sau)
+      // { to: '/admins/catalogs/chuong-trinh-nvkh',  title: 'Chương trình NVKH' },
+      // { to: '/admins/catalogs/loai-nvkh',          title: 'Loại hình NVKH' },
+      // { to: '/admins/catalogs/nguon-ngan-sach',    title: 'Nguồn ngân sách' },
+      // { to: '/admins/catalogs/chuyen-nganh',       title: 'Chuyên ngành' },
+      // { to: '/admins/catalogs/loai-tai-lieu-nvkh', title: 'Loại tài liệu NCKH' },
+      // { to: '/admins/catalogs/chu-dau-tu',         title: 'Chủ đầu tư' },
+      // { to: '/admins/catalogs/tinh-thanh-pho',     title: 'Danh mục tỉnh, thành phố' },
+      // { to: '/admins/catalogs/phuong-xa',          title: 'Danh mục phường, xã' },
+      // { to: '/admins/catalogs/nha-thau',           title: 'Danh mục nhà thầu' },
+      // { to: '/admins/catalogs/nguon-von-dau-tu',   title: 'Danh mục nguồn vốn đầu tư' },
+      // { to: '/admins/catalogs/loai-du-an',         title: 'Danh mục loại dự án' },
+      // { to: '/admins/catalogs/nhom-du-an',         title: 'Danh mục nhóm dự án' },
       {
         to: '/admins/catalogs/linh-vuc-sang-kien',
         title: 'Lĩnh vực sáng kiến',

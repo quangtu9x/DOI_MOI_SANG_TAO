@@ -1,104 +1,176 @@
-import React, { useState, useMemo } from 'react';
-import { Table, Button, Tag, Input, Space, Modal, message, Tooltip } from 'antd';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Table, Button, Tag, Input, Space, Modal, message, Tooltip, Spin } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { MOCK_Y_TUONG_DATA, TRANG_THAI_DISPLAY, TrangThaiYTuong } from '../quan-ly-y-tuong/QuanLyYTuongDMSTPage';
+import { searchIdeas, receiveIdea, returnIdea } from '@/app/services/ideaPortalApi';
+import type { IIdea } from '@/models/idea-portal';
 
 interface QuyTrinhDuyetPageProps {
   mode: 'cho-duyet' | 'da-duyet' | 'tu-choi';
 }
 
+// Trạng thái ý tưởng phía BE (IdeaStatus)
+const STATUS = {
+  choDuyet: 'Đã nộp',
+  daDuyet: 'Đã tiếp nhận',
+  tuChoi: 'Đã trả lại',
+};
+
 const MODE_CONFIG = {
   'cho-duyet': {
     title: 'Chờ phê duyệt',
-    trangThai: TrangThaiYTuong.ChoDuyet,
+    status: STATUS.choDuyet,
     color: 'warning',
     icon: 'fa-clock',
     emptyText: 'Không có ý tưởng nào đang chờ duyệt',
   },
   'da-duyet': {
     title: 'Đã phê duyệt',
-    trangThai: TrangThaiYTuong.DaDuyet,
+    status: STATUS.daDuyet,
     color: 'success',
     icon: 'fa-circle-check',
     emptyText: 'Chưa có ý tưởng nào được phê duyệt',
   },
   'tu-choi': {
     title: 'Đã từ chối',
-    trangThai: TrangThaiYTuong.TuChoi,
+    status: STATUS.tuChoi,
     color: 'danger',
     icon: 'fa-circle-xmark',
     emptyText: 'Chưa có ý tưởng nào bị từ chối',
   },
 };
 
+const safeList = (res: any): IIdea[] => {
+  const d = res?.data ?? res;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.data?.data)) return d.data.data;
+  return [];
+};
+
+const formatDate = (v?: string | null) =>
+  v ? new Date(v).toLocaleDateString('vi-VN') : '—';
+
 export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) => {
   const navigate = useNavigate();
   const cfg = MODE_CONFIG[mode];
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [ideas, setIdeas] = useState<IIdea[]>([]);
   const [approveId, setApproveId] = useState<string | null>(null);
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [localData, setLocalData] = useState(() => [...MOCK_Y_TUONG_DATA]);
+
+  // Tải toàn bộ ý tưởng trong quy trình (3 trạng thái) để hiển thị số đếm + danh sách
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await searchIdeas({ pageNumber: 1, pageSize: 500 });
+      const list = safeList(res).filter(i =>
+        [STATUS.choDuyet, STATUS.daDuyet, STATUS.tuChoi].includes(i.status ?? ''));
+      setIdeas(list);
+    } catch (e) {
+      console.error('[QuyTrinhDuyet] load error:', e);
+      message.error('Không tải được danh sách ý tưởng');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const data = useMemo(() => {
-    return localData
-      .filter(r => r.trangThai === cfg.trangThai)
-      .filter(r => !search || r.tenYTuong.toLowerCase().includes(search.toLowerCase()) || r.ma.toLowerCase().includes(search.toLowerCase()));
-  }, [search, cfg.trangThai, localData]);
+    return ideas
+      .filter(r => r.status === cfg.status)
+      .filter(r => !search
+        || (r.title ?? '').toLowerCase().includes(search.toLowerCase())
+        || (r.code ?? '').toLowerCase().includes(search.toLowerCase())
+        || (r.nguoiDeXuat ?? '').toLowerCase().includes(search.toLowerCase()));
+  }, [ideas, search, cfg.status]);
 
-  const countByStatus = (st: TrangThaiYTuong) => localData.filter(r => r.trangThai === st).length;
+  const countByStatus = (st: string) => ideas.filter(r => r.status === st).length;
 
-  const handleApprove = () => {
-    setLocalData(prev => prev.map(r =>
-      r.id === approveId ? { ...r, trangThai: TrangThaiYTuong.DaDuyet } : r
-    ));
-    setApproveId(null);
-    message.success('Đã phê duyệt ý tưởng thành công!');
+  const handleApprove = async () => {
+    if (!approveId) return;
+    setActionLoading(true);
+    try {
+      const res = await receiveIdea(approveId, 'Phê duyệt qua quy trình duyệt');
+      const ok = (res as any)?.data?.succeeded ?? (res as any)?.status < 400;
+      if (!ok) {
+        message.error((res as any)?.data?.messages?.join(', ') || 'Không phê duyệt được');
+        return;
+      }
+      message.success('Đã phê duyệt ý tưởng thành công!');
+      setApproveId(null);
+      load();
+    } catch {
+      message.error('Lỗi khi phê duyệt');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!rejectReason.trim()) { message.error('Vui lòng nhập lý do từ chối'); return; }
-    setLocalData(prev => prev.map(r =>
-      r.id === rejectId ? { ...r, trangThai: TrangThaiYTuong.TuChoi, lyDoTuChoi: rejectReason } : r
-    ));
-    setRejectId(null);
-    setRejectReason('');
-    message.success('Đã từ chối ý tưởng.');
+    if (!rejectId) return;
+    setActionLoading(true);
+    try {
+      const res = await returnIdea(rejectId, rejectReason.trim());
+      const ok = (res as any)?.data?.succeeded ?? (res as any)?.status < 400;
+      if (!ok) {
+        message.error((res as any)?.data?.messages?.join(', ') || 'Không từ chối được');
+        return;
+      }
+      message.success('Đã từ chối (trả lại) ý tưởng.');
+      setRejectId(null);
+      setRejectReason('');
+      load();
+    } catch {
+      message.error('Lỗi khi từ chối');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const baseColumns = [
     {
       title: 'Mã hồ sơ',
-      dataIndex: 'ma',
-      key: 'ma',
-      width: 140,
+      dataIndex: 'code',
+      key: 'code',
+      width: 160,
       render: (t: string) => <span className="fw-bold text-primary">{t}</span>,
     },
     {
       title: 'Tên ý tưởng',
-      dataIndex: 'tenYTuong',
-      key: 'tenYTuong',
-      render: (text: string, record: any) => (
+      dataIndex: 'title',
+      key: 'title',
+      render: (text: string, record: IIdea) => (
         <div>
           <div className="fw-semibold">{text}</div>
-          <span className="badge badge-light-info fs-8 mt-1">{record.linhVuc}</span>
+          {record.linhVuc && <span className="badge badge-light-info fs-8 mt-1">{record.linhVuc}</span>}
         </div>
       ),
     },
     {
-      title: 'Người gửi',
-      dataIndex: 'nguoiGuiTen',
-      key: 'nguoiGuiTen',
-      width: 140,
+      title: 'Người đề xuất',
+      dataIndex: 'nguoiDeXuat',
+      key: 'nguoiDeXuat',
+      width: 160,
+      render: (v: string, record: IIdea) => (
+        <div>
+          <div>{v || '—'}</div>
+          {record.donViCongTac && <div className="text-muted fs-8">{record.donViCongTac}</div>}
+        </div>
+      ),
     },
     {
       title: 'Ngày nộp',
-      dataIndex: 'ngayNop',
-      key: 'ngayNop',
+      dataIndex: 'submittedOn',
+      key: 'submittedOn',
       width: 110,
-      render: (v: string) => v || '—',
+      render: (v: string, record: IIdea) => formatDate(v ?? record.submittedAt ?? record.createdOn),
     },
   ];
 
@@ -106,7 +178,7 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
     title: 'Thao tác',
     key: 'action',
     width: mode === 'cho-duyet' ? 160 : 100,
-    render: (_: unknown, record: any) => (
+    render: (_: unknown, record: IIdea) => (
       <Space>
         <Tooltip title="Xem chi tiết">
           <Button
@@ -117,7 +189,7 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
         </Tooltip>
         {mode === 'cho-duyet' && (
           <>
-            <Tooltip title="Phê duyệt">
+            <Tooltip title="Phê duyệt (tiếp nhận)">
               <Button
                 size="small"
                 type="primary"
@@ -125,7 +197,7 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
                 onClick={() => setApproveId(record.id)}
               />
             </Tooltip>
-            <Tooltip title="Từ chối">
+            <Tooltip title="Từ chối (trả lại)">
               <Button
                 size="small"
                 danger
@@ -139,14 +211,7 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
     ),
   };
 
-  const rejectReasonColumn = mode === 'tu-choi' ? [{
-    title: 'Lý do từ chối',
-    dataIndex: 'lyDoTuChoi',
-    key: 'lyDoTuChoi',
-    render: (v: string) => v ? <span className="text-danger fs-7">{v}</span> : '—',
-  }] : [];
-
-  const columns = [...baseColumns, ...rejectReasonColumn, actionColumn];
+  const columns = [...baseColumns, actionColumn];
 
   const breadcrumbs = [
     { title: 'Đổi mới sáng tạo', path: '/doi-moi-sang-tao/dashboard', isActive: false, isSeparator: false },
@@ -160,7 +225,7 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
         {/* Summary tabs */}
         <div className="d-flex gap-3 mb-5">
           {Object.entries(MODE_CONFIG).map(([key, mc]) => {
-            const count = countByStatus(mc.trangThai);
+            const count = countByStatus(mc.status);
             return (
               <Link
                 key={key}
@@ -190,24 +255,32 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
               <Tag color={cfg.color} className="me-2 fs-6">{data.length}</Tag>
               {cfg.title}
             </h3>
-            <Input
-              placeholder="Tìm kiếm..."
-              prefix={<i className="fa-regular fa-search text-muted" />}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ width: 250 }}
-            />
+            <div className="d-flex gap-2 align-items-center">
+              <Input
+                placeholder="Tìm theo mã, tên, người đề xuất..."
+                prefix={<i className="fa-regular fa-search text-muted" />}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ width: 280 }}
+                allowClear
+              />
+              <Tooltip title="Làm mới">
+                <Button icon={<i className="fa-regular fa-refresh" />} onClick={load} />
+              </Tooltip>
+            </div>
           </div>
           <div className="card-body py-3">
-            <Table
-              columns={columns}
-              dataSource={data}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-              bordered
-              size="small"
-              locale={{ emptyText: cfg.emptyText }}
-            />
+            <Spin spinning={loading}>
+              <Table
+                columns={columns}
+                dataSource={data}
+                rowKey="id"
+                pagination={{ pageSize: 10 }}
+                bordered
+                size="small"
+                locale={{ emptyText: cfg.emptyText }}
+              />
+            </Spin>
           </div>
         </div>
 
@@ -219,8 +292,9 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
           onCancel={() => setApproveId(null)}
           okText="Phê duyệt"
           cancelText="Hủy"
+          confirmLoading={actionLoading}
         >
-          <p>Bạn có chắc chắn muốn phê duyệt ý tưởng này?</p>
+          <p>Bạn có chắc chắn muốn phê duyệt (tiếp nhận) ý tưởng này?</p>
         </Modal>
 
         {/* Reject Modal */}
@@ -232,8 +306,9 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
           okText="Xác nhận từ chối"
           cancelText="Hủy"
           okButtonProps={{ danger: true }}
+          confirmLoading={actionLoading}
         >
-          <p>Lý do từ chối:</p>
+          <p>Lý do từ chối (ý tưởng sẽ được trả lại cho người gửi chỉnh sửa):</p>
           <Input.TextArea
             rows={3}
             value={rejectReason}

@@ -47,8 +47,10 @@ export interface IIdeaCreateRequest {
 export interface IIdea extends IIdeaCreateRequest {
   id: string;
   createdAt?: string;
+  createdOn?: string;
   updatedAt?: string;
   submittedAt?: string;
+  submittedOn?: string;
   createdBy?: string;
   receiverName?: string;
   statusLabel?: string;
