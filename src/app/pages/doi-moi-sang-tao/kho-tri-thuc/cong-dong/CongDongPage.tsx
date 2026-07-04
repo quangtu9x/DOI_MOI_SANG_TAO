@@ -144,6 +144,12 @@ export const CongDongPage: React.FC = () => {
       const res = await searchBaiViets({ congDongId, pageNumber: 1, pageSize: 30 });
       const list = safeList<IBaiViet>(res);
       setPosts(list);
+      // Khởi tạo likedIds từ daTuThich để giữ trạng thái sau refresh
+      setLikedIds(prev => {
+        const next = new Set(prev);
+        list.forEach(p => { if (p.daTuThich) next.add(p.id); else next.delete(p.id); });
+        return next;
+      });
       // Load 3 preview comments per post (fire & forget)
       Promise.allSettled(
         list.map(p =>
@@ -292,19 +298,20 @@ export const CongDongPage: React.FC = () => {
   const handleLike = async (type: LoaiDoiTuong, id: string) => {
     try {
       const res = await toggleThich({ loaiDoiTuong: type, doiTuongId: id });
-      const liked = (res as any)?.data?.data ?? (res as any)?.data?.succeeded ?? (res as any)?.data ?? false;
+      const result = (res as any)?.data;          // IResult<boolean>
+      if (result?.succeeded === false) { message.warning('Thao tác không thành công'); return; }
+      // data: true → vừa thích, data: false → vừa bỏ thích
+      const liked: boolean = Boolean(result?.data);
       setLikedIds(prev => {
         const next = new Set(prev);
         liked ? next.add(id) : next.delete(id);
         return next;
       });
       if (type === LoaiDoiTuong.BaiViet) {
-        // Cập nhật luotThich trực tiếp trên card — không mở modal
         setPosts(prev => prev.map(p => p.id === id
-          ? { ...p, luotThich: (p.luotThich ?? 0) + (liked ? 1 : -1), daTuThich: liked }
+          ? { ...p, luotThich: Math.max(0, (p.luotThich ?? 0) + (liked ? 1 : -1)), daTuThich: liked }
           : p
         ));
-        // Nếu modal đang mở đúng bài này thì reload
         if (postDetailOpen && postDetail?.id === id) openPost(id);
       }
     } catch { message.error('Lỗi'); }
@@ -386,7 +393,7 @@ export const CongDongPage: React.FC = () => {
             onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
           >
             <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
-            <span className="fs-8">{bv.luotThich ?? 0}</span>
+            <span className="fs-8">{Math.max(0, bv.luotThich ?? 0)}</span>
           </button>
           <button className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
             onClick={() => openPost(bv.id)}>
