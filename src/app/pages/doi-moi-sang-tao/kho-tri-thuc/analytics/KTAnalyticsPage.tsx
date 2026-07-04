@@ -241,9 +241,9 @@ export const KTAnalyticsPage: React.FC = () => {
         {/* Header */}
         <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-6">
           <div>
-            <h4 className="fw-bold text-gray-900 mb-1">Thống kê Knowledge Hub</h4>
+            <h4 className="fw-bold text-gray-900 mb-1">Thống kê Thư viện ĐMST</h4>
             <p className="text-muted mb-0 fs-7">
-              Dashboard tổng hợp — dữ liệu cache 15 phút, cập nhật khi có tài liệu được duyệt
+              Bảng điều hành tổng hợp — dữ liệu lưu đệm 15 phút, tự cập nhật khi có tài liệu được duyệt
             </p>
           </div>
           <div className="d-flex align-items-center gap-3">
@@ -444,7 +444,7 @@ export const KTAnalyticsPage: React.FC = () => {
                 {
                   key: 'tai-lieu',
                   label: (
-                    <span><i className="fa-regular fa-fire me-1" />Tài liệu hot</span>
+                    <span><i className="fa-regular fa-fire me-1" />Tài liệu nổi bật</span>
                   ),
                   children: (
                     <Table

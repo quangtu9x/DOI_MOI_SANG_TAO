@@ -94,7 +94,7 @@ const SidebarDoiMoiSangTaoMenu = () => {
       {/* ── Kho tri thức (all roles, member = read-only) ── */}
       <SidebarMenuItem
         to='/doi-moi-sang-tao/kho-tri-thuc'
-        title={isMember ? 'Kho tri thức (đọc)' : 'Kho tri thức'}
+        title='Thư viện ĐMST'
         fontIcon='fa-regular fa-books'
       />
 
