@@ -95,6 +95,11 @@ export const CongDongPage: React.FC = () => {
   const [editingCmt, setEditingCmt]   = useState<IBinhLuan | null>(null);
   const [editCmtText, setEditCmtText] = useState('');
 
+  // ── Card-level comment preview & quick input
+  const [previewComments, setPreviewComments] = useState<Record<string, IBinhLuan[]>>({});
+  const [quickCmtText, setQuickCmtText]       = useState<Record<string, string>>({});
+  const [quickCmtLoading, setQuickCmtLoading] = useState<Record<string, boolean>>({});
+
   // ── Community form
   const [cdFormOpen, setCdFormOpen]   = useState(false);
   const [cdFormMode, setCdFormMode]   = useState<'create' | 'edit'>('create');
@@ -137,9 +142,35 @@ export const CongDongPage: React.FC = () => {
     setPostLoading(true);
     try {
       const res = await searchBaiViets({ congDongId, pageNumber: 1, pageSize: 30 });
-      setPosts(safeList<IBaiViet>(res));
+      const list = safeList<IBaiViet>(res);
+      setPosts(list);
+      // Load 3 preview comments per post (fire & forget)
+      Promise.allSettled(
+        list.map(p =>
+          searchBinhLuans({ loaiDoiTuong: LoaiDoiTuong.BaiViet, doiTuongId: p.id, pageNumber: 1, pageSize: 3 })
+            .then(r => ({ id: p.id, cmts: safeList<IBinhLuan>(r) }))
+        )
+      ).then(results => {
+        const map: Record<string, IBinhLuan[]> = {};
+        results.forEach(r => { if (r.status === 'fulfilled') map[r.value.id] = r.value.cmts; });
+        setPreviewComments(map);
+      });
     } catch {}
     finally { setPostLoading(false); }
+  };
+
+  const submitQuickComment = async (postId: string) => {
+    const text = quickCmtText[postId]?.trim();
+    if (!text) return;
+    setQuickCmtLoading(prev => ({ ...prev, [postId]: true }));
+    try {
+      await createBinhLuan({ loaiDoiTuong: LoaiDoiTuong.BaiViet, doiTuongId: postId, noiDung: text });
+      setQuickCmtText(prev => ({ ...prev, [postId]: '' }));
+      const r = await searchBinhLuans({ loaiDoiTuong: LoaiDoiTuong.BaiViet, doiTuongId: postId, pageNumber: 1, pageSize: 3 });
+      setPreviewComments(prev => ({ ...prev, [postId]: safeList<IBinhLuan>(r) }));
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, soBinhLuan: (p.soBinhLuan ?? 0) + 1 } : p));
+    } catch { message.error('Lỗi'); }
+    finally { setQuickCmtLoading(prev => ({ ...prev, [postId]: false })); }
   };
 
   // ── Open post detail
@@ -267,7 +298,15 @@ export const CongDongPage: React.FC = () => {
         liked ? next.add(id) : next.delete(id);
         return next;
       });
-      if (postDetail?.id === id || type === LoaiDoiTuong.BaiViet) openPost(postDetail?.id ?? id);
+      if (type === LoaiDoiTuong.BaiViet) {
+        // Cập nhật luotThich trực tiếp trên card — không mở modal
+        setPosts(prev => prev.map(p => p.id === id
+          ? { ...p, luotThich: (p.luotThich ?? 0) + (liked ? 1 : -1), daTuThich: liked }
+          : p
+        ));
+        // Nếu modal đang mở đúng bài này thì reload
+        if (postDetailOpen && postDetail?.id === id) openPost(id);
+      }
     } catch { message.error('Lỗi'); }
   };
 
@@ -346,12 +385,12 @@ export const CongDongPage: React.FC = () => {
             className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(bv.id) || bv.daTuThich ? 'text-danger' : 'text-muted'}`}
             onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
           >
-            <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart`} />
+            <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
             <span className="fs-8">{bv.luotThich ?? 0}</span>
           </button>
           <button className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
             onClick={() => openPost(bv.id)}>
-            <i className="fa-regular fa-comment" />
+            <i className="fa-regular fa-comment me-1" />
             <span className="fs-8">{bv.soBinhLuan ?? 0}</span>
           </button>
           <Button type="link" size="small" className="ms-auto p-0 fs-8"
@@ -359,6 +398,51 @@ export const CongDongPage: React.FC = () => {
             Xem chi tiết →
           </Button>
         </div>
+
+        {/* Quick comment input */}
+        <div className="d-flex gap-2 align-items-end mt-3">
+          <Avatar size={28} style={{ backgroundColor: '#1677ff', flexShrink: 0, fontSize: 12 }}>
+            <i className="fa-regular fa-user" />
+          </Avatar>
+          <Input.TextArea
+            value={quickCmtText[bv.id] ?? ''}
+            onChange={e => setQuickCmtText(prev => ({ ...prev, [bv.id]: e.target.value }))}
+            placeholder="Viết bình luận..."
+            autoSize={{ minRows: 1, maxRows: 3 }}
+            onPressEnter={e => { if (!e.shiftKey) { e.preventDefault(); submitQuickComment(bv.id); } }}
+            style={{ borderRadius: 16, fontSize: 13 }}
+          />
+          <Button type="primary" size="small" shape="circle"
+            icon={<i className="fa-regular fa-paper-plane" />}
+            disabled={!quickCmtText[bv.id]?.trim()}
+            loading={quickCmtLoading[bv.id]}
+            onClick={() => submitQuickComment(bv.id)}
+          />
+        </div>
+
+        {/* 3 most recent comments */}
+        {(previewComments[bv.id]?.length ?? 0) > 0 && (
+          <div className="d-flex flex-column gap-2 mt-2">
+            {previewComments[bv.id].map(cmt => (
+              <div key={cmt.id} className="d-flex gap-2 align-items-start">
+                <Avatar size={24} style={{ backgroundColor: getAvatarColor(cmt.tacGia?.hoTen ?? '?'), flexShrink: 0, fontSize: 11 }}>
+                  {getInitials(cmt.tacGia?.hoTen)}
+                </Avatar>
+                <div className="bg-gray-100 rounded px-2 py-1 flex-grow-1" style={{ minWidth: 0 }}>
+                  <span className="fw-semibold fs-8 me-1">{cmt.tacGia?.hoTen ?? 'Ẩn danh'}</span>
+                  <span className="fs-8 text-gray-700">{cmt.noiDung}</span>
+                  <div className="text-muted fs-8 mt-0.5">{relativeTime(cmt.createdOn)}</div>
+                </div>
+              </div>
+            ))}
+            {(bv.soBinhLuan ?? 0) > 3 && (
+              <button className="btn btn-text btn-sm p-0 text-primary fs-8 text-start"
+                onClick={() => openPost(bv.id)}>
+                Xem tất cả {bv.soBinhLuan} bình luận →
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -378,17 +462,16 @@ export const CongDongPage: React.FC = () => {
             <div className="card border-0 shadow-sm">
               <div className="card-body p-3">
                 {/* Search + create */}
-                <div className="d-flex gap-2 mb-3">
+                <div className="d-flex align-items-center gap-2 mb-3">
                   <Input.Search
                     placeholder="Tìm cộng đồng..."
-                    size="small"
                     onSearch={kw => { setKeyword(kw); setPage(1); loadCommunities(kw, 1); }}
                     allowClear
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, minWidth: 0 }}
                   />
                   {isAdmin && (
                     <Tooltip title="Tạo cộng đồng mới">
-                      <Button size="small" type="primary" icon={<i className="fa-regular fa-plus" />}
+                      <Button type="primary" icon={<i className="fa-regular fa-plus" />}
                         onClick={openCdCreate} />
                     </Tooltip>
                   )}
