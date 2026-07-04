@@ -18,6 +18,8 @@ import {
   getIdeaDetail,
 } from '@/app/services/ideaPortalApi';
 import type { IIdea, IIdeaTemplate, IAttachmentUploadResult } from '@/models/idea-portal';
+import type { IIdeaFieldConfig } from '@/models/cau-hinh-truong-y-tuong';
+import { requestPOST } from '@/utils/baseAPI';
 
 type KhoiTaoCach = 'new' | 'template' | 'import';
 
@@ -38,6 +40,33 @@ export const NopYTuongPage = () => {
   const { currentUser } = useAuth();
   const [step, setStep] = useState(1);
   const [form] = Form.useForm();
+
+  // ── Cấu hình trường thông tin ý tưởng (admin cấu hình ẩn/hiện + bắt buộc) ──
+  const [fieldCfgs, setFieldCfgs] = useState<Record<string, IIdeaFieldConfig>>({});
+
+  useEffect(() => {
+    requestPOST<any>('ideafieldconfigs/search', { pageNumber: 1, pageSize: 100 })
+      .then(res => {
+        const list: IIdeaFieldConfig[] = res?.data?.data ?? [];
+        if (Array.isArray(list) && list.length > 0) {
+          setFieldCfgs(Object.fromEntries(list.map(c => [c.fieldCode, c])));
+        }
+      })
+      .catch(() => { /* chưa có cấu hình → dùng mặc định của form */ });
+  }, []);
+
+  /** Trường có hiển thị không (mặc định có nếu chưa cấu hình) */
+  const fieldShow = (code: string) => (fieldCfgs[code] ? fieldCfgs[code].isActive : true);
+  /** Rule bắt buộc theo cấu hình (fallback về mặc định của form) */
+  const fieldRules = (code: string, defaultRequired: boolean, msg: string) => {
+    const required = fieldCfgs[code] ? fieldCfgs[code].isRequired : defaultRequired;
+    return required ? [{ required: true, message: msg }] : [];
+  };
+  const fieldPh = (code: string, fallback: string) => fieldCfgs[code]?.placeholder || fallback;
+  const fieldMax = (code: string) => {
+    const m = fieldCfgs[code]?.maxLength;
+    return m && m > 0 ? m : undefined;
+  };
   const [khoiTaoCach, setKhoiTaoCach] = useState<KhoiTaoCach | null>(null);
   const [ticketCode, setTicketCode] = useState<string>('');
   const [createdIdeaId, setCreatedIdeaId] = useState<string>('');
@@ -241,6 +270,11 @@ export const NopYTuongPage = () => {
 
   const handlePreview = () => {
     form.validateFields().then(() => {
+      // File đính kèm bắt buộc theo cấu hình trường thông tin
+      if (fieldShow('fileDinhKem') && fieldCfgs['fileDinhKem']?.isRequired && fileList.length === 0) {
+        message.error('Vui lòng đính kèm tài liệu hỗ trợ (trường bắt buộc)!');
+        return;
+      }
       const values = form.getFieldsValue(true);
       setPreviewData({ ...values, attachmentCount: fileList.length });
       setStep(3);
@@ -442,92 +476,116 @@ export const NopYTuongPage = () => {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Form.Item
-                  label="Tên ý tưởng"
-                  name="tenYTuong"
-                  rules={[{ required: true, message: 'Vui lòng nhập tên ý tưởng.' }]}
-                >
-                  <Input placeholder="Nhập tên ý tưởng" />
-                </Form.Item>
+                {fieldShow('tenYTuong') && (
+                  <Form.Item
+                    label="Tên ý tưởng"
+                    name="tenYTuong"
+                    rules={fieldRules('tenYTuong', true, 'Vui lòng nhập tên ý tưởng.')}
+                  >
+                    <Input placeholder={fieldPh('tenYTuong', 'Nhập tên ý tưởng')} maxLength={fieldMax('tenYTuong')} />
+                  </Form.Item>
+                )}
 
-                <Form.Item
-                  label="Lĩnh vực"
-                  name="linhVuc"
-                  rules={[{ required: true, message: 'Vui lòng nhập lĩnh vực.' }]}
-                >
-                  <AutoComplete
-                    options={LINH_VUC_OPTIONS}
-                    placeholder="Chọn hoặc nhập lĩnh vực"
-                    filterOption={(input, option) =>
-                      (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
-                    }
-                    allowClear
-                  />
-                </Form.Item>
+                {fieldShow('linhVuc') && (
+                  <Form.Item
+                    label="Lĩnh vực"
+                    name="linhVuc"
+                    rules={fieldRules('linhVuc', true, 'Vui lòng nhập lĩnh vực.')}
+                  >
+                    <AutoComplete
+                      options={LINH_VUC_OPTIONS}
+                      placeholder={fieldPh('linhVuc', 'Chọn hoặc nhập lĩnh vực')}
+                      filterOption={(input, option) =>
+                        (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                      allowClear
+                    />
+                  </Form.Item>
+                )}
               </div>
 
-              <Form.Item
-                label="Mô tả hiện trạng / vấn đề"
-                name="moTaVanDe"
-                rules={[{ required: true, message: 'Vui lòng nhập mô tả hiện trạng.' }]}
-              >
-                <Input.TextArea rows={4} placeholder="Mô tả vấn đề cần giải quyết" />
-              </Form.Item>
+              {fieldShow('moTaVanDe') && (
+                <Form.Item
+                  label="Mô tả hiện trạng / vấn đề"
+                  name="moTaVanDe"
+                  rules={fieldRules('moTaVanDe', true, 'Vui lòng nhập mô tả hiện trạng.')}
+                >
+                  <Input.TextArea rows={4} placeholder={fieldPh('moTaVanDe', 'Mô tả vấn đề cần giải quyết')} maxLength={fieldMax('moTaVanDe')} />
+                </Form.Item>
+              )}
 
-              <Form.Item
-                label="Nội dung ý tưởng đề xuất"
-                name="noiDungDeXuat"
-                rules={[{ required: true, message: 'Vui lòng nhập nội dung đề xuất.' }]}
-              >
-                <Input.TextArea rows={4} placeholder="Mô tả giải pháp / ý tưởng đề xuất" />
-              </Form.Item>
+              {fieldShow('noiDungDeXuat') && (
+                <Form.Item
+                  label="Nội dung ý tưởng đề xuất"
+                  name="noiDungDeXuat"
+                  rules={fieldRules('noiDungDeXuat', true, 'Vui lòng nhập nội dung đề xuất.')}
+                >
+                  <Input.TextArea rows={4} placeholder={fieldPh('noiDungDeXuat', 'Mô tả giải pháp / ý tưởng đề xuất')} maxLength={fieldMax('noiDungDeXuat')} />
+                </Form.Item>
+              )}
 
-              <Form.Item
-                label="Mục tiêu và giá trị kỳ vọng"
-                name="mucTieu"
-                rules={[{ required: true, message: 'Vui lòng nhập mục tiêu kỳ vọng.' }]}
-              >
-                <Input.TextArea rows={3} placeholder="Mô tả kết quả mong đợi" />
-              </Form.Item>
+              {fieldShow('mucTieu') && (
+                <Form.Item
+                  label="Mục tiêu và giá trị kỳ vọng"
+                  name="mucTieu"
+                  rules={fieldRules('mucTieu', true, 'Vui lòng nhập mục tiêu kỳ vọng.')}
+                >
+                  <Input.TextArea rows={3} placeholder={fieldPh('mucTieu', 'Mô tả kết quả mong đợi')} maxLength={fieldMax('mucTieu')} />
+                </Form.Item>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Form.Item
-                  label="Người đề xuất"
-                  name="nguoiDeXuat"
-                  initialValue={currentUser?.fullName || ''}
-                  rules={[{ required: true, message: 'Vui lòng nhập người đề xuất.' }]}
-                >
-                  <Input placeholder="Họ tên người đề xuất" />
-                </Form.Item>
+                {fieldShow('nguoiDeXuat') && (
+                  <Form.Item
+                    label="Người đề xuất"
+                    name="nguoiDeXuat"
+                    initialValue={currentUser?.fullName || ''}
+                    rules={fieldRules('nguoiDeXuat', true, 'Vui lòng nhập người đề xuất.')}
+                  >
+                    <Input placeholder={fieldPh('nguoiDeXuat', 'Họ tên người đề xuất')} maxLength={fieldMax('nguoiDeXuat')} />
+                  </Form.Item>
+                )}
 
-                <Form.Item
-                  label="Đơn vị công tác"
-                  name="donViCongTac"
-                  initialValue={currentUser?.businessName || currentUser?.organizationUnitCode || ''}
-                  rules={[{ required: true, message: 'Vui lòng nhập đơn vị công tác.' }]}
-                >
-                  <Input placeholder="Đơn vị / phòng ban công tác" />
-                </Form.Item>
+                {fieldShow('donViCongTac') && (
+                  <Form.Item
+                    label="Đơn vị công tác"
+                    name="donViCongTac"
+                    initialValue={currentUser?.businessName || currentUser?.organizationUnitCode || ''}
+                    rules={fieldRules('donViCongTac', true, 'Vui lòng nhập đơn vị công tác.')}
+                  >
+                    <Input placeholder={fieldPh('donViCongTac', 'Đơn vị / phòng ban công tác')} maxLength={fieldMax('donViCongTac')} />
+                  </Form.Item>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Form.Item label="Phạm vi áp dụng" name="phamViApDung">
-                  <Input placeholder="Đơn vị / phòng ban áp dụng" />
-                </Form.Item>
+                {fieldShow('phamViApDung') && (
+                  <Form.Item label="Phạm vi áp dụng" name="phamViApDung"
+                    rules={fieldRules('phamViApDung', false, 'Vui lòng nhập phạm vi áp dụng.')}>
+                    <Input placeholder={fieldPh('phamViApDung', 'Đơn vị / phòng ban áp dụng')} maxLength={fieldMax('phamViApDung')} />
+                  </Form.Item>
+                )}
 
                 <Form.Item label="Thời gian áp dụng dự kiến" name="thoiGianApDung">
                   <DatePicker className="w-full" placeholder="Chọn thời gian" />
                 </Form.Item>
               </div>
 
-              <Form.Item label="Lợi ích dự kiến (định tính / định lượng)" name="loiIchDuKien">
-                <Input.TextArea rows={3} placeholder="Mô tả lợi ích dự kiến" />
-              </Form.Item>
+              {fieldShow('loiIch') && (
+                <Form.Item label="Lợi ích dự kiến (định tính / định lượng)" name="loiIchDuKien"
+                  rules={fieldRules('loiIch', false, 'Vui lòng nhập lợi ích dự kiến.')}>
+                  <Input.TextArea rows={3} placeholder={fieldPh('loiIch', 'Mô tả lợi ích dự kiến')} maxLength={fieldMax('loiIch')} />
+                </Form.Item>
+              )}
 
               {/* Đính kèm + Người tiếp nhận */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                {fieldShow('fileDinhKem') && (
                 <div>
-                  <h4 className="font-semibold mb-3">📎 Đính kèm tài liệu hỗ trợ</h4>
+                  <h4 className="font-semibold mb-3">
+                    📎 Đính kèm tài liệu hỗ trợ
+                    {fieldCfgs['fileDinhKem']?.isRequired && <span className="text-red-500 ms-1">*</span>}
+                  </h4>
                   <Upload
                     maxCount={5}
                     fileList={fileList}
@@ -542,6 +600,7 @@ export const NopYTuongPage = () => {
                   </Upload>
                   <p className="text-sm text-gray-500 mt-2">Tối đa 5 tập tin (PDF, Word, Excel, Ảnh)</p>
                 </div>
+                )}
 
                 <div>
                   <h4 className="font-semibold mb-3">👤 Cán bộ tiếp nhận</h4>

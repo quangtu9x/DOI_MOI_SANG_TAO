@@ -1,38 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import { Tag, message } from 'antd';
+import { getIdeaDashboard } from '@/app/services/ideaPortalApi';
+import type { IIdeaDashboard } from '@/models/idea-portal';
 
 // ── constants ────────────────────────────────────────────────────────────────
 
 const VNA_BLUE = '#003087';
 const VNA_GOLD = '#C5A028';
 
-const STATS = [
-  { label: 'Tổng ý tưởng',    value: 214, icon: 'fa-lightbulb',      color: 'primary', sub: '+18 trong tháng này' },
-  { label: 'Chờ phê duyệt',   value: 31,  icon: 'fa-clock',           color: 'warning', sub: '5 quá hạn xử lý' },
-  { label: 'Đã phê duyệt',    value: 127, icon: 'fa-circle-check',    color: 'success', sub: '59.3% tỷ lệ duyệt' },
-  { label: 'Đang triển khai', value: 43,  icon: 'fa-plane-departure', color: 'info',    sub: 'Trên mạng bay nội địa' },
-];
-
-const MONTHLY = [
-  { thang: 'T1', count: 18 },
-  { thang: 'T2', count: 22 },
-  { thang: 'T3', count: 29 },
-  { thang: 'T4', count: 25 },
-  { thang: 'T5', count: 33 },
-  { thang: 'T6', count: 31 },
-];
-const maxMonthly = Math.max(...MONTHLY.map(m => m.count));
-
-const LINH_VUC_DATA = [
-  { name: 'Khai thác bay',       count: 52, pct: 24, color: '#3B82F6' },
-  { name: 'Kỹ thuật bảo dưỡng', count: 45, pct: 21, color: '#10B981' },
-  { name: 'Dịch vụ hành khách', count: 38, pct: 18, color: '#F59E0B' },
-  { name: 'Dịch vụ mặt đất',    count: 32, pct: 15, color: '#EF4444' },
-  { name: 'Công nghệ thông tin', count: 27, pct: 13, color: '#8B5CF6' },
-];
+const LV_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16'];
 
 const STATUS_COLORS: Record<string, string> = {
   'Đang soạn thảo': 'default',
@@ -370,6 +349,43 @@ export const DashboardDoiMoiPage: React.FC = () => {
     Object.fromEntries(FEED_POSTS.map(p => [p.id, p.initLikes]))
   );
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
+
+  // ── Số liệu thật từ API báo cáo ──────────────────────────────────────────
+  const [dash, setDash] = useState<IIdeaDashboard | null>(null);
+
+  useEffect(() => {
+    getIdeaDashboard()
+      .then(res => {
+        const d = (res as any)?.data;
+        setDash(d?.data ?? d ?? null);
+      })
+      .catch(() => { /* giữ giá trị 0 */ });
+  }, []);
+
+  const STATS = [
+    { label: 'Tổng ý tưởng', value: dash?.tongYTuong ?? 0, icon: 'fa-lightbulb', color: 'primary',
+      sub: `${dash?.soNguoiThamGia ?? 0} người tham gia` },
+    { label: 'Đã nộp/Chờ xét duyệt', value: dash?.soDaNop ?? 0, icon: 'fa-clock', color: 'warning',
+      sub: dash?.soTonDong ? `${dash.soTonDong} quá hạn xử lý` : 'Không có tồn đọng' },
+    { label: 'Đã tiếp nhận', value: dash?.soDaTiepNhan ?? 0, icon: 'fa-circle-check', color: 'success',
+      sub: dash && dash.tongYTuong > 0
+        ? `${Math.round(((dash.soDaTiepNhan + dash.soDuocCongNhan) / dash.tongYTuong) * 100)}% tỷ lệ duyệt`
+        : '—' },
+    { label: 'Được công nhận', value: dash?.soDuocCongNhan ?? 0, icon: 'fa-medal', color: 'info',
+      sub: `${dash?.soDonViThamGia ?? 0} đơn vị tham gia` },
+  ];
+
+  const MONTHLY = (dash?.nopTheoThang ?? Array(12).fill(0))
+    .map((count, i) => ({ thang: `T${i + 1}`, count }));
+  const maxMonthly = Math.max(...MONTHLY.map(m => m.count), 1);
+
+  const totalLv = (dash?.theoLinhVuc ?? []).reduce((s, x) => s + x.soLuong, 0);
+  const LINH_VUC_DATA = (dash?.theoLinhVuc ?? []).slice(0, 6).map((x, i) => ({
+    name: x.ten,
+    count: x.soLuong,
+    pct: totalLv > 0 ? Math.round((x.soLuong / totalLv) * 100) : 0,
+    color: LV_COLORS[i % LV_COLORS.length],
+  }));
 
   const handleLike = (id: string) => {
     const wasLiked = likes[id] ?? false;

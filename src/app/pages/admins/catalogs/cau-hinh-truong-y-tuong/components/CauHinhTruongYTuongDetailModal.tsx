@@ -30,6 +30,7 @@ export const CauHinhTruongYTuongDetailModal = () => {
   const [form] = Form.useForm<IIdeaFieldConfig>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [buttonLoading, setButtonLoading] = useState(false);
+  const [isDefaultField, setIsDefaultField] = useState(false);
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
@@ -41,6 +42,7 @@ export const CauHinhTruongYTuongDetailModal = () => {
           form.setFieldsValue({
             ..._data,
           });
+          setIsDefaultField(!!_data.isDefault);
         }
       } catch (error) {
         console.error('Error fetching idea field config:', error);
@@ -51,6 +53,8 @@ export const CauHinhTruongYTuongDetailModal = () => {
     };
     if (id) {
       fetchData();
+    } else {
+      setIsDefaultField(false);
     }
     return () => { };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,13 +133,22 @@ export const CauHinhTruongYTuongDetailModal = () => {
               }}
             >
               <div className="row">
+                {isDefaultField && (
+                  <div className="col-12 mb-4">
+                    <div className="alert alert-warning py-2 px-3 mb-0 fs-7">
+                      <i className="fa-regular fa-lock me-2" />
+                      Đây là <strong>trường mặc định của hệ thống</strong> — chỉ được cấu hình
+                      <strong> Bắt buộc</strong> và <strong>Kích hoạt</strong> (hiển thị hay không).
+                    </div>
+                  </div>
+                )}
                 <div className="col-xl-6 col-lg-6">
                   <Form.Item
                     label="Mã trường"
                     name="fieldCode"
                     rules={[{ required: true, message: 'Không được để trống!' }]}
                   >
-                    <Input placeholder="Ví dụ: tenYTuong, linhVuc..." />
+                    <Input placeholder="Ví dụ: tenYTuong, linhVuc..." disabled={isDefaultField} />
                   </Form.Item>
                 </div>
                 <div className="col-xl-6 col-lg-6">
@@ -144,7 +157,7 @@ export const CauHinhTruongYTuongDetailModal = () => {
                     name="fieldName"
                     rules={[{ required: true, message: 'Không được để trống!' }]}
                   >
-                    <Input placeholder="Tên hiển thị trên form..." />
+                    <Input placeholder="Tên hiển thị trên form..." disabled={isDefaultField} />
                   </Form.Item>
                 </div>
                 <div className="col-xl-6 col-lg-6">
@@ -153,7 +166,7 @@ export const CauHinhTruongYTuongDetailModal = () => {
                     name="dataType"
                     rules={[{ required: true, message: 'Không được để trống!' }]}
                   >
-                    <Select options={DATA_TYPE_OPTIONS} placeholder="Chọn kiểu dữ liệu" />
+                    <Select options={DATA_TYPE_OPTIONS} placeholder="Chọn kiểu dữ liệu" disabled={isDefaultField} />
                   </Form.Item>
                 </div>
                 <div className="col-xl-3 col-lg-3">
@@ -172,27 +185,27 @@ export const CauHinhTruongYTuongDetailModal = () => {
                     name="sortOrder"
                     rules={[{ required: true, message: 'Không được để trống!' }]}
                   >
-                    <InputNumber min={1} max={999} style={{ width: '100%' }} />
+                    <InputNumber min={1} max={999} style={{ width: '100%' }} disabled={isDefaultField} />
                   </Form.Item>
                 </div>
                 <div className="col-xl-3 col-lg-3">
                   <Form.Item label="Độ dài tối đa" name="maxLength">
-                    <InputNumber min={0} max={99999} style={{ width: '100%' }} placeholder="Không giới hạn" />
+                    <InputNumber min={0} max={99999} style={{ width: '100%' }} placeholder="Không giới hạn" disabled={isDefaultField} />
                   </Form.Item>
                 </div>
                 <div className="col-xl-12 col-lg-12">
                   <Form.Item label="Mô tả / Hướng dẫn" name="description">
-                    <TextArea rows={2} placeholder="Mô tả ngắn về mục đích của trường này..." />
+                    <TextArea rows={2} placeholder="Mô tả ngắn về mục đích của trường này..." disabled={isDefaultField} />
                   </Form.Item>
                 </div>
                 <div className="col-xl-6 col-lg-6">
                   <Form.Item label="Placeholder" name="placeholder">
-                    <Input placeholder="Văn bản gợi ý trong ô nhập..." />
+                    <Input placeholder="Văn bản gợi ý trong ô nhập..." disabled={isDefaultField} />
                   </Form.Item>
                 </div>
                 <div className="col-xl-6 col-lg-6">
                   <Form.Item label="Giá trị mặc định" name="defaultValue">
-                    <Input placeholder="Giá trị khởi tạo (nếu có)..." />
+                    <Input placeholder="Giá trị khởi tạo (nếu có)..." disabled={isDefaultField} />
                   </Form.Item>
                 </div>
                 <div className="col-xl-12 col-lg-12">
@@ -201,7 +214,7 @@ export const CauHinhTruongYTuongDetailModal = () => {
                     name="options"
                     extra="Nhập JSON array, ví dụ: [{'label':'Lựa chọn 1','value':'1'},{'label':'Lựa chọn 2','value':'2'}]"
                   >
-                    <TextArea rows={3} placeholder="JSON array cho các tuỳ chọn của select..." />
+                    <TextArea rows={3} placeholder="JSON array cho các tuỳ chọn của select..." disabled={isDefaultField} />
                   </Form.Item>
                 </div>
               </div>

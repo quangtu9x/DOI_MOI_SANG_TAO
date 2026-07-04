@@ -51,6 +51,25 @@ const safeItem = <T,>(res: any): T | null => {
   return (d?.data ?? d ?? null) as T | null;
 };
 
+/**
+ * baseAPI không throw khi HTTP lỗi (trả {data, status}).
+ * Trả về thông báo lỗi từ BE (ErrorResult.messages / Result.messages) hoặc null nếu thành công.
+ */
+const getApiError = (res: any): string | null => {
+  if (!res) return 'Không nhận được phản hồi từ máy chủ';
+  if (typeof res.status === 'number' && res.status >= 400) {
+    const d = res.data;
+    const msgs: string[] = d?.messages ?? [];
+    return msgs.length > 0 ? msgs.join('. ') : (d?.exception || `Lỗi ${res.status}`);
+  }
+  const d = res.data;
+  if (d && d.succeeded === false) {
+    const msgs: string[] = d.messages ?? [];
+    return msgs.length > 0 ? msgs.join('. ') : 'Yêu cầu không thành công';
+  }
+  return null;
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const LOAI_LABEL: Record<LoaiTaiLieu, string> = {
@@ -343,24 +362,41 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
   // ── Workflow actions
   const handleNop = async (id: string) => {
-    try { await nopKiemDuyetTaiLieu(id); message.success('Đã nộp kiểm duyệt'); loadItems(); }
+    try {
+      const res = await nopKiemDuyetTaiLieu(id);
+      const err = getApiError(res);
+      if (err) { message.error(err); return; }
+      message.success('Đã nộp kiểm duyệt'); loadItems();
+    }
     catch { message.error('Không nộp được'); }
   };
   const handlePheDuyet = async (id: string) => {
-    try { await pheDuyetTaiLieu(id); message.success('Đã phê duyệt & xuất bản'); loadItems(); if (detail?.id === id) openDetail(id); }
+    try {
+      const res = await pheDuyetTaiLieu(id);
+      const err = getApiError(res);
+      if (err) { message.error(err); return; }
+      message.success('Đã phê duyệt & xuất bản'); loadItems(); if (detail?.id === id) openDetail(id);
+    }
     catch { message.error('Không phê duyệt được'); }
   };
   const openTuChoi = (id: string) => { setTuChoiId(id); tuChoiForm.resetFields(); setTuChoiOpen(true); };
   const handleTuChoi = async () => {
     try {
       const { lyDo } = await tuChoiForm.validateFields();
-      await tuChoiTaiLieu({ id: tuChoiId, lyDo });
+      const res = await tuChoiTaiLieu({ id: tuChoiId, lyDo });
+      const err = getApiError(res);
+      if (err) { message.error(err); return; }
       message.success('Đã từ chối tài liệu'); setTuChoiOpen(false);
       loadItems(); if (detail?.id === tuChoiId) openDetail(tuChoiId);
     } catch {}
   };
   const handleDelete = async (id: string) => {
-    try { await deleteTaiLieu(id); message.success('Đã xóa'); loadItems(); }
+    try {
+      const res = await deleteTaiLieu(id);
+      const err = getApiError(res);
+      if (err) { message.error(err); return; }
+      message.success('Đã xóa'); loadItems();
+    }
     catch { message.error('Không xóa được'); }
   };
 

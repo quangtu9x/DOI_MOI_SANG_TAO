@@ -1,4 +1,4 @@
-import { requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile } from '@/utils/baseAPI';
+import { requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile, requestDownloadFile } from '@/utils/baseAPI';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   IIdea,
@@ -6,6 +6,9 @@ import {
   IIdeaSearchRequest,
   IIdeaStatusActionRequest,
   IIdeaTemplate,
+  IIdeaHistory,
+  IIdeaDashboard,
+  IIdeaContributionReport,
   IAttachmentUploadResult,
 } from '@/models/idea-portal';
 import { IPaginationResponse, IResult } from '@/models';
@@ -24,6 +27,30 @@ export const getIdeaDetail = (id: string) =>
 export const searchIdeas = (data: IIdeaSearchRequest) =>
   requestPOST<IPaginationResponse<IIdea[]>>('ideas/search', data);
 
+/** Lịch sử xử lý của ý tưởng (mới nhất trước) */
+export const getIdeaHistories = (ideaId: string) =>
+  requestGET<IResult<IIdeaHistory[]>>(`IdeaHistories/by-idea/${ideaId}`);
+
+// ── Báo cáo / Dashboard ĐMST ─────────────────────────────────────────────────
+
+/** Dashboard điều hành ĐMST (số liệu thật từ dữ liệu ý tưởng) */
+export const getIdeaDashboard = (nam?: number, slaGio = 72) =>
+  requestGET<IResult<IIdeaDashboard>>(`IdeaReports/dashboard?slaGio=${slaGio}${nam ? `&nam=${nam}` : ''}`);
+
+/** Bảng xếp hạng đóng góp cá nhân/đơn vị theo kỳ */
+export const getIdeaContributions = (params: { nam?: number; quy?: number; thang?: number; top?: number }) => {
+  const q = new URLSearchParams();
+  if (params.nam) q.append('nam', String(params.nam));
+  if (params.quy) q.append('quy', String(params.quy));
+  if (params.thang) q.append('thang', String(params.thang));
+  if (params.top) q.append('top', String(params.top));
+  return requestGET<IResult<IIdeaContributionReport>>(`IdeaReports/contributions?${q}`);
+};
+
+/** Xuất báo cáo ĐMST tổng hợp (CSV mở bằng Excel) */
+export const exportIdeaReport = (nam?: number) =>
+  requestDownloadFile(`IdeaReports/export${nam ? `?nam=${nam}` : ''}`, {});
+
 // ── Status transitions ────────────────────────────────────────────────────────
 
 export const submitIdea = (id: string, remark = '') =>
@@ -37,6 +64,10 @@ export const returnIdea = (id: string, remark = '') =>
 
 export const cancelIdea = (id: string, remark = '') =>
   requestPOST<IResult<unknown>>(`IdeaStatus/${id}/cancel`, { remark } as IIdeaStatusActionRequest);
+
+/** Công nhận ý tưởng (Đã tiếp nhận → Được công nhận); remark = thông tin công nhận */
+export const recognizeIdea = (id: string, remark = '') =>
+  requestPOST<IResult<unknown>>(`IdeaStatus/${id}/recognize`, { remark } as IIdeaStatusActionRequest);
 
 // Thu hồi ý tưởng đã nộp (Chờ tiếp nhận → Bản nháp / Hủy)
 export const recallIdea = (id: string, remark = '') =>

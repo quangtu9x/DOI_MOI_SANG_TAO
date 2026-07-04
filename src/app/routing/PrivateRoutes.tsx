@@ -1,6 +1,7 @@
 import { FC, Suspense, useEffect } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { MasterLayout } from '../../_metronic/layout/MasterLayout';
+import { PortalLayout } from '../../_metronic/layout/PortalLayout';
 import { DashboardLayout } from '../../_metronic/layout/DashboardLayout';
 import TopBarProgress from 'react-topbar-progress-indicator';
 import { getCSSVariableValue } from '../../_metronic/assets/ts/_utils';
@@ -14,7 +15,6 @@ import {
   SidebarDanhMucHeThongMenu,
   SidebarLichSuMenu,
   SidebarEformMenu,
-  SidebarDoiMoiSangTaoMenu
 } from '../components';
 import { hasAll, uiManage } from '@/utils/utils';
 import { useAuth } from '../modules/auth';
@@ -297,13 +297,18 @@ const PrivateRoutes = () => {
         <Route path="*" element={<Navigate to="/error/404/system" replace />} />
       </Route>
 
-      {/* Đổi mới sáng tạo - Innovation Portal */}
-      <Route path="doi-moi-sang-tao/*" element={<MasterLayout asideMenu={<SidebarDoiMoiSangTaoMenu />} menuInner={<MenuInnerSystem />} />}>
+      {/* Đổi mới sáng tạo — dùng giao diện portal thống nhất (navbar trên, không menu trái) */}
+      <Route path="doi-moi-sang-tao/*" element={<PortalLayout />}>
         <Route
           path="*"
           element={
             <ProtectedSuspenseView>
-              <DoiMoiSangTaoRoutes />
+              <div className="py-6" style={{ background: '#f5f6f8', minHeight: '100%' }}>
+                {/* Container giữa màn hình, cách đều 2 bên */}
+                <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 32px' }}>
+                  <DoiMoiSangTaoRoutes />
+                </div>
+              </div>
             </ProtectedSuspenseView>
           }
         />

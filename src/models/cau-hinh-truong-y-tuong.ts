@@ -8,6 +8,7 @@ export interface IIdeaFieldConfig {
   dataType: string;        // text | textarea | select | file
   isRequired: boolean;     // Bắt buộc?
   isActive: boolean;       // Có sử dụng?
+  isDefault?: boolean;     // Trường mặc định hệ thống — chỉ cấu hình được isRequired/isActive
   sortOrder: number;       // Thứ tự hiển thị
   description?: string;    // Mô tả / hướng dẫn
   placeholder?: string;    // Placeholder text

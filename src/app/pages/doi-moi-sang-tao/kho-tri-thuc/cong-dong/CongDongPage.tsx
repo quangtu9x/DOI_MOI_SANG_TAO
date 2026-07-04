@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Input, Button, Tag, Modal, Form, Spin, Empty,
-  Avatar, Divider, message, Tooltip, Badge, Popconfirm,
+  Avatar, Divider, message, Tooltip, Popconfirm,
 } from 'antd';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
@@ -325,66 +325,94 @@ export const CongDongPage: React.FC = () => {
     return (
       <div
         key={cd.id}
-        className={`d-flex align-items-center gap-3 p-3 rounded-2 cursor-pointer mb-1 ${isActive ? 'bg-light-primary' : 'hover-bg-light'}`}
-        style={{ transition: 'background 0.15s', border: isActive ? '1px solid #d6e4ff' : '1px solid transparent' }}
+        className={`d-flex align-items-center gap-3 p-3 cursor-pointer mb-1 ${isActive ? 'bg-light-success' : 'hover-bg-light'}`}
+        style={{
+          transition: 'all 0.15s',
+          borderRadius: 10,
+          borderLeft: isActive ? '3px solid #059669' : '3px solid transparent',
+        }}
         onClick={() => openCommunity(cd)}
       >
-        <Avatar size={40} style={{ backgroundColor: getAvatarColor(cd.ten), flexShrink: 0 }}>
+        <Avatar size={42} shape="square" style={{ backgroundColor: getAvatarColor(cd.ten), flexShrink: 0, borderRadius: 10, fontWeight: 700 }}>
           {getInitials(cd.ten)}
         </Avatar>
         <div className="flex-grow-1 min-w-0">
-          <div className={`fw-semibold fs-7 text-truncate ${isActive ? 'text-primary' : 'text-gray-800'}`}>{cd.ten}</div>
-          <div className="text-muted fs-8 d-flex gap-2">
+          <div className={`fw-semibold fs-7 text-truncate ${isActive ? 'text-success' : 'text-gray-800'}`}>{cd.ten}</div>
+          <div className="text-muted fs-8 d-flex gap-3 mt-1">
             <span><i className="fa-regular fa-users me-1" />{cd.soThanhVien ?? 0}</span>
             <span><i className="fa-regular fa-comment me-1" />{cd.soThaoCuan ?? 0}</span>
           </div>
         </div>
-        {cd.daThamGia && <i className="fa-solid fa-check-circle text-success fs-8" title="Đã tham gia" />}
+        {cd.daThamGia && (
+          <Tooltip title="Đã tham gia">
+            <i className="fa-solid fa-circle-check text-success" />
+          </Tooltip>
+        )}
       </div>
     );
   };
 
   // ── Render post card
-  const renderPostCard = (bv: IBaiViet) => (
-    <div key={bv.id} className="card border-0 shadow-sm mb-3"
-      style={{ transition: 'box-shadow 0.2s' }}
-      onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)')}
-      onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.boxShadow = '')}
-    >
-      <div className="card-body p-4">
-        {/* Author + type */}
-        <div className="d-flex align-items-center gap-2 mb-3">
-          <Avatar size={36} style={{ backgroundColor: getAvatarColor(bv.tacGia?.hoTen ?? '?'), flexShrink: 0 }}>
-            {getInitials(bv.tacGia?.hoTen)}
-          </Avatar>
-          <div className="flex-grow-1">
-            <div className="fw-semibold fs-7 text-gray-800">{bv.tacGia?.hoTen ?? 'Ẩn danh'}</div>
-            <div className="text-muted fs-8">{relativeTime(bv.createdOn)}</div>
-          </div>
-          <Tag color={LOAI_BV_COLOR[bv.loaiBaiViet]} style={{ margin: 0 }}>
-            {LOAI_BV_LABEL[bv.loaiBaiViet]}
-          </Tag>
-          {isAdmin && (
-            <div className="d-flex gap-1" onClick={e => e.stopPropagation()}>
-              <Tooltip title="Chỉnh sửa">
-                <Button type="text" size="small" icon={<i className="fa-regular fa-pen text-muted" />}
-                  onClick={() => openBvEdit(bv)} />
-              </Tooltip>
-              <Popconfirm title="Xóa bài viết này?" onConfirm={() => handleDeleteBv(bv.id)} okText="Xóa" cancelText="Hủy">
-                <Button type="text" size="small" danger icon={<i className="fa-regular fa-trash" />} />
-              </Popconfirm>
+  const renderPostCard = (bv: IBaiViet) => {
+    const typeHex: Record<LoaiBaiViet, string> = {
+      [LoaiBaiViet.ThaoCuan]: '#1677ff',
+      [LoaiBaiViet.HoiDap]:   '#fa8c16',
+      [LoaiBaiViet.ChiaSe]:   '#52c41a',
+    };
+    return (
+      <div key={bv.id} className="shadow-sm mb-3"
+        style={{
+          background: '#fff',
+          borderRadius: 12,
+          borderLeft: `4px solid ${typeHex[bv.loaiBaiViet]}`,
+          transition: 'box-shadow 0.2s, transform 0.15s',
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '';
+          (e.currentTarget as HTMLDivElement).style.transform = '';
+        }}
+      >
+        <div className="p-4">
+          {/* Author + type */}
+          <div className="d-flex align-items-center gap-3 mb-3">
+            <Avatar size={40} style={{ backgroundColor: getAvatarColor(bv.tacGia?.hoTen ?? '?'), flexShrink: 0, fontWeight: 600 }}>
+              {getInitials(bv.tacGia?.hoTen)}
+            </Avatar>
+            <div className="flex-grow-1">
+              <div className="fw-semibold fs-7 text-gray-800">{bv.tacGia?.hoTen ?? 'Ẩn danh'}</div>
+              <div className="text-muted fs-8">
+                <i className="fa-regular fa-clock me-1" />{relativeTime(bv.createdOn)}
+              </div>
             </div>
-          )}
-        </div>
+            <Tag color={LOAI_BV_COLOR[bv.loaiBaiViet]} style={{ margin: 0, borderRadius: 12 }}>
+              {LOAI_BV_LABEL[bv.loaiBaiViet]}
+            </Tag>
+            {isAdmin && (
+              <div className="d-flex gap-1" onClick={e => e.stopPropagation()}>
+                <Tooltip title="Chỉnh sửa">
+                  <Button type="text" size="small" icon={<i className="fa-regular fa-pen text-muted" />}
+                    onClick={() => openBvEdit(bv)} />
+                </Tooltip>
+                <Popconfirm title="Xóa bài viết này?" onConfirm={() => handleDeleteBv(bv.id)} okText="Xóa" cancelText="Hủy">
+                  <Button type="text" size="small" danger icon={<i className="fa-regular fa-trash" />} />
+                </Popconfirm>
+              </div>
+            )}
+          </div>
 
-        {/* Title & content */}
-        <div className="fw-bold fs-6 text-gray-800 mb-2 cursor-pointer"
-          onClick={() => openPost(bv.id)}>{bv.tieuDe}</div>
-        <div className="text-muted fs-7 mb-3 cursor-pointer"
-          style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6 }}
-          onClick={() => openPost(bv.id)}>
-          {bv.noiDung}
-        </div>
+          {/* Title & content */}
+          <div className="fw-bold fs-5 text-gray-900 mb-2 cursor-pointer"
+            style={{ lineHeight: 1.4 }}
+            onClick={() => openPost(bv.id)}>{bv.tieuDe}</div>
+          <div className="text-gray-600 fs-7 mb-3 cursor-pointer"
+            style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.7 }}
+            onClick={() => openPost(bv.id)}>
+            {bv.noiDung}
+          </div>
 
         {/* Footer stats */}
         <div className="d-flex gap-3 align-items-center border-top pt-2 mt-1">
@@ -393,7 +421,7 @@ export const CongDongPage: React.FC = () => {
             onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
           >
             <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
-            <span className="fs-8">{Math.max(0, bv.soLuotThich ?? 0)}</span>
+            <span className="fs-8">{bv.luotThich ?? 0}</span>
           </button>
           <button className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
             onClick={() => openPost(bv.id)}>
@@ -451,8 +479,8 @@ export const CongDongPage: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -462,30 +490,54 @@ export const CongDongPage: React.FC = () => {
       ]}>Cộng đồng thực hành</PageTitle>
 
       <Content>
+        {/* Hero header */}
+        <div className="mb-5 overflow-hidden shadow-sm"
+          style={{
+            backgroundImage: 'linear-gradient(135deg, #065f46 0%, #059669 60%, #10b981 100%)',
+            backgroundColor: '#065f46',
+            borderRadius: 12,
+          }}>
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 px-6 py-6">
+            <div className="d-flex align-items-center gap-4">
+              <div className="d-flex align-items-center justify-content-center rounded-3"
+                style={{ width: 56, height: 56, backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                <i className="fa-regular fa-users fs-2" style={{ color: '#fff' }} />
+              </div>
+              <div>
+                <h3 className="mb-1" style={{ color: '#fff' }}>Cộng đồng thực hành</h3>
+                <span className="fs-7" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                  Trao đổi, hỏi đáp và chia sẻ kinh nghiệm đổi mới sáng tạo giữa các đơn vị
+                </span>
+              </div>
+            </div>
+            {isAdmin && (
+              <Button size="large" onClick={openCdCreate}
+                style={{ background: '#fff', color: '#065f46', fontWeight: 600, border: 'none' }}
+                icon={<i className="fa-regular fa-plus me-1" />}>
+                Tạo cộng đồng
+              </Button>
+            )}
+          </div>
+        </div>
+
         <div className="d-flex gap-4" style={{ alignItems: 'flex-start' }}>
 
           {/* ── Left: Community sidebar ────────────────────────────────── */}
-          <div style={{ width: 280, flexShrink: 0 }}>
-            <div className="card border-0 shadow-sm">
-              <div className="card-body p-3">
-                {/* Search + create */}
-                <div className="d-flex align-items-center gap-2 mb-3">
-                  <Input.Search
-                    placeholder="Tìm cộng đồng..."
-                    onSearch={kw => { setKeyword(kw); setPage(1); loadCommunities(kw, 1); }}
-                    allowClear
-                    style={{ flex: 1, minWidth: 0 }}
-                  />
-                  {isAdmin && (
-                    <Tooltip title="Tạo cộng đồng mới">
-                      <Button type="primary" icon={<i className="fa-regular fa-plus" />}
-                        onClick={openCdCreate} />
-                    </Tooltip>
-                  )}
-                </div>
+          <div style={{ width: 300, flexShrink: 0 }}>
+            <div className="card border-0 shadow-sm" style={{ borderRadius: 12 }}>
+              <div className="card-body p-4">
+                <Input.Search
+                  placeholder="Tìm cộng đồng..."
+                  onSearch={kw => { setKeyword(kw); setPage(1); loadCommunities(kw, 1); }}
+                  allowClear
+                  className="mb-4"
+                />
 
-                <div className="fw-semibold text-muted fs-8 text-uppercase mb-2 px-1">
-                  {total} Cộng đồng
+                <div className="d-flex align-items-center justify-content-between mb-3 px-1">
+                  <span className="fw-bold text-gray-600 fs-8 text-uppercase" style={{ letterSpacing: '0.06em' }}>
+                    Cộng đồng
+                  </span>
+                  <span className="badge badge-light-success">{total}</span>
                 </div>
 
                 <Spin spinning={loading}>
@@ -516,68 +568,115 @@ export const CongDongPage: React.FC = () => {
           {/* ── Right: Post feed ───────────────────────────────────────── */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {!selected ? (
-              <div className="card border-0 shadow-sm">
+              <div className="card border-0 shadow-sm" style={{ borderRadius: 12 }}>
                 <div className="card-body py-16 text-center">
-                  <i className="fa-regular fa-users fs-3x text-muted mb-4 d-block" />
-                  <div className="fw-semibold text-gray-700 mb-2">Chọn một cộng đồng</div>
-                  <div className="text-muted fs-7">Nhấn vào cộng đồng ở bên trái để xem các bài thảo luận</div>
+                  <div className="d-inline-flex align-items-center justify-content-center rounded-circle mb-4"
+                    style={{ width: 88, height: 88, background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)' }}>
+                    <i className="fa-regular fa-users fs-2x" style={{ color: '#059669' }} />
+                  </div>
+                  <div className="fw-bold fs-4 text-gray-800 mb-2">Chọn một cộng đồng để bắt đầu</div>
+                  <div className="text-muted fs-7 mb-4">
+                    Tham gia thảo luận, đặt câu hỏi và chia sẻ kinh nghiệm cùng đồng nghiệp
+                  </div>
+                  {communities.length > 0 && (
+                    <Button type="primary" ghost onClick={() => openCommunity(communities[0])}>
+                      Xem cộng đồng đầu tiên <i className="fa-regular fa-arrow-right ms-1" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (
               <Spin spinning={selLoading}>
-                {/* Community header */}
-                <div className="card border-0 shadow-sm mb-4">
-                  <div className="card-body p-4">
-                    <div className="d-flex align-items-start gap-3">
-                      <Avatar size={52} style={{ backgroundColor: getAvatarColor(selected.ten) }}>
+                {/* Community header — banner */}
+                <div className="shadow-sm mb-4 overflow-hidden" style={{ borderRadius: 12, background: '#fff' }}>
+                  {/* Cover strip */}
+                  <div style={{
+                    height: 64,
+                    backgroundImage: `linear-gradient(120deg, ${getAvatarColor(selected.ten)} 0%, ${getAvatarColor(selected.ten)}99 100%)`,
+                  }} />
+                  <div className="px-5 pb-4">
+                    <div className="d-flex align-items-end gap-3" style={{ marginTop: -26 }}>
+                      <Avatar size={64} shape="square"
+                        style={{
+                          backgroundColor: getAvatarColor(selected.ten),
+                          borderRadius: 14, fontWeight: 700, fontSize: 24,
+                          border: '3px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                        }}>
                         {getInitials(selected.ten)}
                       </Avatar>
-                      <div className="flex-grow-1">
-                        <div className="fw-bold fs-5 text-gray-800">{selected.ten}</div>
-                        {selected.moTa && <div className="text-muted fs-7 mt-1">{selected.moTa}</div>}
-                        <div className="d-flex gap-4 text-muted fs-8 mt-2">
-                          <span><i className="fa-regular fa-users me-1" />{selected.soThanhVien ?? 0} thành viên</span>
-                          <span><i className="fa-regular fa-comment me-1" />{selected.soThaoCuan ?? 0} bài viết</span>
-                        </div>
+                      <div className="flex-grow-1 pt-6">
+                        <div className="fw-bold fs-4 text-gray-800">{selected.ten}</div>
                       </div>
-                      <div className="d-flex gap-2 align-items-center">
+                      <div className="d-flex gap-2 align-items-center pt-6">
                         {selected.daThamGia
-                          ? <Button size="small" onClick={() => handleRoi(selected.id)}>Rời cộng đồng</Button>
-                          : <Button size="small" type="primary" onClick={() => handleThamGia(selected.id)}>Tham gia</Button>
+                          ? <Button onClick={() => handleRoi(selected.id)}
+                              icon={<i className="fa-regular fa-right-from-bracket me-1" />}>Rời cộng đồng</Button>
+                          : <Button type="primary" onClick={() => handleThamGia(selected.id)}
+                              icon={<i className="fa-regular fa-user-plus me-1" />}>Tham gia</Button>
                         }
                         {isAdmin && (
                           <>
                             <Tooltip title="Chỉnh sửa cộng đồng">
-                              <Button size="small" icon={<i className="fa-regular fa-pen" />} onClick={openCdEdit} />
+                              <Button icon={<i className="fa-regular fa-pen" />} onClick={openCdEdit} />
                             </Tooltip>
                             <Popconfirm title="Xóa cộng đồng này?" onConfirm={() => handleDeleteCd(selected.id)} okText="Xóa" cancelText="Hủy">
-                              <Button size="small" danger icon={<i className="fa-regular fa-trash" />} />
+                              <Button danger icon={<i className="fa-regular fa-trash" />} />
                             </Popconfirm>
                           </>
                         )}
                       </div>
                     </div>
+                    {selected.moTa && <div className="text-muted fs-7 mt-3">{selected.moTa}</div>}
+                    <div className="d-flex gap-2 mt-3">
+                      <span className="badge badge-light-primary">
+                        <i className="fa-regular fa-users me-1" />{selected.soThanhVien ?? 0} thành viên
+                      </span>
+                      <span className="badge badge-light-info">
+                        <i className="fa-regular fa-comment me-1" />{selected.soThaoCuan ?? 0} bài viết
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Composer — khung đăng bài nhanh */}
+                <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
+                  <div className="card-body py-3 px-4 d-flex align-items-center gap-3">
+                    <Avatar size={38} style={{ backgroundColor: '#1677ff', flexShrink: 0 }}>
+                      <i className="fa-regular fa-user" />
+                    </Avatar>
+                    <div
+                      className="flex-grow-1 text-muted fs-7 px-4 py-2 cursor-pointer hover-bg-light"
+                      style={{ background: '#f5f6f8', borderRadius: 20, transition: 'background 0.15s' }}
+                      onClick={openBvCreate}
+                    >
+                      Chia sẻ thảo luận, câu hỏi hoặc kinh nghiệm của bạn...
+                    </div>
+                    <Button type="primary" icon={<i className="fa-regular fa-pen me-1" />} onClick={openBvCreate}>
+                      Đăng bài
+                    </Button>
                   </div>
                 </div>
 
                 {/* Post area header */}
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div className="fw-semibold text-gray-700">
-                    <i className="fa-regular fa-comment-dots me-2" />
-                    Bài viết ({posts.length})
-                  </div>
-                  <Button type="primary" size="small"
-                    icon={<i className="fa-regular fa-pen me-1" />}
-                    onClick={openBvCreate}>
-                    Đăng bài
-                  </Button>
+                <div className="d-flex align-items-center mb-3 px-1">
+                  <span className="fw-bold text-gray-600 fs-8 text-uppercase" style={{ letterSpacing: '0.06em' }}>
+                    <i className="fa-regular fa-comment-dots me-2" />Bài viết
+                  </span>
+                  <span className="badge badge-light-success ms-2">{posts.length}</span>
                 </div>
 
                 <Spin spinning={postLoading}>
                   {posts.length === 0 && !postLoading ? (
-                    <div className="card border-0 shadow-sm">
-                      <Empty description="Chưa có bài viết nào" className="py-8">
-                        <Button type="primary" ghost onClick={openBvCreate}>
+                    <div className="card border-0 shadow-sm" style={{ borderRadius: 12 }}>
+                      <Empty
+                        className="py-8"
+                        description={
+                          <div>
+                            <div className="fw-semibold text-gray-700 mb-1">Chưa có bài viết nào</div>
+                            <div className="text-muted fs-8">Hãy mở đầu cuộc thảo luận trong cộng đồng này</div>
+                          </div>
+                        }>
+                        <Button type="primary" onClick={openBvCreate}>
                           <i className="fa-regular fa-pen me-1" />Đăng bài đầu tiên
                         </Button>
                       </Empty>

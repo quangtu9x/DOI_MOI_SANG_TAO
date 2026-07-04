@@ -91,6 +91,12 @@ export const CauHinhTruongYTuongTable: React.FC<CauHinhTruongYTuongTableProps> =
       dataIndex: 'fieldName',
       key: 'fieldName',
       width: '25%',
+      render: (text: string, record: IIdeaFieldConfig) => (
+        <span>
+          {text}
+          {record.isDefault && <Tag color="gold" className="ms-2" style={{ fontSize: 11 }}>Mặc định</Tag>}
+        </span>
+      ),
     },
     {
       title: 'Kiểu dữ liệu',
@@ -162,18 +168,20 @@ export const CauHinhTruongYTuongTable: React.FC<CauHinhTruongYTuongTableProps> =
               <i className="fa-regular fa-pen-to-square"></i>
             </a>
 
-            <Popconfirm
-              title="Xoá?"
-              onConfirm={() => {
-                handleAction(`delete`, record);
-              }}
-              okText="Xoá"
-              cancelText="Huỷ"
-            >
-              <a className="btn btn-icon btn-bg-light btn-active-color-danger btn-sm me-1 mb-1" data-toggle="m-tooltip" title="Xoá">
-                <i className="fa-regular fa-trash"></i>
-              </a>
-            </Popconfirm>
+            {!record.isDefault && (
+              <Popconfirm
+                title="Xoá?"
+                onConfirm={() => {
+                  handleAction(`delete`, record);
+                }}
+                okText="Xoá"
+                cancelText="Huỷ"
+              >
+                <a className="btn btn-icon btn-bg-light btn-active-color-danger btn-sm me-1 mb-1" data-toggle="m-tooltip" title="Xoá">
+                  <i className="fa-regular fa-trash"></i>
+                </a>
+              </Popconfirm>
+            )}
           </div>
         );
       },

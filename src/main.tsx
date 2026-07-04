@@ -16,6 +16,7 @@ import './_metronic/assets/keenicons/duotone/style.css';
 import './_metronic/assets/keenicons/outline/style.css';
 import './_metronic/assets/keenicons/solid/style.css';
 import './_metronic/assets/sass/style.scss';
+import './app/styles/buttons.css';
 
 import { AppRoutes } from './app/routing/AppRoutes';
 import { AuthProvider, setupAxios } from './app/modules/auth';

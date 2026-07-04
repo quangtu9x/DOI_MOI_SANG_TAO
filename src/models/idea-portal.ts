@@ -56,6 +56,61 @@ export interface IIdea extends IIdeaCreateRequest {
   statusLabel?: string;
 }
 
+/** GET /api/v1/IdeaHistories/by-idea/{ideaId} */
+export interface IIdeaHistory {
+  id: string;
+  ideaId: string;
+  actionType: string;
+  remark?: string | null;
+  actionBy?: string | null;
+  actionDate: string;
+}
+
+// ── Báo cáo / Dashboard ĐMST ─────────────────────────────────────────────────
+
+export interface INhomSoLuong {
+  ten: string;
+  soLuong: number;
+  soDuocDuyet: number;
+  soDuocCongNhan: number;
+}
+
+export interface IIdeaDashboard {
+  nam: number;
+  tongYTuong: number;
+  soBanNhap: number;
+  soDaNop: number;
+  soDaTiepNhan: number;
+  soTraLai: number;
+  soDaHuy: number;
+  soDuocCongNhan: number;
+  soNguoiThamGia: number;
+  soDonViThamGia: number;
+  nopTheoThang: number[];
+  theoLinhVuc: INhomSoLuong[];
+  theoDonVi: INhomSoLuong[];
+  gioXuLyTrungBinh?: number | null;
+  tyLeDungHan?: number | null;
+  slaGio: number;
+  soTonDong: number;
+  soChoXuLy: number;
+}
+
+export interface IIdeaContribution {
+  ten: string;
+  donVi?: string | null;
+  soNop: number;
+  soDuocDuyet: number;
+  soDuocCongNhan: number;
+  xepHang: number;
+}
+
+export interface IIdeaContributionReport {
+  ky: string;
+  caNhan: IIdeaContribution[];
+  donVi: IIdeaContribution[];
+}
+
 /** POST /api/v1/ideas/search */
 export interface IIdeaSearchRequest {
   pageNumber?: number;

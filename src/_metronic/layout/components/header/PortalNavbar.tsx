@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "@/app/modules/auth"
+import { P, R } from "@/data"
+import { hasAll } from "@/utils/utils"
 
 export const PortalNavbar = () => {
   const { currentUser } = useAuth();
@@ -13,6 +15,17 @@ export const PortalNavbar = () => {
       [key]: !prev[key]
     }));
   };
+
+  // ── Menu Quản trị (chỉ hiện với người có quyền tương ứng) ──
+  const perms = new Set(currentUser?.permissions ?? []);
+  const adminItems = [
+    { label: "Quản lý danh mục", to: "/admins/catalogs/categories", need: [P.of(R.Catalogs, 'View')] },
+    { label: "Cấu hình trường thông tin ý tưởng", to: "/admins/catalogs/cau-hinh-truong-y-tuong", need: [P.of(R.Catalogs, 'View')] },
+    { label: "Cơ cấu tổ chức", to: "/admins/system-admins/organization-units", need: [P.of(R.OrganizationUnits, 'View')] },
+    { label: "Người dùng", to: "/admins/system-admins/users", need: [P.of(R.Users, 'View')] },
+    { label: "Vai trò & quyền", to: "/admins/system-admins/roles", need: [P.of(R.Roles, 'View')] },
+    { label: "Nhật ký hệ thống", to: "/admins/system-admins/audits", need: [P.of(R.Audits, 'View')] },
+  ].filter(item => hasAll(perms, item.need));
 
   const menuItems = [
     {
@@ -28,7 +41,8 @@ export const PortalNavbar = () => {
       title: "Thư viện ĐMST",
       key: "kho-tri-thuc",
       items: [
-        { label: "Kho tri thức (giới thiệu)", to: "/doi-moi/kho-tri-thuc" },
+        { label: "Kho tri thức", to: "/doi-moi/kho-tri-thuc" },
+        { label: "Thống kê", to: "/doi-moi-sang-tao/kho-tri-thuc/analytics" },
         { label: "Thư viện tài liệu", to: "/doi-moi-sang-tao/kho-tri-thuc/thu-vien" },
         { label: "Danh bạ chuyên gia", to: "/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia" },
         { label: "Cộng đồng", to: "/doi-moi-sang-tao/kho-tri-thuc/cong-dong" },
@@ -36,6 +50,25 @@ export const PortalNavbar = () => {
         { label: "Tìm kiếm tri thức", to: "/doi-moi-sang-tao/kho-tri-thuc/tim-kiem" },
       ]
     },
+    {
+      title: "Quản lý ĐMST",
+      key: "quan-ly-dmst",
+      items: [
+        { label: "Tổng quan", to: "/doi-moi-sang-tao/dashboard" },
+        { label: "Danh sách ý tưởng", to: "/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach" },
+        { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi" },
+        { label: "Quy trình phê duyệt", to: "/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet" },
+        { label: "Thông báo hệ thống", to: "/doi-moi-sang-tao/thong-bao" },
+        { label: "Báo cáo & thống kê", to: "/doi-moi-sang-tao/bao-cao" },
+        { label: "Quản lý người dùng", to: "/doi-moi-sang-tao/quan-ly-nguoi-dung" },
+      ]
+    },
+    // Menu Quản trị hệ thống — chỉ hiện khi có quyền
+    ...(adminItems.length > 0 ? [{
+      title: "Quản trị",
+      key: "quan-tri",
+      items: adminItems.map(({ label, to }) => ({ label, to })),
+    }] : []),
   ];
 
   return (
