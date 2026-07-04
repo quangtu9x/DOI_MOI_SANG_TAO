@@ -21,14 +21,19 @@ export const PortalNavbar = () => {
       items: [
         { label: "Khởi tạo ý tưởng", to: "/doi-moi/y-tuong" },
         { label: "Tra cứu hồ sơ", to: "/doi-moi/tra-cuu" },
-        { label: "Import hàng loạt", to: "/doi-moi/y-tuong?mode=import" },
+        // { label: "Import hàng loạt", to: "/doi-moi/y-tuong?mode=import" },
       ]
     },
     {
-      title: "Kho tri thức",
+      title: "Thư viện ĐMST",
       key: "kho-tri-thuc",
       items: [
-        { label: "Xem kho tri thức", to: "/doi-moi/kho-tri-thuc" },
+        { label: "Kho tri thức (giới thiệu)", to: "/doi-moi/kho-tri-thuc" },
+        { label: "Thư viện tài liệu", to: "/doi-moi-sang-tao/kho-tri-thuc/thu-vien" },
+        { label: "Danh bạ chuyên gia", to: "/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia" },
+        { label: "Cộng đồng", to: "/doi-moi-sang-tao/kho-tri-thuc/cong-dong" },
+        { label: "Bảng tin", to: "/doi-moi-sang-tao/kho-tri-thuc/news-feed" },
+        { label: "Tìm kiếm tri thức", to: "/doi-moi-sang-tao/kho-tri-thuc/tim-kiem" },
       ]
     },
   ];

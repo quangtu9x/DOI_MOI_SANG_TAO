@@ -1,11 +1,31 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Input, Button, Tag, Spin, Empty, Avatar, Tabs, message } from 'antd';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Input, Button, Tag, Spin, Empty, Avatar, Tabs, message, Select, Badge } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { timKiem, searchChuyenGias, goiYTuKhoa } from '@/app/services/khoTriThucApi';
-import type { ITaiLieuSearchResult, IChuyenGia } from '@/app/models/knowledge-hub';
+import { timKiem, searchChuyenGias, goiYTuKhoa, searchTaiLieus, searchTags } from '@/app/services/khoTriThucApi';
+import { requestPOST } from '@/utils/baseAPI';
+import type { ITaiLieuSearchResult, IChuyenGia, ITag } from '@/app/models/knowledge-hub';
 import { LoaiTaiLieu, TrangThaiTaiLieu } from '@/app/models/knowledge-hub';
+
+const { Option } = Select;
+
+const TRANG_THAI_LABEL: Record<TrangThaiTaiLieu, string> = {
+  [TrangThaiTaiLieu.NhapLieu]:    'Nháp',
+  [TrangThaiTaiLieu.ChoXetDuyet]: 'Chờ duyệt',
+  [TrangThaiTaiLieu.DaXuatBan]:   'Đã xuất bản',
+  [TrangThaiTaiLieu.TuChoi]:      'Từ chối',
+};
+
+interface ISearchFilters {
+  loaiTaiLieu?: LoaiTaiLieu | null;
+  trangThai?: TrangThaiTaiLieu | null;
+  tagIds: string[];
+  linhVucKHCNId?: string | null;
+  donViId?: string | null;
+}
+
+const EMPTY_FILTERS: ISearchFilters = { tagIds: [] };
 
 const { TabPane } = Tabs;
 
@@ -74,9 +94,17 @@ export const TimKiemPage: React.FC = () => {
 
   const [query, setQuery]             = useState('');
   const [activeQuery, setActiveQuery] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading]         = useState(false);
   const [activeTab, setActiveTab]     = useState('tai-lieu');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  // Bộ lọc nâng cao (metadata)
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters]         = useState<ISearchFilters>(EMPTY_FILTERS);
+  const [tagOptions, setTagOptions]   = useState<ITag[]>([]);
+  const [linhVucOptions, setLinhVucOptions] = useState<{ id: string; ten: string }[]>([]);
+  const [donViOptions, setDonViOptions]     = useState<{ id: string; name: string }[]>([]);
 
   // Results
   const [tailieux, setTailieux]       = useState<ITaiLieuSearchResult[]>([]);
@@ -86,6 +114,31 @@ export const TimKiemPage: React.FC = () => {
 
   const inputRef      = useRef<any>(null);
   const suggestTimer  = useRef<ReturnType<typeof setTimeout>>();
+
+  const activeFilterCount =
+    (filters.loaiTaiLieu != null ? 1 : 0) +
+    (filters.trangThai != null ? 1 : 0) +
+    (filters.tagIds.length > 0 ? 1 : 0) +
+    (filters.linhVucKHCNId ? 1 : 0) +
+    (filters.donViId ? 1 : 0);
+
+  // Tải dữ liệu cho các bộ lọc (tag, lĩnh vực, đơn vị) — 1 lần
+  useEffect(() => {
+    (async () => {
+      const [tagRes, lvRes, dvRes] = await Promise.allSettled([
+        searchTags({ pageNumber: 1, pageSize: 100 }),
+        requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 200 }),
+        requestPOST<any>('OrganizationUnits/search', { pageNumber: 1, pageSize: 200 }),
+      ]);
+      if (tagRes.status === 'fulfilled') setTagOptions(safeList<ITag>(tagRes.value));
+      if (lvRes.status === 'fulfilled') {
+        setLinhVucOptions(safeList<any>(lvRes.value).map((x: any) => ({ id: x.id, ten: x.ten ?? x.name ?? '' })));
+      }
+      if (dvRes.status === 'fulfilled') {
+        setDonViOptions(safeList<any>(dvRes.value).map((x: any) => ({ id: x.id, name: x.name ?? x.ten ?? '' })));
+      }
+    })();
+  }, []);
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -104,35 +157,82 @@ export const TimKiemPage: React.FC = () => {
     }
   };
 
-  const handleSearch = useCallback(async (kw: string) => {
+  /** Chuẩn hóa ITaiLieu (TaiLieus/search) → shape hiển thị chung */
+  const normalizeTL = (item: any): ITaiLieuSearchResult => ({
+    id: item.id,
+    tieuDe: item.tieuDe,
+    moTa: item.moTa,
+    loaiTaiLieu: item.loaiTaiLieu,
+    trangThai: item.trangThai,
+    tags: (item.tags ?? []).map((t: any) => (typeof t === 'string' ? t : (t?.ten ?? ''))).filter(Boolean),
+    luotXem: item.luotXem ?? 0,
+    tacGia: item.tacGia,
+    createdOn: item.createdOn,
+  });
+
+  const handleSearch = useCallback(async (kw: string, f: ISearchFilters = filters) => {
     const q = kw.trim();
-    if (!q) return;
+    const hasFilters =
+      f.loaiTaiLieu != null || f.trangThai != null || f.tagIds.length > 0 || !!f.linhVucKHCNId || !!f.donViId;
+    if (!q && !hasFilters) return;
+
     setActiveQuery(q);
+    setHasSearched(true);
     setLoading(true);
     try {
+      // Có bộ lọc metadata → tìm qua TaiLieus/search (keyword + tag + lĩnh vực + trạng thái + đơn vị)
+      // Chỉ có keyword → full-text search (Elasticsearch, tự fallback DB)
+      const tlPromise = hasFilters
+        ? searchTaiLieus({
+            pageNumber: 1,
+            pageSize: 20,
+            keyword: q || '',
+            loaiTaiLieu: f.loaiTaiLieu ?? null,
+            trangThai: f.trangThai ?? null,
+            linhVucKHCNId: f.linhVucKHCNId ?? null,
+            donViId: f.donViId ?? null,
+            tagIds: f.tagIds,
+          })
+        : timKiem(q, 1, 20);
+
       const [tlRes, cgRes] = await Promise.allSettled([
-        timKiem(q, 1, 20),
-        searchChuyenGias({ keyword: q, pageNumber: 1, pageSize: 12 }),
+        tlPromise,
+        q ? searchChuyenGias({ keyword: q, pageNumber: 1, pageSize: 12 })
+          : Promise.resolve(null),
       ]);
 
       if (tlRes.status === 'fulfilled') {
-        setTailieux(safeList<ITaiLieuSearchResult>(tlRes.value));
+        const rawList = safeList<any>(tlRes.value);
+        setTailieux(hasFilters ? rawList.map(normalizeTL) : rawList);
         setTailieuxTotal(safeTotal(tlRes.value));
       }
 
-      if (cgRes.status === 'fulfilled') {
+      if (cgRes.status === 'fulfilled' && cgRes.value) {
         setChuyenGias(safeList<IChuyenGia>(cgRes.value));
         setChuyenGiasTotal(safeTotal(cgRes.value));
+      } else if (!q) {
+        setChuyenGias([]);
+        setChuyenGiasTotal(0);
       }
     } catch {
       message.error('Tìm kiếm thất bại');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters]);
+
+  const updateFilter = (patch: Partial<ISearchFilters>) => {
+    const next = { ...filters, ...patch };
+    setFilters(next);
+    if (hasSearched) handleSearch(query, next);
+  };
+
+  const clearFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    if (hasSearched) handleSearch(query, EMPTY_FILTERS);
+  };
 
   const totalResults = tailieuxTotal + chuyenGiasTotal;
-  const hasSearched = activeQuery.length > 0;
 
   return (
     <>
@@ -170,7 +270,74 @@ export const TimKiemPage: React.FC = () => {
             >
               Tìm kiếm
             </Button>
+            <Badge count={activeFilterCount} size="small">
+              <Button
+                size="large"
+                style={{ borderRadius: 12 }}
+                type={showFilters ? 'primary' : 'default'}
+                ghost={showFilters}
+                icon={<i className="fa-regular fa-sliders" />}
+                onClick={() => setShowFilters(v => !v)}
+              />
+            </Badge>
           </div>
+
+          {/* Bộ lọc nâng cao: tag + metadata (lĩnh vực, trạng thái, đơn vị, loại) */}
+          {showFilters && (
+            <div className="card border-0 shadow-sm mt-4 text-start">
+              <div className="card-body py-4 d-flex flex-wrap gap-3 align-items-end">
+                <div>
+                  <div className="fs-8 text-muted mb-1">Loại tài liệu</div>
+                  <Select allowClear placeholder="Tất cả" style={{ width: 160 }}
+                    value={filters.loaiTaiLieu ?? undefined}
+                    onChange={v => updateFilter({ loaiTaiLieu: v ?? null })}>
+                    {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                  </Select>
+                </div>
+                <div>
+                  <div className="fs-8 text-muted mb-1">Trạng thái</div>
+                  <Select allowClear placeholder="Tất cả" style={{ width: 150 }}
+                    value={filters.trangThai ?? undefined}
+                    onChange={v => updateFilter({ trangThai: v ?? null })}>
+                    {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                  </Select>
+                </div>
+                <div>
+                  <div className="fs-8 text-muted mb-1">Tag</div>
+                  <Select mode="multiple" allowClear placeholder="Chọn tag" style={{ minWidth: 200 }}
+                    value={filters.tagIds}
+                    maxTagCount={2}
+                    optionFilterProp="children"
+                    onChange={v => updateFilter({ tagIds: v })}>
+                    {tagOptions.map(t => <Option key={t.id} value={t.id}>{t.ten}</Option>)}
+                  </Select>
+                </div>
+                <div>
+                  <div className="fs-8 text-muted mb-1">Lĩnh vực</div>
+                  <Select allowClear showSearch placeholder="Tất cả" style={{ width: 200 }}
+                    value={filters.linhVucKHCNId ?? undefined}
+                    optionFilterProp="children"
+                    onChange={v => updateFilter({ linhVucKHCNId: v ?? null })}>
+                    {linhVucOptions.map(lv => <Option key={lv.id} value={lv.id}>{lv.ten}</Option>)}
+                  </Select>
+                </div>
+                <div>
+                  <div className="fs-8 text-muted mb-1">Đơn vị</div>
+                  <Select allowClear showSearch placeholder="Tất cả" style={{ width: 220 }}
+                    value={filters.donViId ?? undefined}
+                    optionFilterProp="children"
+                    onChange={v => updateFilter({ donViId: v ?? null })}>
+                    {donViOptions.map(dv => <Option key={dv.id} value={dv.id}>{dv.name}</Option>)}
+                  </Select>
+                </div>
+                {activeFilterCount > 0 && (
+                  <Button type="link" danger onClick={clearFilters}>
+                    <i className="fa-regular fa-filter-circle-xmark me-1" />Xóa lọc
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Suggested tags */}
           {!hasSearched && (
@@ -190,7 +357,10 @@ export const TimKiemPage: React.FC = () => {
           {hasSearched && !loading && (
             <div className="mb-4 d-flex align-items-center gap-2">
               <span className="text-muted fs-7">
-                Kết quả cho <strong className="text-gray-800">"{activeQuery}"</strong>
+                {activeQuery
+                  ? <>Kết quả cho <strong className="text-gray-800">"{activeQuery}"</strong></>
+                  : <>Kết quả theo bộ lọc</>}
+                {activeFilterCount > 0 && <span> ({activeFilterCount} bộ lọc)</span>}
                 {totalResults > 0 && <span> — {totalResults} kết quả</span>}
               </span>
             </div>
