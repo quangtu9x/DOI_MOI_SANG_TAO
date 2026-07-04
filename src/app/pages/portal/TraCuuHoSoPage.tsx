@@ -9,22 +9,23 @@ import dayjs from 'dayjs';
 // ── Status mapping ─────────────────────────────────────────────────────────────
 type TrangThai = 'BanNhap' | 'ChoTiepNhan' | 'DaTiepNhan' | 'TraLai' | 'Huy' | 'DuocCongNhan';
 
+// Key = giá trị trạng thái BE lưu trong DB (IdeaStatus)
 const STATUS_MAP: Record<string, TrangThai> = {
   'Bản nháp':       'BanNhap',
-  'Chờ tiếp nhận':  'ChoTiepNhan',
+  'Đã nộp':         'ChoTiepNhan',
   'Đã tiếp nhận':   'DaTiepNhan',
-  'Trả lại':        'TraLai',
-  'Hủy':            'Huy',
+  'Đã trả lại':     'TraLai',
+  'Đã hủy':         'Huy',
   'Được công nhận': 'DuocCongNhan',
 };
 
 const STATUS_CFG: Record<TrangThai, { label: string; color: string; icon: string; bg: string }> = {
-  BanNhap:       { label: 'Bản nháp',        color: '#6B7280', icon: 'fa-pen-to-square',  bg: '#F9FAFB' },
-  ChoTiepNhan:   { label: 'Chờ tiếp nhận',   color: '#F59E0B', icon: 'fa-clock',          bg: '#FFFBEB' },
-  DaTiepNhan:    { label: 'Đã tiếp nhận',    color: '#3B82F6', icon: 'fa-inbox',           bg: '#EFF6FF' },
-  TraLai:        { label: 'Trả lại',         color: '#EF4444', icon: 'fa-rotate-left',     bg: '#FEF2F2' },
-  Huy:           { label: 'Đã hủy',          color: '#9CA3AF', icon: 'fa-ban',             bg: '#F3F4F6' },
-  DuocCongNhan:  { label: 'Được công nhận',  color: '#8B5CF6', icon: 'fa-medal',           bg: '#F5F3FF' },
+  BanNhap:       { label: 'Bản nháp',              color: '#6B7280', icon: 'fa-pen-to-square',  bg: '#F9FAFB' },
+  ChoTiepNhan:   { label: 'Đã nộp/Chờ xét duyệt',  color: '#F59E0B', icon: 'fa-clock',          bg: '#FFFBEB' },
+  DaTiepNhan:    { label: 'Đã tiếp nhận',          color: '#3B82F6', icon: 'fa-inbox',           bg: '#EFF6FF' },
+  TraLai:        { label: 'Đã trả lại',            color: '#EF4444', icon: 'fa-rotate-left',     bg: '#FEF2F2' },
+  Huy:           { label: 'Đã hủy',                color: '#9CA3AF', icon: 'fa-ban',             bg: '#F3F4F6' },
+  DuocCongNhan:  { label: 'Được công nhận',        color: '#8B5CF6', icon: 'fa-medal',           bg: '#F5F3FF' },
 };
 
 const DEFAULT_STATUS: typeof STATUS_CFG[TrangThai] = {
@@ -34,9 +35,9 @@ const DEFAULT_STATUS: typeof STATUS_CFG[TrangThai] = {
 const ALL_TABS: Array<{ key: TrangThai | 'all'; label: string }> = [
   { key: 'all',          label: 'Tất cả' },
   { key: 'BanNhap',      label: 'Bản nháp' },
-  { key: 'ChoTiepNhan',  label: 'Chờ tiếp nhận' },
+  { key: 'ChoTiepNhan',  label: 'Đã nộp/Chờ xét duyệt' },
   { key: 'DaTiepNhan',   label: 'Đã tiếp nhận' },
-  { key: 'TraLai',       label: 'Trả lại' },
+  { key: 'TraLai',       label: 'Đã trả lại' },
   { key: 'DuocCongNhan', label: 'Công nhận' },
 ];
 
@@ -45,10 +46,10 @@ const buildSteps = (idea: IIdea) => {
   const st = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
   const ORDER: TrangThai[] = ['BanNhap', 'ChoTiepNhan', 'DaTiepNhan', 'DuocCongNhan'];
   const stepDefs = [
-    { key: 'BanNhap',      label: 'Đã nộp hồ sơ',       date: idea.createdAt },
-    { key: 'ChoTiepNhan',  label: 'Chờ tiếp nhận',       date: idea.submittedAt ?? idea.updatedAt },
-    { key: 'DaTiepNhan',   label: 'Đã tiếp nhận',        date: idea.updatedAt },
-    { key: 'DuocCongNhan', label: 'Công nhận & lưu kho', date: null },
+    { key: 'BanNhap',      label: 'Khởi tạo hồ sơ',          date: idea.createdAt },
+    { key: 'ChoTiepNhan',  label: 'Đã nộp/Chờ xét duyệt',    date: idea.submittedAt ?? idea.updatedAt },
+    { key: 'DaTiepNhan',   label: 'Đã tiếp nhận',            date: idea.updatedAt },
+    { key: 'DuocCongNhan', label: 'Công nhận & lưu kho',     date: null },
   ];
   const idx = ORDER.indexOf(st);
   return stepDefs.map((s, i) => ({

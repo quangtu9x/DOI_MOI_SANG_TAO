@@ -19,8 +19,8 @@ interface IYTuong {
 
 const STATUS_TAG: Record<string, { color: string; label: string }> = {
   DRAFT:     { color: 'default',    label: 'Nháp' },
-  SUBMITTED: { color: 'processing', label: 'Đã nộp' },
-  PENDING:   { color: 'processing', label: 'Chờ duyệt' },
+  SUBMITTED: { color: 'processing', label: 'Đã nộp/Chờ xét duyệt' },
+  PENDING:   { color: 'processing', label: 'Đã nộp/Chờ xét duyệt' },
   APPROVED:  { color: 'success',    label: 'Đã duyệt' },
   REJECTED:  { color: 'error',      label: 'Từ chối' },
   RETURNED:  { color: 'warning',    label: 'Trả về' },

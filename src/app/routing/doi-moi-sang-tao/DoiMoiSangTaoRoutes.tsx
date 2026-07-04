@@ -1,8 +1,7 @@
 import { FC } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { DashboardDoiMoiPage } from '@/app/pages/doi-moi-sang-tao/dashboard/DashboardDoiMoiPage';
 import { QuanLyYTuongDMSTPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/QuanLyYTuongDMSTPage';
-import { TaoYTuongPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/TaoYTuongPage';
 import { ChiTietYTuongPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/ChiTietYTuongPage';
 import { QuyTrinhDuyetPage } from '@/app/pages/doi-moi-sang-tao/quy-trinh-duyet/QuyTrinhDuyetPage';
 import { ThongBaoDMSTPage } from '@/app/pages/doi-moi-sang-tao/thong-bao/ThongBaoDMSTPage';
@@ -30,6 +29,12 @@ const AdminRoute: FC<{ element: React.ReactElement }> = ({ element }) => {
   return isAdmin ? element : <Navigate to="/doi-moi-sang-tao/dashboard" replace />;
 };
 
+/** Form tạo/sửa ý tưởng dùng chung form portal /doi-moi/y-tuong (thống nhất một form duy nhất) */
+const RedirectToPortalEdit: FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/doi-moi/y-tuong?ideaId=${id}`} replace />;
+};
+
 export const DoiMoiSangTaoRoutes: FC = () => {
   return (
     <Routes>
@@ -41,9 +46,10 @@ export const DoiMoiSangTaoRoutes: FC = () => {
       {/* Quản lý ý tưởng */}
       <Route path="quan-ly-y-tuong/danh-sach" element={<ReviewerRoute element={<QuanLyYTuongDMSTPage />} />} />
       <Route path="quan-ly-y-tuong/cua-toi"   element={<QuanLyYTuongDMSTPage myIdeasOnly />} />
-      <Route path="quan-ly-y-tuong/tao-moi"   element={<TaoYTuongPage />} />
+      {/* Tạo/sửa ý tưởng: dùng chung form portal /doi-moi/y-tuong */}
+      <Route path="quan-ly-y-tuong/tao-moi"   element={<Navigate to="/doi-moi/y-tuong" replace />} />
       <Route path="quan-ly-y-tuong/chi-tiet/:id"  element={<ChiTietYTuongPage />} />
-      <Route path="quan-ly-y-tuong/chinh-sua/:id" element={<TaoYTuongPage />} />
+      <Route path="quan-ly-y-tuong/chinh-sua/:id" element={<RedirectToPortalEdit />} />
       <Route path="quan-ly-y-tuong" element={<Navigate to="quan-ly-y-tuong/danh-sach" replace />} />
 
       {/* Quy trình duyệt — reviewer + admin only */}

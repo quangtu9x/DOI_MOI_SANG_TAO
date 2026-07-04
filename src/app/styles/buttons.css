@@ -1,0 +1,12 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Quy tắc chung: icon bên trong nút luôn cùng màu với chữ của nút.
+ * Ghi đè các utility class màu (text-muted, text-primary, text-white...)
+ * lỡ đặt trực tiếp lên <i> bên trong nút antd (.ant-btn) và bootstrap (.btn).
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+.ant-btn i,
+.ant-btn .anticon,
+.ant-btn .anticon i,
+.btn i {
+  color: inherit !important;
+}

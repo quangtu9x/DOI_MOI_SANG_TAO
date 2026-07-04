@@ -1,312 +1,408 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Tag, Divider, Button, Modal, Input, message, Upload } from 'antd';
+import { Button, Tag, Spin, Empty, Modal, Input, message, Timeline } from 'antd';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { MOCK_Y_TUONG_DATA, TRANG_THAI_DISPLAY, TrangThaiYTuong } from './QuanLyYTuongDMSTPage';
+import { getIdeaDetail, getIdeaHistories, receiveIdea, returnIdea, recognizeIdea } from '@/app/services/ideaPortalApi';
+import type { IIdea, IIdeaHistory } from '@/models/idea-portal';
 import { TuongTacSection } from '@/app/components/tuong-tac/TuongTacSection';
 import { LoaiDoiTuong } from '@/app/models/knowledge-hub';
 import { useAuth } from '@/app/modules/auth';
+import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 
-const MOCK_HISTORY: Record<string, { action: string; user: string; time: string; note: string; dot: string }[]> = {
-  '1': [
-    { action: 'Tạo ý tưởng', user: 'Nguyễn Minh Tuấn', time: '25/06/2026 08:45', note: '', dot: 'primary' },
-    { action: 'Nộp phê duyệt', user: 'Nguyễn Minh Tuấn', time: '25/06/2026 10:30', note: 'Đính kèm 2 tài liệu minh chứng', dot: 'primary' },
-    { action: 'Tiếp nhận hồ sơ', user: 'Ban ĐMST — Lê Thị Hương', time: '25/06/2026 14:00', note: 'Đã tiếp nhận, đang chờ xét duyệt', dot: 'warning' },
-  ],
-  '2': [
-    { action: 'Tạo ý tưởng', user: 'Trần Quang Hùng', time: '24/06/2026 07:30', note: '', dot: 'primary' },
-    { action: 'Nộp phê duyệt', user: 'Trần Quang Hùng', time: '24/06/2026 09:00', note: '', dot: 'primary' },
-    { action: 'Phê duyệt', user: 'Hội đồng ĐMST — Hoàng Văn Đức', time: '24/06/2026 16:00', note: 'Ý tưởng có tính khả thi cao, đề nghị triển khai thí điểm tại A76', dot: 'success' },
-  ],
-  '3': [
-    { action: 'Tạo ý tưởng', user: 'Phạm Thị Lan', time: '23/06/2026 08:00', note: '', dot: 'primary' },
-    { action: 'Nộp phê duyệt', user: 'Phạm Thị Lan', time: '23/06/2026 10:00', note: 'Đính kèm báo cáo phân tích dữ liệu', dot: 'primary' },
-    { action: 'Phê duyệt', user: 'Hội đồng ĐMST', time: '23/06/2026 15:30', note: 'Đã áp dụng thí điểm 3 đường bay', dot: 'success' },
-    { action: 'Được công nhận', user: 'Ban Tổng Giám đốc', time: '24/06/2026 09:00', note: 'Đưa vào Kho tri thức, tiết kiệm 12 tỷ/năm', dot: 'success' },
-  ],
-  default: [
-    { action: 'Tạo ý tưởng', user: 'Nhân viên', time: '19/06/2026 09:00', note: '', dot: 'primary' },
-    { action: 'Nộp phê duyệt', user: 'Nhân viên', time: '19/06/2026 11:00', note: '', dot: 'primary' },
-  ],
+// Trạng thái ý tưởng (key = giá trị IdeaStatus phía BE, label = tên hiển thị)
+const STATUS_META: Record<string, { color: string; icon: string; label: string }> = {
+  'Bản nháp':     { color: 'default',    icon: 'fa-file-pen',     label: 'Bản nháp' },
+  'Đã nộp':       { color: 'processing', icon: 'fa-paper-plane',  label: 'Đã nộp/Chờ xét duyệt' },
+  'Đã tiếp nhận': { color: 'success',    icon: 'fa-circle-check', label: 'Đã tiếp nhận' },
+  'Đã trả lại':   { color: 'error',      icon: 'fa-rotate-left',  label: 'Đã trả lại' },
+  'Đã hủy':       { color: 'default',    icon: 'fa-ban',          label: 'Đã hủy' },
+  'Được công nhận': { color: 'purple',   icon: 'fa-medal',        label: 'Được công nhận' },
 };
 
-const MOCK_FILES: Record<string, { name: string; size: string; type: string }[]> = {
-  '1': [
-    { name: 'Thuyết minh giải pháp self check-in.pdf', size: '1.4 MB', type: 'pdf' },
-    { name: 'Khảo sát sân bay Đà Nẵng - Nha Trang.xlsx', size: '580 KB', type: 'xlsx' },
-  ],
-  '2': [
-    { name: 'Predictive Maintenance Proposal.pdf', size: '2.1 MB', type: 'pdf' },
-    { name: 'Dữ liệu cảm biến mẫu động cơ CFM56.xlsx', size: '1.8 MB', type: 'xlsx' },
-    { name: 'Kế hoạch triển khai AI A76.docx', size: '320 KB', type: 'docx' },
-  ],
-  '3': [
-    { name: 'Báo cáo phân tích nhiên liệu 2025.pdf', size: '3.2 MB', type: 'pdf' },
-    { name: 'Dữ liệu flight path 18 đường bay.xlsx', size: '2.5 MB', type: 'xlsx' },
-    { name: 'Kết quả thí điểm Q1-2026.docx', size: '450 KB', type: 'docx' },
-    { name: 'Báo cáo tiết kiệm nhiên liệu.pdf', size: '1.1 MB', type: 'pdf' },
-    { name: 'Phê duyệt Ban TGĐ.pdf', size: '210 KB', type: 'pdf' },
-  ],
-  default: [
-    { name: 'Thuyết minh ý tưởng.pdf', size: '1.2 MB', type: 'pdf' },
-    { name: 'Kế hoạch triển khai.docx', size: '456 KB', type: 'docx' },
-    { name: 'Tài liệu tham khảo.pdf', size: '820 KB', type: 'pdf' },
-    { name: 'Phân tích chi phí - lợi ích.xlsx', size: '340 KB', type: 'xlsx' },
-  ],
+const HISTORY_DOT: Record<string, string> = {
+  'Đã nộp':         'blue',
+  'Đã tiếp nhận':   'green',
+  'Đã trả lại':     'red',
+  'Đã hủy':         'gray',
+  'Được công nhận': 'purple',
+};
+
+const isGuid = (v?: string) =>
+  !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
+const fmtDateTime = (v?: string | null) =>
+  v ? new Date(v).toLocaleString('vi-VN') : '—';
+
+const fmtBytes = (bytes?: number | null) => {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const safeItem = <T,>(res: any): T | null => {
+  const d = res?.data ?? res;
+  return (d?.data ?? d ?? null) as T | null;
+};
+const safeList = <T,>(res: any): T[] => {
+  const d = res?.data ?? res;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  return [];
 };
 
 export const ChiTietYTuongPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const idea = MOCK_Y_TUONG_DATA.find(i => i.id === id);
-  const [approveModal, setApproveModal] = useState(false);
-  const [rejectModal, setRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
+  const { isReviewer, isAdmin } = useDMSTRole();
+  const canApprove = isReviewer || isAdmin;
 
-  if (!idea) {
+  const [loading, setLoading]     = useState(false);
+  const [idea, setIdea]           = useState<IIdea | null>(null);
+  const [histories, setHistories] = useState<IIdeaHistory[]>([]);
+  const [notFound, setNotFound]   = useState(false);
+
+  // Trả lại (từ chối)
+  const [rejectOpen, setRejectOpen]       = useState(false);
+  const [rejectReason, setRejectReason]   = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Công nhận
+  const [recognizeOpen, setRecognizeOpen] = useState(false);
+  const [recognizeInfo, setRecognizeInfo] = useState('');
+
+  const load = useCallback(async () => {
+    if (!isGuid(id)) { setNotFound(true); return; }
+    setLoading(true);
+    try {
+      const [ideaRes, histRes] = await Promise.allSettled([
+        getIdeaDetail(id!),
+        getIdeaHistories(id!),
+      ]);
+      const item = ideaRes.status === 'fulfilled' ? safeItem<IIdea>(ideaRes.value) : null;
+      if (!item || !item.id) { setNotFound(true); return; }
+      setIdea(item);
+      setHistories(histRes.status === 'fulfilled' ? safeList<IIdeaHistory>(histRes.value) : []);
+    } catch {
+      setNotFound(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleApprove = () => {
+    Modal.confirm({
+      title: 'Phê duyệt (tiếp nhận) ý tưởng này?',
+      okText: 'Phê duyệt',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          const res = await receiveIdea(id!, 'Phê duyệt từ trang chi tiết');
+          if ((res as any)?.status >= 400 || (res as any)?.data?.succeeded === false) {
+            message.error((res as any)?.data?.messages?.join(', ') || 'Không phê duyệt được');
+            return;
+          }
+          message.success('Đã tiếp nhận ý tưởng');
+          load();
+        } catch { message.error('Lỗi khi phê duyệt'); }
+      },
+    });
+  };
+
+  const handleReject = async () => {
+    if (!rejectReason.trim()) { message.error('Vui lòng nhập lý do'); return; }
+    setActionLoading(true);
+    try {
+      const res = await returnIdea(id!, rejectReason.trim());
+      if ((res as any)?.status >= 400 || (res as any)?.data?.succeeded === false) {
+        message.error((res as any)?.data?.messages?.join(', ') || 'Không trả lại được');
+        return;
+      }
+      message.success('Đã trả lại ý tưởng');
+      setRejectOpen(false); setRejectReason('');
+      load();
+    } catch { message.error('Lỗi'); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleRecognize = async () => {
+    if (!recognizeInfo.trim()) { message.error('Vui lòng nhập thông tin công nhận'); return; }
+    setActionLoading(true);
+    try {
+      const res = await recognizeIdea(id!, recognizeInfo.trim());
+      if ((res as any)?.status >= 400 || (res as any)?.data?.succeeded === false) {
+        message.error((res as any)?.data?.messages?.join(', ') || 'Không công nhận được');
+        return;
+      }
+      message.success('Đã công nhận ý tưởng');
+      setRecognizeOpen(false); setRecognizeInfo('');
+      load();
+    } catch { message.error('Lỗi'); }
+    finally { setActionLoading(false); }
+  };
+
+  // Thông tin công nhận (lấy từ lịch sử)
+  const recognitionEntry = histories.find(h => h.actionType === 'Được công nhận');
+
+  const statusMeta = STATUS_META[idea?.status ?? '']
+    ?? { color: 'default', icon: 'fa-circle-question', label: idea?.status ?? 'Không rõ' };
+
+  const breadcrumbs = [
+    { title: 'Đổi mới sáng tạo', path: '/doi-moi-sang-tao/dashboard', isActive: false, isSeparator: false },
+    { title: 'Quản lý ý tưởng', path: '/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach', isActive: false, isSeparator: false },
+  ];
+
+  // ── Not found / invalid id ─────────────────────────────────────────────────
+  if (notFound) {
     return (
-      <Content>
-        <div className="alert alert-danger">Không tìm thấy ý tưởng.</div>
-      </Content>
+      <>
+        <PageTitle breadcrumbs={breadcrumbs}>Chi tiết ý tưởng</PageTitle>
+        <Content>
+          <div className="card border-0 shadow-sm" style={{ borderRadius: 12 }}>
+            <div className="card-body py-16 text-center">
+              <i className="fa-regular fa-file-circle-question fs-3x text-muted mb-4 d-block" />
+              <div className="fw-bold fs-4 text-gray-800 mb-2">Không tìm thấy ý tưởng</div>
+              <div className="text-muted fs-7 mb-4">
+                Ý tưởng không tồn tại hoặc đã bị xóa. Vui lòng kiểm tra lại đường dẫn.
+              </div>
+              <Button type="primary" onClick={() => navigate('/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach')}>
+                <i className="fa-regular fa-arrow-left me-1" />Về danh sách ý tưởng
+              </Button>
+            </div>
+          </div>
+        </Content>
+      </>
     );
   }
 
-  const display  = TRANG_THAI_DISPLAY[idea.trangThai];
-  const history  = MOCK_HISTORY[id!] ?? MOCK_HISTORY['default'];
-  const files    = MOCK_FILES[id!]   ?? MOCK_FILES['default'];
-  const fileSlice = files.slice(0, idea.fileCount ?? files.length);
-
-  const handleApprove = () => {
-    setApproveModal(false);
-    message.success('Đã phê duyệt ý tưởng thành công!');
-    navigate('/doi-moi-sang-tao/quy-trinh-duyet/da-duyet');
-  };
-
-  const handleReject = () => {
-    if (!rejectReason.trim()) { message.error('Vui lòng nhập lý do từ chối'); return; }
-    setRejectModal(false);
-    message.success('Đã từ chối ý tưởng.');
-    navigate('/doi-moi-sang-tao/quy-trinh-duyet/tu-choi');
-  };
-
-  const fileIcon = (type: string) => {
-    if (type === 'pdf') return 'fa-file-pdf text-danger';
-    if (type === 'docx' || type === 'doc') return 'fa-file-word text-primary';
-    if (type === 'xlsx' || type === 'xls') return 'fa-file-excel text-success';
-    return 'fa-file text-muted';
-  };
-
   return (
     <>
-      <PageTitle breadcrumbs={[
-        { title: 'Đổi mới sáng tạo', path: '/doi-moi-sang-tao/dashboard', isActive: false, isSeparator: false },
-        { title: 'Quản lý ý tưởng', path: '/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach', isActive: false, isSeparator: false },
-      ]}>
-        Chi tiết ý tưởng
-      </PageTitle>
+      <PageTitle breadcrumbs={breadcrumbs}>Chi tiết ý tưởng</PageTitle>
       <Content>
-        <div className="row g-5">
-          {/* Main content */}
-          <div className="col-xl-8">
-            <div className="card mb-5">
-              <div className="card-header border-0 pt-5 d-flex justify-content-between align-items-center">
-                <div>
-                  <h3 className="card-title fw-bold text-gray-800 mb-1">{idea.tenYTuong}</h3>
-                  <div className="d-flex align-items-center gap-3">
-                    <span className="text-muted fs-7"><i className="fa-regular fa-hashtag me-1" />{idea.ma}</span>
-                    <Tag color={display.color}>{display.label}</Tag>
-                    <span className="badge badge-light-info">{idea.linhVuc}</span>
-                  </div>
-                </div>
-                <div className="d-flex gap-2">
-                  {idea.trangThai === TrangThaiYTuong.ChoDuyet && (
-                    <>
-                      <Button type="primary" onClick={() => setApproveModal(true)}>
-                        <i className="fa-regular fa-check me-1 text-white" /> Phê duyệt
-                      </Button>
-                      <Button danger onClick={() => setRejectModal(true)}>
-                        <i className="fa-regular fa-times me-1 text-white" /> Từ chối
-                      </Button>
-                    </>
-                  )}
-                  {idea.trangThai === TrangThaiYTuong.DangSoanThao && (
-                    <Button type="primary" onClick={() => navigate(`/doi-moi-sang-tao/quan-ly-y-tuong/chinh-sua/${idea.id}`)}>
-                      <i className="fa-regular fa-pen me-1" /> Chỉnh sửa
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <div className="card-body">
-                <div className="mb-6">
-                  <div className="fw-bold text-gray-700 mb-2 fs-6">Mô tả vấn đề hiện tại</div>
-                  <div className="text-gray-600 bg-light p-4 rounded">{idea.moTaVanDe}</div>
-                </div>
-                <div className="mb-6">
-                  <div className="fw-bold text-gray-700 mb-2 fs-6">Nội dung ý tưởng / Giải pháp đề xuất</div>
-                  <div className="text-gray-600 bg-light p-4 rounded">{idea.noiDungDeXuat}</div>
-                </div>
-                <div className="row g-4 mb-6">
-                  <div className="col-md-6">
-                    <div className="fw-bold text-gray-700 mb-2 fs-6">Mục tiêu cụ thể</div>
-                    <div className="text-gray-600 bg-light p-3 rounded">{idea.mucTieu}</div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="fw-bold text-gray-700 mb-2 fs-6">Lợi ích dự kiến</div>
-                    <div className="text-gray-600 bg-light p-3 rounded">{idea.loiIch}</div>
-                  </div>
-                </div>
-                {idea.lyDoTuChoi && (
-                  <div className="alert alert-danger">
-                    <div className="fw-bold mb-1"><i className="fa-regular fa-circle-xmark me-2" />Lý do từ chối</div>
-                    {idea.lyDoTuChoi}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Files */}
-            <div className="card mb-5">
-              <div className="card-header border-0 pt-4">
-                <h4 className="card-title fw-semibold text-gray-700">
-                  <i className="fa-regular fa-paperclip me-2" />Tài liệu đính kèm ({idea.fileCount || 0})
-                </h4>
-              </div>
-              <div className="card-body py-3">
-                {fileSlice.length > 0 ? (
-                  <div className="d-flex flex-column gap-2">
-                    {fileSlice.map((f, i) => (
-                      <div key={i} className="d-flex align-items-center justify-content-between p-3 border rounded bg-light">
-                        <div className="d-flex align-items-center">
-                          <i className={`fa-regular ${fileIcon(f.type)} fs-3 me-3`} />
-                          <div>
-                            <div className="fw-semibold fs-7">{f.name}</div>
-                            <div className="text-muted fs-8">{f.size}</div>
-                          </div>
+        <Spin spinning={loading}>
+          {idea && (
+            <div className="d-flex gap-4 flex-wrap flex-lg-nowrap" style={{ alignItems: 'flex-start' }}>
+              {/* ── Main column ─────────────────────────────────────────── */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Header card */}
+                <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
+                  <div className="card-body p-5">
+                    <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                      <div>
+                        <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                          <span className="badge badge-light-primary fw-bold">{idea.code}</span>
+                          {idea.linhVuc && <Tag color="cyan" style={{ margin: 0 }}>{idea.linhVuc}</Tag>}
+                          <Tag color={statusMeta.color} style={{ margin: 0 }}>
+                            <i className={`fa-regular ${statusMeta.icon} me-1`} />{statusMeta.label}
+                          </Tag>
                         </div>
-                        <Button type="link" size="small" icon={<i className="fa-regular fa-download" />}>
-                          Tải xuống
-                        </Button>
+                        <h3 className="fw-bold text-gray-900 mb-0">{idea.title}</h3>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-muted text-center py-4">Chưa có tài liệu đính kèm</div>
-                )}
-              </div>
-            </div>
-            {/* Tương tác & Bình luận — IV.2.2 */}
-            <div className="card">
-              <div className="card-header border-0 pt-4 pb-2">
-                <h4 className="card-title fw-semibold text-gray-700">
-                  <i className="fa-regular fa-comments me-2" />Tương tác & Bình luận
-                </h4>
-              </div>
-              <div className="card-body">
-                <TuongTacSection
-                  loaiDoiTuong={LoaiDoiTuong.YTuong}
-                  doiTuongId={id!}
-                  initialLikes={idea.luotThich ?? 0}
-                  currentUserId={currentUser?.id}
-                />
-              </div>
-            </div>
-          </div>
+                      <div className="d-flex gap-2">
+                        <Button onClick={() => navigate(-1)}>
+                          <i className="fa-regular fa-arrow-left me-1" />Quay lại
+                        </Button>
+                        {canApprove && idea.status === 'Đã nộp' && (
+                          <>
+                            <Button type="primary" onClick={handleApprove}>
+                              <i className="fa-regular fa-check me-1" />Phê duyệt
+                            </Button>
+                            <Button danger onClick={() => setRejectOpen(true)}>
+                              <i className="fa-regular fa-rotate-left me-1" />Trả lại
+                            </Button>
+                          </>
+                        )}
+                        {canApprove && idea.status === 'Đã tiếp nhận' && (
+                          <Button type="primary" style={{ background: '#722ed1', borderColor: '#722ed1' }}
+                            onClick={() => setRecognizeOpen(true)}>
+                            <i className="fa-regular fa-medal me-1" />Công nhận
+                          </Button>
+                        )}
+                      </div>
+                    </div>
 
-          {/* Sidebar info */}
-          <div className="col-xl-4">
-            <div className="card mb-5">
-              <div className="card-header border-0 pt-4">
-                <h4 className="card-title fw-semibold text-gray-700">Thông tin hồ sơ</h4>
-              </div>
-              <div className="card-body py-3">
+                    <div className="row g-3 text-muted fs-7">
+                      <div className="col-md-4">
+                        <i className="fa-regular fa-user me-2" />
+                        Người đề xuất: <span className="text-gray-800 fw-semibold">{idea.nguoiDeXuat || '—'}</span>
+                      </div>
+                      <div className="col-md-4">
+                        <i className="fa-regular fa-building me-2" />
+                        Đơn vị: <span className="text-gray-800 fw-semibold">{idea.donViCongTac || '—'}</span>
+                      </div>
+                      <div className="col-md-4">
+                        <i className="fa-regular fa-calendar me-2" />
+                        Ngày nộp: <span className="text-gray-800 fw-semibold">{fmtDateTime(idea.submittedOn ?? idea.submittedAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thông tin công nhận */}
+                {idea.status === 'Được công nhận' && (
+                  <div className="shadow-sm mb-4 overflow-hidden"
+                    style={{
+                      borderRadius: 12,
+                      background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+                      border: '1px solid #ddd6fe',
+                    }}>
+                    <div className="p-5 d-flex gap-4 align-items-start">
+                      <div className="d-flex align-items-center justify-content-center rounded-circle bg-white shadow-sm"
+                        style={{ width: 52, height: 52, flexShrink: 0 }}>
+                        <i className="fa-solid fa-medal fs-2" style={{ color: '#722ed1' }} />
+                      </div>
+                      <div>
+                        <div className="fw-bold fs-5 mb-1" style={{ color: '#5b21b6' }}>Ý tưởng đã được công nhận</div>
+                        {recognitionEntry?.remark && (
+                          <div className="text-gray-700 fs-7 mb-1">{recognitionEntry.remark}</div>
+                        )}
+                        {recognitionEntry && (
+                          <div className="text-muted fs-8">
+                            <i className="fa-regular fa-calendar me-1" />
+                            Ngày công nhận: {fmtDateTime(recognitionEntry.actionDate)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Content sections */}
                 {[
-                  { label: 'Mã hồ sơ', value: idea.ma, icon: 'fa-hashtag' },
-                  { label: 'Người gửi', value: idea.nguoiGuiTen, icon: 'fa-user' },
-                  { label: 'Ngày nộp', value: idea.ngayNop || '—', icon: 'fa-calendar' },
-                  { label: 'Lĩnh vực', value: idea.linhVuc, icon: 'fa-tag' },
-                ].map((item, i) => (
-                  <div key={i} className="d-flex align-items-center py-2 border-bottom">
-                    <i className={`fa-regular ${item.icon} text-muted me-3 w-20px`} />
-                    <div>
-                      <div className="text-muted fs-8">{item.label}</div>
-                      <div className="fw-semibold fs-7">{item.value}</div>
+                  { label: 'Mô tả vấn đề hiện tại', icon: 'fa-circle-exclamation', value: idea.problemDescription },
+                  { label: 'Nội dung ý tưởng / Giải pháp đề xuất', icon: 'fa-lightbulb', value: idea.ideaContent },
+                  { label: 'Mục tiêu cụ thể', icon: 'fa-bullseye', value: idea.mucTieu },
+                  { label: 'Lợi ích dự kiến', icon: 'fa-chart-line', value: idea.expectedBenefit },
+                  { label: 'Phạm vi áp dụng', icon: 'fa-diagram-project', value: idea.phamViApDung },
+                ].filter(s => s.value).map(s => (
+                  <div key={s.label} className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
+                    <div className="card-body p-5">
+                      <div className="fw-bold text-gray-800 mb-3">
+                        <i className={`fa-regular ${s.icon} text-primary me-2`} />{s.label}
+                      </div>
+                      <div className="text-gray-700 fs-7" style={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                        {s.value}
+                      </div>
                     </div>
                   </div>
                 ))}
-                <div className="d-flex align-items-center py-2">
-                  <i className="fa-regular fa-circle-dot text-muted me-3 w-20px" />
-                  <div>
-                    <div className="text-muted fs-8">Trạng thái</div>
-                    <Tag color={display.color}>{display.label}</Tag>
+
+                {/* Attachments */}
+                <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
+                  <div className="card-body p-5">
+                    <div className="fw-bold text-gray-800 mb-3">
+                      <i className="fa-regular fa-paperclip text-primary me-2" />
+                      Tài liệu đính kèm ({idea.attachments?.length ?? 0})
+                    </div>
+                    {!idea.attachments?.length ? (
+                      <div className="text-muted fs-7">Không có tài liệu đính kèm</div>
+                    ) : (
+                      <div className="d-flex flex-column gap-2">
+                        {idea.attachments.map((f, i) => (
+                          <div key={i} className="d-flex align-items-center gap-3 p-3 rounded bg-light">
+                            <i className="fa-regular fa-file text-primary fs-4" />
+                            <div className="flex-grow-1 min-w-0">
+                              <div className="fw-semibold fs-7 text-truncate">{f.originalName ?? f.fileName}</div>
+                              <div className="text-muted fs-8">{f.fileExt?.toUpperCase()} · {fmtBytes(f.fileSize)}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tương tác: thích + bình luận */}
+                <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
+                  <div className="card-body p-5">
+                    <div className="fw-bold text-gray-800 mb-3">
+                      <i className="fa-regular fa-comments text-primary me-2" />Thảo luận
+                    </div>
+                    <TuongTacSection
+                      loaiDoiTuong={LoaiDoiTuong.YTuong}
+                      doiTuongId={idea.id}
+                      initialLikes={0}
+                      currentUserId={currentUser?.id}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Right column: timeline ──────────────────────────────── */}
+              <div style={{ width: 320, flexShrink: 0 }}>
+                <div className="card border-0 shadow-sm" style={{ borderRadius: 12 }}>
+                  <div className="card-body p-5">
+                    <div className="fw-bold text-gray-800 mb-4">
+                      <i className="fa-regular fa-timeline text-primary me-2" />Lịch sử xử lý
+                    </div>
+                    {histories.length === 0 ? (
+                      <Empty description="Chưa có lịch sử" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
+                      <Timeline
+                        items={histories.map(h => ({
+                          color: HISTORY_DOT[h.actionType] ?? 'blue',
+                          children: (
+                            <div>
+                              <div className="fw-semibold fs-7 text-gray-800">{h.actionType}</div>
+                              {h.remark && <div className="text-muted fs-8 mt-1">{h.remark}</div>}
+                              <div className="text-muted fs-9 mt-1">
+                                <i className="fa-regular fa-clock me-1" />{fmtDateTime(h.actionDate)}
+                              </div>
+                            </div>
+                          ),
+                        }))}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* History timeline */}
-            <div className="card">
-              <div className="card-header border-0 pt-4">
-                <h4 className="card-title fw-semibold text-gray-700">Lịch sử xử lý</h4>
-              </div>
-              <div className="card-body py-3">
-                <div className="timeline">
-                  {history.map((h, i) => (
-                    <div key={i} className="timeline-item d-flex pb-4">
-                      <div className="timeline-line me-3 d-flex flex-column align-items-center" style={{ minWidth: 20 }}>
-                        <div className={`rounded-circle bg-${h.dot}`} style={{ width: 10, height: 10, marginTop: 4 }} />
-                        {i < history.length - 1 && (
-                          <div className="bg-light flex-grow-1" style={{ width: 2, marginTop: 2 }} />
-                        )}
-                      </div>
-                      <div>
-                        <div className="fw-semibold fs-7">{h.action}</div>
-                        <div className="text-muted fs-8">{h.user}</div>
-                        <div className="text-muted fs-8">{h.time}</div>
-                        {h.note && <div className="text-info fs-8 mt-1">{h.note}</div>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Approve modal */}
-        <Modal
-          title={<><i className="fa-regular fa-circle-check text-success me-2" />Xác nhận phê duyệt</>}
-          open={approveModal}
-          onOk={handleApprove}
-          onCancel={() => setApproveModal(false)}
-          okText="Phê duyệt"
-          cancelText="Hủy"
-          okButtonProps={{ type: 'primary' }}
-        >
-          <p>Bạn có chắc chắn muốn <strong>phê duyệt</strong> ý tưởng này không?</p>
-          <p className="text-muted fs-7">Sau khi phê duyệt, ý tưởng sẽ được chuyển sang Kho tri thức.</p>
-        </Modal>
-
-        {/* Reject modal */}
-        <Modal
-          title={<><i className="fa-regular fa-circle-xmark text-danger me-2" />Từ chối ý tưởng</>}
-          open={rejectModal}
-          onOk={handleReject}
-          onCancel={() => setRejectModal(false)}
-          okText="Xác nhận từ chối"
-          cancelText="Hủy"
-          okButtonProps={{ danger: true }}
-        >
-          <p>Vui lòng nhập lý do từ chối:</p>
-          <Input.TextArea
-            rows={3}
-            value={rejectReason}
-            onChange={e => setRejectReason(e.target.value)}
-            placeholder="Nhập lý do từ chối rõ ràng để người gửi có thể cải thiện..."
-          />
-        </Modal>
+          )}
+        </Spin>
       </Content>
+
+      {/* Reject modal */}
+      <Modal
+        title={<><i className="fa-regular fa-rotate-left text-danger me-2" />Trả lại ý tưởng</>}
+        open={rejectOpen}
+        onOk={handleReject}
+        onCancel={() => { setRejectOpen(false); setRejectReason(''); }}
+        okText="Xác nhận trả lại"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+        confirmLoading={actionLoading}
+      >
+        <p>Lý do trả lại (người gửi có thể chỉnh sửa và nộp lại):</p>
+        <Input.TextArea
+          rows={3}
+          value={rejectReason}
+          onChange={e => setRejectReason(e.target.value)}
+          placeholder="Nhập lý do để người gửi hoàn thiện ý tưởng..."
+        />
+      </Modal>
+
+      {/* Recognize modal */}
+      <Modal
+        title={<><i className="fa-solid fa-medal me-2" style={{ color: '#722ed1' }} />Công nhận ý tưởng</>}
+        open={recognizeOpen}
+        onOk={handleRecognize}
+        onCancel={() => { setRecognizeOpen(false); setRecognizeInfo(''); }}
+        okText="Xác nhận công nhận"
+        cancelText="Hủy"
+        confirmLoading={actionLoading}
+      >
+        <p>Thông tin công nhận (số quyết định, nội dung ghi nhận, giá trị mang lại...):</p>
+        <Input.TextArea
+          rows={3}
+          value={recognizeInfo}
+          onChange={e => setRecognizeInfo(e.target.value)}
+          placeholder="VD: Quyết định số 123/QĐ-TCT ngày ..., công nhận sáng kiến cấp Tổng công ty..."
+        />
+      </Modal>
     </>
   );
 };
