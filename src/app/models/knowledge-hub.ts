@@ -83,6 +83,17 @@ export interface ICreateTagRequest {
   ten: string;
 }
 
+// ── Thư mục tri thức (cây thư mục như Windows) ───────────────────────────────
+
+export interface IThuMucTaiLieu {
+  id:           string;
+  ten:          string;
+  moTa?:        string | null;
+  thuMucChaId?: string | null;
+  thuTu:        number;
+  soTaiLieu:    number;
+}
+
 // ── Tài Liệu ──────────────────────────────────────────────────────────────────
 
 export interface ITacGia {
@@ -103,6 +114,7 @@ export interface ITaiLieu {
   loaiNguonThamChieu?: LoaiNguonThamChieu | null;
   nguonThamChieuId?:   string | null;
   tenNguonThamChieu?:  string | null;
+  thuMucId?:        string | null;
   urlNgoai?:        string;
   duongDanLuuTru?:  string;
   tenGoc?:          string;
@@ -126,6 +138,8 @@ export interface ISearchTaiLieuRequest extends IPageRequest {
   donViId?:       string | null;
   loaiNguonThamChieu?: LoaiNguonThamChieu | null;
   nguonThamChieuId?:   string | null;
+  thuMucId?:      string | null;
+  chuaPhanLoai?:  boolean | null;
   tagIds?:        string[];
 }
 
@@ -143,6 +157,7 @@ export interface ICreateTaiLieuRequest {
   loaiNguonThamChieu?: LoaiNguonThamChieu | null;
   nguonThamChieuId?:   string | null;
   tenNguonThamChieu?:  string | null;
+  thuMucId?:       string | null;
   tags?:           string[];
 }
 
@@ -150,6 +165,8 @@ export interface IUpdateTaiLieuRequest extends ICreateTaiLieuRequest {
   id: string;
   /** true → BE cập nhật lại nguồn tham chiếu theo 3 field loai/nguon/ten (cho phép xóa bằng null) */
   capNhatNguonThamChieu?: boolean;
+  /** true → BE cập nhật lại thư mục theo thuMucId (đưa về gốc bằng null) */
+  capNhatThuMuc?: boolean;
 }
 
 export interface ITuChoiRequest {
