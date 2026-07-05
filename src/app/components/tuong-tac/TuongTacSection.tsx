@@ -25,6 +25,7 @@ import {
 } from '@/app/services/khoTriThucApi';
 import type { IBinhLuan } from '@/app/models/knowledge-hub';
 import { LoaiDoiTuong } from '@/app/models/knowledge-hub';
+import { NguoiThichPopover } from './NguoiThichPopover';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -147,8 +148,14 @@ const CommentItem: React.FC<CommentItemProps> = ({
             }}
           >
             <i className={`fa-${liked ? 'solid' : 'regular'} fa-heart`} style={{ fontSize: 12 }} />
-            {likeCount > 0 && <span>{likeCount}</span>}
           </button>
+          {likeCount > 0 && (
+            <NguoiThichPopover loaiDoiTuong={LoaiDoiTuong.BinhLuan} doiTuongId={comment.id}>
+              <span style={{ fontSize: '0.78rem', color: '#999', textDecoration: 'underline dotted' }}>
+                {likeCount}
+              </span>
+            </NguoiThichPopover>
+          )}
 
           {depth === 0 && onReply && (
             <button
@@ -379,16 +386,14 @@ export const TuongTacSection: React.FC<TuongTacSectionProps> = ({
         >
           <i className={`fa-${liked ? 'solid' : 'regular'} fa-heart`} />
           {liked ? 'Đã thích' : 'Thích'}
-          {likeCount > 0 && (
-            <span style={{
-              background: liked ? '#e0443a' : '#eee',
-              color: liked ? '#fff' : '#666',
-              borderRadius: 10, padding: '1px 8px', fontSize: '0.8rem',
-            }}>
-              {likeCount}
-            </span>
-          )}
         </button>
+
+        <NguoiThichPopover loaiDoiTuong={loaiDoiTuong} doiTuongId={doiTuongId}>
+          <span style={{ color: '#888', fontSize: '0.82rem', textDecoration: 'underline dotted' }}>
+            <i className='fa-solid fa-heart me-1' style={{ color: '#e0443a' }} />
+            {likeCount} người đã thích
+          </span>
+        </NguoiThichPopover>
 
         <span style={{ color: '#bbb', fontSize: '0.82rem' }}>
           <i className='fa-regular fa-comment me-1' />

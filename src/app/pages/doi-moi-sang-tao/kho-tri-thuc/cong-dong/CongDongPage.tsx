@@ -18,6 +18,7 @@ import type {
 } from '@/app/models/knowledge-hub';
 import { LoaiBaiViet, LoaiDoiTuong } from '@/app/models/knowledge-hub';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
+import { NguoiThichPopover } from '@/app/components/tuong-tac/NguoiThichPopover';
 
 const { TextArea } = Input;
 
@@ -417,10 +418,10 @@ export const CongDongPage: React.FC = () => {
         {/* Footer stats */}
         <div className="d-flex gap-3 align-items-center border-top pt-2 mt-1">
           <button
-            className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(bv.id) || bv.daThich ? 'text-danger' : 'text-muted'}`}
+            className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(bv.id) || bv.daTuThich ? 'text-danger' : 'text-muted'}`}
             onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
           >
-            <i className={`fa-${likedIds.has(bv.id) || bv.daThich ? 'solid' : 'regular'} fa-heart me-1`} />
+            <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
             <span className="fs-8">{Math.max(0, bv.soLuotThich ?? 0)}</span>
           </button>
           <button className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
@@ -718,14 +719,25 @@ export const CongDongPage: React.FC = () => {
               </div>
 
               {/* Actions */}
-              <div className="d-flex gap-3 mb-4">
+              <div className="d-flex gap-3 mb-4 align-items-center">
                 <button
                   className={`btn btn-sm d-flex align-items-center gap-2 ${likedIds.has(postDetail.id) || postDetail.daThich ? 'btn-danger' : 'btn-light-danger'}`}
                   onClick={() => handleLike(LoaiDoiTuong.BaiViet, postDetail.id)}
                 >
-                  <i className={`fa-${likedIds.has(postDetail.id) || postDetail.daThich ? 'solid' : 'regular'} fa-heart`} />
+                  <i className={`fa-${likedIds.has(postDetail.id) || postDetail.daTuThich ? 'solid' : 'regular'} fa-heart`} />
                   {Math.max(0, postDetail.soLuotThich ?? 0)} Thích
                 </button>
+                <NguoiThichPopover loaiDoiTuong={LoaiDoiTuong.BaiViet} doiTuongId={postDetail.id}>
+                  <span className="text-muted fs-8 fw-semibold" style={{ textDecoration: 'underline dotted' }}>
+                    {postDetail.soLuotThich ?? 0} người đã thích
+                  </span>
+                </NguoiThichPopover>
+                <Button size="small" onClick={() => {
+                  navigator.clipboard.writeText(window.location.origin + '/doi-moi-sang-tao/kho-tri-thuc/cong-dong');
+                  message.success('Đã sao chép liên kết!');
+                }}>
+                  <i className="fa-regular fa-link me-1" />Chia sẻ
+                </Button>
                 {isAdmin && (
                   <Button size="small" onClick={() => { setPostDetailOpen(false); openBvEdit(postDetail); }}>
                     <i className="fa-regular fa-pen me-1" />Chỉnh sửa

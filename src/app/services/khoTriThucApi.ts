@@ -113,6 +113,20 @@ export const getRankingTaiLieus = (pageNumber = 1, pageSize = 10, linhVucKHCNId?
 export const deleteTaiLieu = (id: string) =>
   requestDELETE<IResult<boolean>>(`TaiLieus/${id}`);
 
+// ── Người đã thích ────────────────────────────────────────────────────────────
+
+export interface INguoiThich {
+  nguoiDungId: string;
+  hoTen?: string | null;
+  email?: string | null;
+  hinhDaiDien?: string | null;
+  thoiGian?: string | null;
+}
+
+/** Danh sách người đã thích một nội dung (tài liệu / bài viết / bình luận) */
+export const getNguoiThich = (loaiDoiTuong: number, doiTuongId: string) =>
+  requestGET<IResult<INguoiThich[]>>(`LuotThichs/nguoi-thich?loaiDoiTuong=${loaiDoiTuong}&doiTuongId=${doiTuongId}`);
+
 // ── 1b. Tài Liệu Đính Kèm (nhiều file/link cho một tài liệu) ─────────────────
 
 /** Danh sách đính kèm của một tài liệu */
