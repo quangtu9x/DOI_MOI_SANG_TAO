@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Input, Select, Button, Tag, Modal, Form, Upload, Spin, Empty,
   Tabs, Tooltip, Popconfirm, message, Badge, Divider, Progress,
+  Tree, TreeSelect,
 } from 'antd';
+import type { DataNode } from 'antd/es/tree';
 import type { UploadFile, RcFile } from 'antd/es/upload/interface';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
@@ -24,11 +27,19 @@ import {
   createTaiLieuDinhKem,
   deleteTaiLieuDinhKem,
   getTaiLieuDinhKemDownloadUrl,
+  getThuMucTree,
+  createThuMuc,
+  updateThuMuc,
+  deleteThuMuc,
+  chiaSeTaiLieu,
+  getTaiLieuShareLink,
 } from '@/app/services/khoTriThucApi';
+import { UserSelect } from '@/app/components/UserSelect';
 import type {
   ITaiLieu,
   ISearchTaiLieuRequest,
   ITaiLieuDinhKem,
+  IThuMucTaiLieu,
 } from '@/app/models/knowledge-hub';
 import { TrangThaiTaiLieu, LoaiTaiLieu, LoaiNguonThamChieu } from '@/app/models/knowledge-hub';
 
@@ -190,6 +201,55 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [tuChoiId, setTuChoiId]         = useState('');
   const [tuChoiForm] = Form.useForm();
 
+  // chia sẻ
+  const [shareOpen, setShareOpen]       = useState(false);
+  const [shareTarget, setShareTarget]   = useState<ITaiLieu | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareForm] = Form.useForm();
+
+  // deep-link: ?taiLieuId=xxx → mở thẳng chi tiết tài liệu được chia sẻ
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const sharedId = searchParams.get('taiLieuId');
+    if (sharedId) {
+      openDetail(sharedId);
+      // Xóa param để tránh mở lại khi refresh state
+      searchParams.delete('taiLieuId');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const openShare = (item: ITaiLieu) => {
+    setShareTarget(item);
+    shareForm.resetFields();
+    setShareOpen(true);
+  };
+
+  const handleCopyLink = () => {
+    if (!shareTarget) return;
+    navigator.clipboard.writeText(getTaiLieuShareLink(shareTarget.id))
+      .then(() => message.success('Đã sao chép liên kết!'));
+  };
+
+  const handleShare = async () => {
+    if (!shareTarget) return;
+    try {
+      const values = await shareForm.validateFields();
+      const ids: string[] = (values.nguoiNhanIds ?? [])
+        .map((v: any) => v?.value ?? v)
+        .filter(Boolean);
+      if (ids.length === 0) { message.error('Chọn ít nhất một người nhận'); return; }
+      setShareLoading(true);
+      const res = await chiaSeTaiLieu(shareTarget.id, { nguoiNhanIds: ids, loiNhan: values.loiNhan });
+      const err = getApiError(res);
+      if (err) { message.error(err); return; }
+      message.success('Đã chia sẻ — người nhận sẽ nhận được thông báo');
+      setShareOpen(false);
+    } catch (e: any) { if (!e?.errorFields) message.error('Lỗi khi chia sẻ'); }
+    finally { setShareLoading(false); }
+  };
+
   // ── Load
   const loadItems = useCallback(async (req = searchReq) => {
     setLoading(true);
@@ -209,6 +269,119 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     } catch {}
     finally { setRankLoading(false); }
   }, []);
+
+  // ── Cây thư mục tri thức ────────────────────────────────────────────────────
+  const [folders, setFolders] = useState<IThuMucTaiLieu[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string>('all'); // 'all' | 'none' | folderId
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
+  const [folderModalMode, setFolderModalMode] = useState<'create' | 'edit'>('create');
+  const [folderForm] = Form.useForm();
+
+  const loadFolders = useCallback(async () => {
+    try {
+      const res = await getThuMucTree();
+      setFolders(safeList<IThuMucTaiLieu>(res));
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { loadFolders(); }, [loadFolders]);
+
+  /** Dựng cây antd từ danh sách phẳng */
+  const buildTreeNodes = (parentId: string | null): DataNode[] =>
+    folders
+      .filter(f => (f.thuMucChaId ?? null) === parentId)
+      .map(f => ({
+        key: f.id,
+        title: (
+          <span>
+            {f.ten}
+            {f.soTaiLieu > 0 && <span className="text-muted fs-9 ms-1">({f.soTaiLieu})</span>}
+          </span>
+        ),
+        icon: <i className="fa-regular fa-folder text-warning" />,
+        children: buildTreeNodes(f.id),
+      }));
+
+  const treeData: DataNode[] = [
+    {
+      key: 'all',
+      title: <span className="fw-semibold">Tất cả tài liệu</span>,
+      icon: <i className="fa-regular fa-books text-primary" />,
+    },
+    ...buildTreeNodes(null),
+    {
+      key: 'none',
+      title: <span className="text-muted">Chưa phân loại</span>,
+      icon: <i className="fa-regular fa-folder-open text-muted" />,
+    },
+  ];
+
+  /** TreeSelect data cho form chọn thư mục */
+  const buildSelectNodes = (parentId: string | null): any[] =>
+    folders
+      .filter(f => (f.thuMucChaId ?? null) === parentId)
+      .map(f => ({ title: f.ten, value: f.id, children: buildSelectNodes(f.id) }));
+
+  const onSelectFolder = (keys: React.Key[]) => {
+    const key = (keys[0] as string) ?? 'all';
+    setSelectedFolder(key);
+    const req: ISearchTaiLieuRequest = {
+      ...searchReq,
+      pageNumber: 1,
+      thuMucId: key !== 'all' && key !== 'none' ? key : null,
+      chuaPhanLoai: key === 'none' ? true : null,
+    };
+    setSearchReq(req);
+    loadItems(req);
+  };
+
+  const openFolderCreate = () => {
+    setFolderModalMode('create');
+    folderForm.resetFields();
+    // Nếu đang chọn 1 thư mục → mặc định tạo thư mục con bên trong
+    if (selectedFolder !== 'all' && selectedFolder !== 'none') {
+      folderForm.setFieldsValue({ thuMucChaId: selectedFolder });
+    }
+    setFolderModalOpen(true);
+  };
+
+  const openFolderEdit = () => {
+    const f = folders.find(x => x.id === selectedFolder);
+    if (!f) return;
+    setFolderModalMode('edit');
+    folderForm.setFieldsValue({ id: f.id, ten: f.ten, moTa: f.moTa, thuMucChaId: f.thuMucChaId ?? undefined });
+    setFolderModalOpen(true);
+  };
+
+  const submitFolder = async () => {
+    try {
+      const values = await folderForm.validateFields();
+      if (folderModalMode === 'create') {
+        const res = await createThuMuc({ ten: values.ten, moTa: values.moTa, thuMucChaId: values.thuMucChaId ?? null });
+        const err = getApiError(res);
+        if (err) { message.error(err); return; }
+        message.success('Đã tạo thư mục');
+      } else {
+        const res = await updateThuMuc(values.id, { ...values, thuMucChaId: values.thuMucChaId ?? null });
+        const err = getApiError(res);
+        if (err) { message.error(err); return; }
+        message.success('Đã cập nhật thư mục');
+      }
+      setFolderModalOpen(false);
+      loadFolders();
+    } catch (e: any) { if (!e?.errorFields) message.error('Lỗi'); }
+  };
+
+  const handleDeleteFolder = async () => {
+    if (selectedFolder === 'all' || selectedFolder === 'none') return;
+    const res = await deleteThuMuc(selectedFolder);
+    const err = getApiError(res);
+    if (err) { message.error(err); return; }
+    message.success('Đã xóa thư mục');
+    setSelectedFolder('all');
+    onSelectFolder(['all']);
+    loadFolders();
+  };
 
   useEffect(() => { loadItems(); }, []);
   useEffect(() => { if (activeTab === 'ranking') loadRanking(); }, [activeTab]);
@@ -315,6 +488,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         loaiNguonThamChieu: values.loaiNguonThamChieu ?? null,
         tenNguonThamChieu: values.loaiNguonThamChieu ? (values.tenNguonThamChieu || null) : null,
         nguonThamChieuId: values.loaiNguonThamChieu ? (values.nguonThamChieuId || null) : null,
+        thuMucId: values.thuMucId ?? null,
         tags,
         duongDanLuuTru: duongDanLuuTru || null,
         tenGoc: tenGoc || null,
@@ -329,7 +503,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         message.success('Tạo tài liệu thành công');
       } else {
         const editId = form.getFieldValue('id');
-        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true });
+        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true, capNhatThuMuc: true });
         taiLieuId = editId;
         message.success('Cập nhật thành công');
       }
@@ -353,7 +527,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         if (failed > 0) message.warning(`${failed} file đính kèm upload thất bại`);
       }
 
-      setFormOpen(false); loadItems();
+      setFormOpen(false); loadItems(); loadFolders();
     } catch (e: any) {
       if (e?.errorFields) return;
       message.error('Có lỗi xảy ra');
@@ -395,7 +569,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       const res = await deleteTaiLieu(id);
       const err = getApiError(res);
       if (err) { message.error(err); return; }
-      message.success('Đã xóa'); loadItems();
+      message.success('Đã xóa'); loadItems(); loadFolders();
     }
     catch { message.error('Không xóa được'); }
   };
@@ -494,6 +668,13 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                   <i className="fa-regular fa-eye" />
                 </Button>
               </Tooltip>
+              {item.trangThai === TrangThaiTaiLieu.DaXuatBan && (
+                <Tooltip title="Chia sẻ">
+                  <Button size="small" onClick={() => openShare(item)}>
+                    <i className="fa-regular fa-share-nodes" />
+                  </Button>
+                </Tooltip>
+              )}
               {(isAdmin || item.trangThai === TrangThaiTaiLieu.NhapLieu) && (
                 <Tooltip title="Chỉnh sửa">
                   <Button size="small" onClick={() => openEdit(item)}>
@@ -589,7 +770,49 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
         {/* ── Tab: Danh sách ─────────────────────────────────────────────────── */}
         {activeTab === 'danh-sach' && (
-          <>
+          <div className="d-flex gap-4" style={{ alignItems: 'flex-start' }}>
+            {/* ── Cây thư mục tri thức (như Windows Explorer) ── */}
+            <div style={{ width: 264, flexShrink: 0 }}>
+              <div className="card border-0 shadow-sm" style={{ borderRadius: 12 }}>
+                <div className="card-body p-3">
+                  <div className="d-flex align-items-center justify-content-between mb-2 px-1">
+                    <span className="fw-bold text-gray-600 fs-8 text-uppercase" style={{ letterSpacing: '0.06em' }}>
+                      <i className="fa-regular fa-folder-tree me-1" />Thư mục
+                    </span>
+                    {canApprove && (
+                      <div className="d-flex gap-1">
+                        <Tooltip title="Thư mục mới">
+                          <Button size="small" type="text" icon={<i className="fa-regular fa-folder-plus" />}
+                            onClick={openFolderCreate} />
+                        </Tooltip>
+                        {selectedFolder !== 'all' && selectedFolder !== 'none' && (
+                          <>
+                            <Tooltip title="Đổi tên / di chuyển">
+                              <Button size="small" type="text" icon={<i className="fa-regular fa-pen" />}
+                                onClick={openFolderEdit} />
+                            </Tooltip>
+                            <Popconfirm title="Xóa thư mục này? (chỉ xóa được khi rỗng)" onConfirm={handleDeleteFolder}>
+                              <Button size="small" type="text" danger icon={<i className="fa-regular fa-trash" />} />
+                            </Popconfirm>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <Tree
+                    showIcon
+                    blockNode
+                    defaultExpandAll
+                    selectedKeys={[selectedFolder]}
+                    onSelect={onSelectFolder}
+                    treeData={treeData}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Danh sách tài liệu ── */}
+            <div style={{ flex: 1, minWidth: 0 }}>
             {/* Toolbar */}
             <div className="card border-0 shadow-sm mb-5">
               <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 py-4">
@@ -639,7 +862,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                 </Button>
               </div>
             )}
-          </>
+            </div>
+          </div>
         )}
 
         {/* ── Tab: Xếp hạng ──────────────────────────────────────────────────── */}
@@ -770,6 +994,11 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             <Button key="dl" icon={<i className="fa-regular fa-download me-1" />}
               onClick={() => handleDownload(detail.id, detail.tenGoc)}>
               Tải xuống
+            </Button>
+          ),
+          detail && (
+            <Button key="share" onClick={() => openShare(detail)}>
+              <i className="fa-regular fa-share-nodes me-1" />Chia sẻ
             </Button>
           ),
           detail && (isAdmin || detail.trangThai === TrangThaiTaiLieu.NhapLieu) && (
@@ -1010,6 +1239,17 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             </div>
           </div>
 
+          <Form.Item name="thuMucId" label="Thư mục lưu trữ">
+            <TreeSelect
+              allowClear
+              showSearch
+              treeDefaultExpandAll
+              placeholder="Chọn thư mục (bỏ trống = Chưa phân loại)"
+              treeData={buildSelectNodes(null)}
+              treeNodeFilterProp="title"
+            />
+          </Form.Item>
+
           <Form.Item name="moTa" label="Mô tả">
             <TextArea rows={3} placeholder="Mô tả nội dung tài liệu..." />
           </Form.Item>
@@ -1125,6 +1365,90 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
           <Form.Item name="urlNgoai" label="Liên kết ngoài (tuỳ chọn)">
             <Input placeholder="https://..." prefix={<i className="fa-regular fa-link text-muted" />} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* ── Chia sẻ Modal ──────────────────────────────────────────────────── */}
+      <Modal
+        open={shareOpen}
+        onCancel={() => setShareOpen(false)}
+        title={
+          <span>
+            <i className="fa-regular fa-share-nodes me-2 text-primary" />
+            Chia sẻ tài liệu
+          </span>
+        }
+        onOk={handleShare}
+        okText="Gửi chia sẻ"
+        cancelText="Đóng"
+        confirmLoading={shareLoading}
+      >
+        {shareTarget && (
+          <>
+            <div className="p-3 rounded bg-light mb-4 d-flex align-items-center gap-3">
+              <i className={`fa-regular ${getFileIcon(shareTarget.mimeType)} fs-3`} />
+              <div className="fw-semibold text-gray-800 flex-grow-1">{shareTarget.tieuDe}</div>
+            </div>
+
+            {/* Sao chép liên kết */}
+            <div className="d-flex gap-2 mb-4">
+              <Input readOnly value={getTaiLieuShareLink(shareTarget.id)} />
+              <Button onClick={handleCopyLink} icon={<i className="fa-regular fa-copy me-1" />}>
+                Sao chép
+              </Button>
+            </div>
+
+            <Divider style={{ fontSize: 12, color: '#999' }}>hoặc gửi trực tiếp cho đồng nghiệp</Divider>
+
+            <Form form={shareForm} layout="vertical">
+              <Form.Item
+                name="nguoiNhanIds"
+                label="Người nhận"
+                rules={[{ required: true, message: 'Chọn ít nhất một người nhận' }]}
+              >
+                <UserSelect mode="multiple" placeholder="Tìm và chọn đồng nghiệp..." />
+              </Form.Item>
+              <Form.Item name="loiNhan" label="Lời nhắn (tuỳ chọn)">
+                <TextArea rows={2} maxLength={500} showCount
+                  placeholder="VD: Tài liệu này hữu ích cho dự án của nhóm mình..." />
+              </Form.Item>
+            </Form>
+          </>
+        )}
+      </Modal>
+
+      {/* ── Thư mục Modal ──────────────────────────────────────────────────── */}
+      <Modal
+        open={folderModalOpen}
+        onCancel={() => setFolderModalOpen(false)}
+        title={
+          <span>
+            <i className="fa-regular fa-folder-plus me-2 text-warning" />
+            {folderModalMode === 'create' ? 'Tạo thư mục mới' : 'Đổi tên / di chuyển thư mục'}
+          </span>
+        }
+        onOk={submitFolder}
+        okText={folderModalMode === 'create' ? 'Tạo thư mục' : 'Lưu'}
+        cancelText="Hủy"
+      >
+        <Form form={folderForm} layout="vertical">
+          <Form.Item name="id" hidden><Input /></Form.Item>
+          <Form.Item name="ten" label="Tên thư mục" rules={[{ required: true, message: 'Nhập tên thư mục' }]}>
+            <Input placeholder="VD: Playbook chuyển đổi số, Biểu mẫu ĐMST..." maxLength={512} />
+          </Form.Item>
+          <Form.Item name="thuMucChaId" label="Thư mục cha">
+            <TreeSelect
+              allowClear
+              showSearch
+              treeDefaultExpandAll
+              placeholder="Bỏ trống = thư mục gốc"
+              treeData={buildSelectNodes(null)}
+              treeNodeFilterProp="title"
+            />
+          </Form.Item>
+          <Form.Item name="moTa" label="Mô tả">
+            <TextArea rows={2} placeholder="Mô tả ngắn về nội dung thư mục..." maxLength={1024} />
           </Form.Item>
         </Form>
       </Modal>

@@ -24,6 +24,7 @@ import type {
   ITaiLieuDinhKem,
   ISearchDinhKemRequest,
   ICreateDinhKemRequest,
+  IThuMucTaiLieu,
   IChuyenGia,
   ICreateChuyenGiaRequest,
   IUpdateChuyenGiaRequest,
@@ -112,6 +113,32 @@ export const getRankingTaiLieus = (pageNumber = 1, pageSize = 10, linhVucKHCNId?
 /** Xóa tài liệu */
 export const deleteTaiLieu = (id: string) =>
   requestDELETE<IResult<boolean>>(`TaiLieus/${id}`);
+
+/** Chia sẻ tài liệu cho đồng nghiệp — người nhận nhận thông báo hệ thống */
+export const chiaSeTaiLieu = (id: string, req: { nguoiNhanIds: string[]; loiNhan?: string }) =>
+  requestPOST<IResult<boolean>>(`TaiLieus/${id}/chia-se`, { id, ...req });
+
+/** Liên kết chia sẻ mở thẳng tài liệu trong Thư viện */
+export const getTaiLieuShareLink = (id: string): string =>
+  `${window.location.origin}/doi-moi-sang-tao/kho-tri-thuc/thu-vien?taiLieuId=${id}`;
+
+// ── Thư mục tri thức (cây thư mục) ────────────────────────────────────────────
+
+/** Cây thư mục kèm số tài liệu */
+export const getThuMucTree = () =>
+  requestGET<IResult<IThuMucTaiLieu[]>>(`ThuMucTaiLieus/tree`);
+
+/** Tạo thư mục (reviewer/admin) */
+export const createThuMuc = (req: { ten: string; moTa?: string; thuMucChaId?: string | null; thuTu?: number }) =>
+  requestPOST<IResult<string>>(`ThuMucTaiLieus`, req);
+
+/** Đổi tên / di chuyển thư mục */
+export const updateThuMuc = (id: string, req: { id: string; ten?: string; moTa?: string; thuMucChaId?: string | null; thuTu?: number }) =>
+  requestPUT<IResult<boolean>>(`ThuMucTaiLieus/${id}`, req);
+
+/** Xóa thư mục (chỉ khi rỗng) */
+export const deleteThuMuc = (id: string) =>
+  requestDELETE<IResult<boolean>>(`ThuMucTaiLieus/${id}`);
 
 // ── Người đã thích ────────────────────────────────────────────────────────────
 
