@@ -1,303 +1,562 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Input, Select, Button, Tag, Badge, Modal, Spin, Empty } from 'antd';
+import { searchTaiLieus, getTaiLieu } from '@/app/services/khoTriThucApi';
+import { TrangThaiTaiLieu, LoaiTaiLieu } from '@/app/models/knowledge-hub';
+import type { ITaiLieu, ISearchTaiLieuRequest } from '@/app/models/knowledge-hub';
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-interface IKhoTri {
-  id: string; ma: string; ten: string; linhVuc: string;
-  tomTat: string; nguoiGui: string; donVi: string;
-  ngayCongnhan: string; loiIch: string; tags: string[]; luotXem: number;
-}
+const { Option } = Select;
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
-const MOCK_KHO: IKhoTri[] = [
-  {
-    id: '1', ma: 'KTT-2026-001',
-    ten: 'Tối ưu lịch trình bay bằng Big Data — tiết kiệm nhiên liệu',
-    linhVuc: 'Khai thác bay',
-    tomTat: 'Phân tích dữ liệu khí tượng, ATC slot và lịch sử hành trình để tối ưu flight path. Áp dụng 18 đường bay nội địa, tiết kiệm trung bình 3.2% nhiên liệu/chuyến.',
-    nguoiGui: 'Phạm Thị Lan', donVi: 'Ban Khai thác bay', ngayCongnhan: '15/06/2026',
-    loiIch: 'Tiết kiệm ~12 tỷ đồng/năm chi phí nhiên liệu, giảm phát thải CO₂.',
-    tags: ['Big Data', 'Nhiên liệu', 'Tối ưu hóa'], luotXem: 128,
-  },
-  {
-    id: '2', ma: 'KTT-2026-002',
-    ten: 'AI dự báo bảo trì động cơ phòng ngừa (Predictive Maintenance)',
-    linhVuc: 'Kỹ thuật bảo dưỡng',
-    tomTat: 'Hệ thống AI phân tích dữ liệu cảm biến động cơ theo thời gian thực, phát hiện sớm dấu hiệu bất thường và đề xuất lịch bảo trì trước khi sự cố xảy ra.',
-    nguoiGui: 'Trần Quang Hùng', donVi: 'Xí nghiệp A76', ngayCongnhan: '10/06/2026',
-    loiIch: 'Giảm 30% chi phí bảo dưỡng khẩn cấp, tăng độ tin cậy khai thác.',
-    tags: ['AI', 'Predictive Maintenance', 'An toàn'], luotXem: 95,
-  },
-  {
-    id: '3', ma: 'KTT-2026-003',
-    ten: 'Hệ thống phản hồi hành khách thời gian thực qua QR Code',
-    linhVuc: 'Dịch vụ hành khách',
-    tomTat: 'Hành khách quét QR tại ghế ngồi để đánh giá dịch vụ ngay trên chuyến bay. Dữ liệu phản hồi xử lý tự động, báo cáo về trung tâm trong 30 phút sau hạ cánh.',
-    nguoiGui: 'Lê Thị Hương', donVi: 'Ban Dịch vụ hành khách', ngayCongnhan: '08/06/2026',
-    loiIch: 'NPS tăng từ 62 lên 74, phát hiện vấn đề dịch vụ ngay trong ngày.',
-    tags: ['QR Code', 'Customer Feedback', 'NPS'], luotXem: 82,
-  },
-  {
-    id: '4', ma: 'KTT-2026-004',
-    ten: 'Blended Learning cho đào tạo phi công & tiếp viên',
-    linhVuc: 'Đào tạo nhân lực',
-    tomTat: 'Kết hợp học lý thuyết online (LMS) với thực hành simulator, rút ngắn 25% thời gian đào tạo định kỳ cho trên 2.000 nhân viên phi hành/năm.',
-    nguoiGui: 'Nguyễn Thành Nam', donVi: 'Trung tâm Đào tạo bay', ngayCongnhan: '05/06/2026',
-    loiIch: 'Tiết kiệm chi phí đào tạo, linh hoạt lịch học cho phi hành đoàn.',
-    tags: ['E-learning', 'Simulator', 'Phi công'], luotXem: 71,
-  },
-  {
-    id: '5', ma: 'KTT-2026-005',
-    ten: 'Self check-in kiosk tại sân bay Tier-2 — giảm thời gian chờ',
-    linhVuc: 'Dịch vụ mặt đất',
-    tomTat: 'Triển khai 24 kiosk self check-in tại Đà Nẵng, Nha Trang, Phú Quốc. Hành khách tự làm thủ tục dưới 3 phút, giảm tải quầy check-in truyền thống 40%.',
-    nguoiGui: 'Nguyễn Minh Tuấn', donVi: 'Ban Dịch vụ mặt đất', ngayCongnhan: '01/06/2026',
-    loiIch: 'Giảm thời gian chờ hành khách, tiết kiệm nhân lực phục vụ mặt đất.',
-    tags: ['Self check-in', 'Kiosk', 'Tự động hoá'], luotXem: 64,
-  },
+// ── Null-safe API helpers ─────────────────────────────────────────────────────
+const safeList = <T,>(res: any): T[] => {
+  const d = res?.data ?? res;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  return [];
+};
+const safeTotal = (res: any): number => {
+  const d = res?.data ?? res;
+  return d?.totalCount ?? d?.data?.totalCount ?? 0;
+};
+const safeItem = <T,>(res: any): T | null => {
+  const d = res?.data ?? res;
+  return (d?.data ?? d ?? null) as T | null;
+};
+
+// ── Màu theo lĩnh vực — hash ổn định ─────────────────────────────────────────
+const PALETTE = ['#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#EF4444', '#0EA5E9', '#EC4899', '#14B8A6'];
+const colorForLinhVuc = (ten?: string | null): string => {
+  if (!ten) return '#6B7280';
+  let hash = 0;
+  for (let i = 0; i < ten.length; i++) hash = (hash * 31 + ten.charCodeAt(i)) >>> 0;
+  return PALETTE[hash % PALETTE.length];
+};
+
+// Tags từ API là [{id, ten, soLanDung}], cần map về string[]
+const normalizeTags = (raw: any[]): string[] =>
+  raw.map(t => (typeof t === 'string' ? t : (t?.ten ?? ''))).filter(Boolean);
+
+const normalizeItem = (item: any): ITaiLieu => ({
+  ...item,
+  tags: Array.isArray(item.tags) ? normalizeTags(item.tags) : [],
+});
+
+// ── Error handling (theo pattern getApiError của ThuVienTaiLieuPage.tsx) ─────
+// baseAPI không throw khi HTTP lỗi — resolve với {data, status}. Cần tự kiểm tra status.
+type ApiErrorKind = 'unauthorized' | 'forbidden' | 'server' | null;
+
+const getApiErrorKind = (res: any): ApiErrorKind => {
+  const status = res?.status;
+  if (status === 401) return 'unauthorized';
+  if (status === 403) return 'forbidden';
+  if (typeof status === 'number' && status >= 500) return 'server';
+  return null;
+};
+
+/** Thông báo lỗi từ BE (Result.messages) hoặc null nếu thành công — sao chép từ ThuVienTaiLieuPage.tsx */
+const getApiError = (res: any): string | null => {
+  if (!res) return 'Không nhận được phản hồi từ máy chủ';
+  if (typeof res.status === 'number' && res.status >= 400) {
+    const d = res.data;
+    const msgs: string[] = d?.messages ?? [];
+    return msgs.length > 0 ? msgs.join('. ') : (d?.exception || `Lỗi ${res.status}`);
+  }
+  const d = res.data;
+  if (d && d.succeeded === false) {
+    const msgs: string[] = d.messages ?? [];
+    return msgs.length > 0 ? msgs.join('. ') : 'Yêu cầu không thành công';
+  }
+  return null;
+};
+
+const ERROR_KIND_LABEL: Record<Exclude<ApiErrorKind, null>, { title: string; desc: string }> = {
+  unauthorized: { title: 'Cần đăng nhập', desc: 'Bạn cần đăng nhập để xem nội dung này.' },
+  forbidden:    { title: 'Không có quyền truy cập', desc: 'Bạn không có quyền xem nội dung này.' },
+  server:       { title: 'Lỗi hệ thống', desc: 'Hệ thống đang gặp sự cố, vui lòng thử lại sau.' },
+};
+
+const LOAI_LABEL: Record<LoaiTaiLieu, string> = {
+  [LoaiTaiLieu.HuongDan]:         'Hướng dẫn',
+  [LoaiTaiLieu.Playbook]:         'Playbook',
+  [LoaiTaiLieu.Template]:         'Mẫu biểu',
+  [LoaiTaiLieu.NghienCuu]:        'Nghiên cứu',
+  [LoaiTaiLieu.TinhHuong]:        'Tình huống',
+  [LoaiTaiLieu.BaiHocKinhNghiem]: 'Bài học KN',
+};
+
+const PAGE_SIZE = 9;
+const SORT_OPTIONS: { label: string; orderBy: string[] }[] = [
+  { label: 'Mới nhất',        orderBy: ['createdOn desc'] },
+  { label: 'Xem nhiều nhất',  orderBy: ['luotXem desc']   },
+  { label: 'Tên A-Z',         orderBy: ['tieuDe asc']     },
 ];
 
-const LV_COLORS: Record<string, string> = {
-  'Khai thác bay':       '#3B82F6',
-  'Kỹ thuật bảo dưỡng':  '#F59E0B',
-  'Dịch vụ hành khách':  '#10B981',
-  'Dịch vụ mặt đất':     '#8B5CF6',
-  'Đào tạo nhân lực':    '#EF4444',
+// Portal là màn hình công khai — chỉ hiển thị tài liệu đã xuất bản (DaXuatBan).
+// Không set field này, BE sẽ áp dụng phạm vi nhìn thấy theo phiên đăng nhập hiện tại
+// (bao gồm cả bản nháp/chờ duyệt của chính người dùng hoặc người có quyền duyệt),
+// không phù hợp với một trang trưng bày công khai.
+const DEFAULT_SEARCH: ISearchTaiLieuRequest = {
+  pageNumber:   1,
+  pageSize:     PAGE_SIZE,
+  keyword:      '',
+  loaiTaiLieu:  null,
+  trangThai:    TrangThaiTaiLieu.DaXuatBan,
+  orderBy:      SORT_OPTIONS[0].orderBy,
 };
-const LV_LIST = Object.keys(LV_COLORS);
 
-// ── Main component ─────────────────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 export const KhoTriThucPortalPage = () => {
-  const [kSearch, setKSearch]     = useState('');
-  const [kLinhVuc, setKLinhVuc]   = useState('');
-  const [detail, setDetail]       = useState<IKhoTri | null>(null);
-  const [khoItems, setKhoItems]   = useState<IKhoTri[]>(MOCK_KHO);
+  const [kSearchInput, setKSearchInput] = useState('');
+  const [searchReq, setSearchReq]       = useState<ISearchTaiLieuRequest>(DEFAULT_SEARCH);
+  const [sortIndex, setSortIndex]       = useState(0);
 
-  const openDetail = (item: IKhoTri) => {
-    const updated = { ...item, luotXem: item.luotXem + 1 };
-    setKhoItems(prev => prev.map(k => k.id === item.id ? updated : k));
-    setDetail(updated);
+  const [items, setItems]     = useState<ITaiLieu[]>([]);
+  const [total, setTotal]     = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [errorKind, setErrorKind] = useState<ApiErrorKind>(null);
+  const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+
+  const [detail, setDetail]               = useState<ITaiLieu | null>(null);
+  const [detailOpen, setDetailOpen]       = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailErrorKind, setDetailErrorKind] = useState<ApiErrorKind>(null);
+  const [detailErrorMsg, setDetailErrorMsg]   = useState<string | null>(null);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Load ──────────────────────────────────────────────────────────────────
+  const loadItems = useCallback(async (req: ISearchTaiLieuRequest) => {
+    setLoading(true);
+    setErrorKind(null);
+    setErrorMsg(null);
+    try {
+      const res = await searchTaiLieus(req);
+      const kind = getApiErrorKind(res);
+      if (kind) {
+        setErrorKind(kind);
+        setErrorMsg(getApiError(res));
+        setItems([]);
+        setTotal(0);
+        return;
+      }
+      setItems(safeList<any>(res).map(normalizeItem));
+      setTotal(safeTotal(res));
+    } catch {
+      setErrorKind('server');
+      setErrorMsg('Không thể kết nối tới máy chủ');
+      setItems([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadItems(searchReq); }, [searchReq, loadItems]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const onSearchInputChange = (value: string) => {
+    setKSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchReq(prev => ({ ...prev, keyword: value, pageNumber: 1 }));
+    }, 400);
   };
 
-  const kFiltered = useMemo(() => khoItems.filter(k => {
-    const matchLV = !kLinhVuc || k.linhVuc === kLinhVuc;
-    const matchQ  = !kSearch
-      || k.ten.toLowerCase().includes(kSearch.toLowerCase())
-      || k.ma.toLowerCase().includes(kSearch.toLowerCase())
-      || k.tags.some(t => t.toLowerCase().includes(kSearch.toLowerCase()));
-    return matchLV && matchQ;
-  }), [kSearch, kLinhVuc, khoItems]);
+  const onLoaiChange = (v?: number) => {
+    setSearchReq(prev => ({ ...prev, loaiTaiLieu: v ?? null, pageNumber: 1 }));
+  };
+
+  const onSortChange = (idx: number) => {
+    setSortIndex(idx);
+    setSearchReq(prev => ({ ...prev, orderBy: SORT_OPTIONS[idx].orderBy, pageNumber: 1 }));
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const onPageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setSearchReq(prev => ({ ...prev, pageNumber: page }));
+  };
+
+  const openDetail = async (item: ITaiLieu) => {
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setDetailErrorKind(null);
+    setDetailErrorMsg(null);
+    setDetail(null);
+    try {
+      const res = await getTaiLieu(item.id);
+      const kind = getApiErrorKind(res);
+      if (kind) {
+        setDetailErrorKind(kind);
+        setDetailErrorMsg(getApiError(res));
+        return;
+      }
+      const fresh = safeItem<any>(res);
+      if (fresh) {
+        setDetail(normalizeItem(fresh));
+        setItems(prev => prev.map(it => it.id === item.id ? { ...it, luotXem: (it.luotXem ?? 0) + 1 } : it));
+      } else {
+        setDetail(item);
+      }
+    } catch {
+      setDetailErrorKind('server');
+      setDetailErrorMsg('Không thể kết nối tới máy chủ');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetail = () => {
+    setDetailOpen(false);
+    setDetail(null);
+    setDetailErrorKind(null);
+    setDetailErrorMsg(null);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-full bg-gray-50">
 
       {/* Hero */}
-      <div className="bg-portal-primary py-10 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 mb-3 text-base">
-            <Link to="/doi-moi/trang-chu" className="text-white/70 hover:text-white">Trang chủ</Link>
-            <span className="text-white/40">/</span>
-            <span className="text-white font-semibold">Kho tri thức</span>
+      <div
+        className="mx-4 mt-4 mb-5 rounded-xl overflow-hidden shadow-sm"
+        style={{ backgroundImage: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%)' }}
+      >
+        <div className="flex items-center gap-4 px-6 py-6">
+          <div
+            className="flex items-center justify-center rounded-xl shrink-0"
+            style={{ width: 56, height: 56, backgroundColor: 'rgba(255,255,255,0.15)' }}
+          >
+            <i className="fa-regular fa-books text-white text-2xl"></i>
           </div>
-          <h1 className="text-white text-3xl font-bold mb-2">
-            <i className="fa-regular fa-books mr-3"></i>
-            Kho tri thức đổi mới sáng tạo
-          </h1>
-          <p className="text-white/80 text-base">
-            Tổng hợp các ý tưởng sáng tạo được công nhận tại Vietnam Airlines
-          </p>
+          <div>
+            <h3 className="text-white font-bold text-xl mb-0.5">Kho tri thức đổi mới sáng tạo</h3>
+            <p className="text-white/80 text-sm mb-0">
+              Tổng hợp các ý tưởng sáng tạo được công nhận tại Vietnam Airlines
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Filters bar */}
-      <div className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="flex items-center gap-4 text-base text-gray-600">
+      {/* Toolbar */}
+      <div className="mx-4 mb-5 bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+          {/* Thống kê */}
+          <div className="flex items-center gap-4 text-sm text-gray-500">
             <span>
-              <i className="fa-regular fa-books mr-1.5 text-portal-primary"></i>
-              <strong className="text-lg">{khoItems.length}</strong> tri thức công nhận
+              <i className="fa-regular fa-books mr-1.5 text-blue-500"></i>
+              <strong className="text-gray-700">{total}</strong> tri thức công nhận
             </span>
-            <span className="text-gray-400">|</span>
-            <span>
+            <span className="text-gray-300 hidden sm:inline">|</span>
+            <span className="hidden sm:inline">
               <i className="fa-regular fa-eye mr-1.5 text-green-500"></i>
-              <strong className="text-lg">{khoItems.reduce((s, k) => s + k.luotXem, 0)}</strong> lượt xem
+              <strong className="text-gray-700">{items.reduce((s, k) => s + (k.luotXem ?? 0), 0)}</strong> lượt xem (trang này)
             </span>
           </div>
-          <div className="flex gap-2">
-            <div className="relative">
-              <i className="fa-regular fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-              <input
-                type="text"
-                className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-portal-primary/30"
-                placeholder="Tìm theo tên, mã, tag..."
-                value={kSearch}
-                onChange={e => setKSearch(e.target.value)}
-                style={{ width: 240 }}
+          {/* Bộ lọc */}
+          <div className="flex flex-wrap gap-2">
+            <Input.Search
+              placeholder="Tìm theo tên, mã, tag..."
+              value={kSearchInput}
+              onChange={e => onSearchInputChange(e.target.value)}
+              onSearch={v => onSearchInputChange(v)}
+              allowClear
+              style={{ width: 240 }}
+            />
+            <Select
+              placeholder="Loại tài liệu"
+              allowClear
+              style={{ width: 180 }}
+              value={searchReq.loaiTaiLieu ?? undefined}
+              onChange={v => onLoaiChange(v)}
+            >
+              {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+            </Select>
+            <Select
+              style={{ width: 155 }}
+              value={sortIndex}
+              onChange={v => onSortChange(Number(v))}
+            >
+              {SORT_OPTIONS.map((s, idx) => <Option key={s.label} value={idx}>{s.label}</Option>)}
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Danh sách card */}
+      <div className="px-4 pb-8 flex-1">
+        <Spin spinning={loading}>
+          {!loading && errorKind ? (
+            <div className="text-center py-16">
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <div>
+                    <div className="text-gray-700 font-semibold mb-1">{ERROR_KIND_LABEL[errorKind].title}</div>
+                    <span className="text-gray-500 text-sm">{errorMsg || ERROR_KIND_LABEL[errorKind].desc}</span>
+                  </div>
+                }
               />
             </div>
-            <select
-              className="px-3 py-2 border border-gray-200 rounded-lg text-base focus:outline-none bg-white"
-              value={kLinhVuc}
-              onChange={e => setKLinhVuc(e.target.value)}
-            >
-              <option value="">Tất cả lĩnh vực</option>
-              {LV_LIST.map(lv => (
-                <option key={lv} value={lv}>{lv}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+          ) : !loading && items.length === 0 ? (
+            <div className="text-center py-16">
+              <Empty description={<span className="text-gray-500">Không tìm thấy tri thức phù hợp</span>} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {items.map(item => {
+                const color = colorForLinhVuc(item.tenLinhVuc);
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col h-full"
+                    style={{ transition: 'box-shadow 0.2s, transform 0.15s', cursor: 'pointer' }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)';
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = '';
+                      (e.currentTarget as HTMLDivElement).style.transform = '';
+                    }}
+                    onClick={() => openDetail(item)}
+                  >
+                    {/* Accent bar — lĩnh vực color */}
+                    <div style={{ height: 4, borderRadius: '8px 8px 0 0', background: color }} />
 
-      {/* Cards */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {kFiltered.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            <i className="fa-regular fa-magnifying-glass text-5xl mb-4 block"></i>
-            <p className="text-lg">Không tìm thấy tri thức phù hợp</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {kFiltered.map(item => {
-              const color = LV_COLORS[item.linhVuc] || '#6B7280';
-              return (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer flex flex-col group"
-                  onClick={() => openDetail(item)}
-                >
-                  <div className="h-1.5 rounded-t-xl" style={{ background: color }}></div>
-                  <div className="p-6 flex flex-col flex-1">
-                    <div className="flex items-start justify-between mb-3">
-                      <span
-                        className="text-sm font-bold px-2.5 py-1 rounded-full"
-                        style={{ background: color + '18', color }}
-                      >
-                        {item.ma}
-                      </span>
-                      <span className="text-sm text-gray-600 flex items-center gap-1">
-                        <i className="fa-regular fa-eye"></i>{item.luotXem}
-                      </span>
-                    </div>
-
-                    <h3 className="text-gray-800 font-semibold text-base mb-2.5 leading-snug group-hover:text-portal-primary transition-colors">
-                      {item.ten}
-                    </h3>
-
-                    <p
-                      className="text-gray-700 text-base mb-4 leading-relaxed flex-1"
-                      style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                    >
-                      {item.tomTat}
-                    </p>
-
-                    <div className="flex flex-wrap gap-1.5 mb-5">
-                      {item.tags.map(tag => (
-                        <span
-                          key={tag}
-                          className="text-sm px-2.5 py-1 rounded-full border font-semibold"
-                          style={{ borderColor: color + '80', color, background: color + '12' }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-end justify-between border-t border-gray-200 pt-4 mt-auto">
-                      <div className="text-sm text-gray-600 leading-relaxed">
-                        <div><i className="fa-regular fa-user mr-1.5"></i>{item.nguoiGui}</div>
-                        <div className="mt-0.5"><i className="fa-regular fa-building mr-1.5"></i>{item.donVi}</div>
+                    <div className="p-4 flex flex-col flex-1">
+                      {/* Header row: icon + lĩnh vực + mã số | trạng thái */}
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="flex items-center justify-center rounded-lg shrink-0"
+                            style={{ width: 42, height: 42, backgroundColor: color + '1a', flexShrink: 0 }}
+                          >
+                            <i className="fa-regular fa-lightbulb text-lg" style={{ color }} />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            {item.tenLinhVuc && (
+                              <Tag style={{ margin: 0, width: 'fit-content', fontSize: 11, background: color + '1a', color, borderColor: color + '60' }}>
+                                {item.tenLinhVuc}
+                              </Tag>
+                            )}
+                            {item.soHieu && (
+                              <span className="text-xs text-gray-400">#{item.soHieu}</span>
+                            )}
+                          </div>
+                        </div>
+                        <Badge status="success" text="Đã xuất bản" />
                       </div>
-                      <button
-                        className="text-sm px-4 py-2 rounded-lg font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
-                        style={{ background: color }}
+
+                      {/* Tiêu đề */}
+                      <h6
+                        className="font-bold text-gray-800 text-sm mb-2"
+                        style={{ lineHeight: 1.4, cursor: 'pointer', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                        onClick={e => { e.stopPropagation(); openDetail(item); }}
                       >
-                        Đọc thêm
-                      </button>
+                        {item.tieuDe}
+                      </h6>
+
+                      {/* Mô tả */}
+                      <p
+                        className="text-gray-600 text-xs flex-1 mb-3"
+                        style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 54 }}
+                      >
+                        {item.moTa ?? <span className="italic text-gray-400">Chưa có mô tả</span>}
+                      </p>
+
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-1 mb-3" style={{ minHeight: 22 }}>
+                        {(item.tags ?? []).slice(0, 3).map(t => (
+                          <Tag key={t} color="blue" style={{ fontSize: 11 }}>{t}</Tag>
+                        ))}
+                        {(item.tags ?? []).length > 3 && <Tag style={{ fontSize: 11 }}>+{(item.tags ?? []).length - 3}</Tag>}
+                      </div>
+
+                      {/* Tác giả + đơn vị */}
+                      <div className="text-gray-400 text-xs mb-2 flex items-center gap-1.5">
+                        <i className="fa-regular fa-user" />
+                        <span>{item.tacGia?.hoTen ?? '—'}</span>
+                        {item.tenDonVi && (
+                          <>
+                            <span>·</span>
+                            <span className="truncate" style={{ maxWidth: 110 }}>{item.tenDonVi}</span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex justify-between items-center border-t border-gray-100 pt-3 mt-auto">
+                        <div className="text-gray-400 text-xs flex gap-3">
+                          <span><i className="fa-regular fa-eye" style={{ marginRight: 3 }} />{item.luotXem ?? 0}</span>
+                          {(() => {
+                            const d = item.ngayXuatBan ?? item.createdOn;
+                            return d ? (
+                              <span>
+                                <i className="fa-regular fa-calendar" style={{ marginRight: 3 }} />
+                                {new Date(d).toLocaleDateString('vi-VN')}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
+                        <Button
+                          size="small"
+                          type="primary"
+                          ghost
+                          onClick={e => { e.stopPropagation(); openDetail(item); }}
+                        >
+                          <i className="fa-regular fa-eye" style={{ marginRight: 4 }} />Xem
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )}
+        </Spin>
+
+        {/* Phân trang */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-3 mt-8">
+            <Button
+              size="small"
+              disabled={(searchReq.pageNumber ?? 1) <= 1}
+              onClick={() => onPageChange((searchReq.pageNumber ?? 1) - 1)}
+            >
+              <i className="fa-regular fa-chevron-left"></i>
+            </Button>
+            <span className="text-sm text-gray-500">
+              Trang <strong>{searchReq.pageNumber}</strong> / {totalPages}
+            </span>
+            <Button
+              size="small"
+              disabled={(searchReq.pageNumber ?? 1) >= totalPages}
+              onClick={() => onPageChange((searchReq.pageNumber ?? 1) + 1)}
+            >
+              <i className="fa-regular fa-chevron-right"></i>
+            </Button>
           </div>
         )}
       </div>
 
-      {/* Detail modal */}
-      {detail && (
-        <div
-          className="fixed inset-0 z-[1100] flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.45)' }}
-          onClick={() => setDetail(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex-shrink-0 h-1.5 rounded-t-2xl" style={{ background: LV_COLORS[detail.linhVuc] || '#6B7280' }}></div>
-            <div className="flex-shrink-0 flex items-start justify-between p-6 border-b border-gray-200">
-              <div>
-                <span
-                  className="text-sm font-bold px-2.5 py-1 rounded-full mb-2 inline-block"
-                  style={{ background: (LV_COLORS[detail.linhVuc] || '#6B7280') + '20', color: LV_COLORS[detail.linhVuc] || '#6B7280' }}
-                >
-                  {detail.ma}
-                </span>
-                <h2 className="text-gray-900 font-bold text-xl leading-snug mt-1">{detail.ten}</h2>
-              </div>
-              <button
-                className="text-gray-500 hover:text-gray-800 text-2xl ml-4 flex-shrink-0"
-                onClick={() => setDetail(null)}
+      {/* Detail Modal */}
+      <Modal
+        open={detailOpen}
+        onCancel={closeDetail}
+        width={660}
+        title={
+          detail && !detailLoading ? (
+            <div className="flex items-center gap-3">
+              <div
+                className="flex items-center justify-center rounded-lg shrink-0"
+                style={{ width: 40, height: 40, background: colorForLinhVuc(detail.tenLinhVuc) + '20' }}
               >
-                <i className="fa-regular fa-xmark"></i>
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="flex flex-wrap gap-2 mb-5">
+                <i
+                  className="fa-regular fa-lightbulb text-lg"
+                  style={{ color: colorForLinhVuc(detail.tenLinhVuc) }}
+                ></i>
+              </div>
+              <div>
+                <div className="font-bold text-gray-800 text-base leading-snug">{detail.tieuDe}</div>
                 <span
-                  className="text-sm font-bold px-3 py-1.5 rounded-full"
-                  style={{ background: (LV_COLORS[detail.linhVuc] || '#6B7280') + '22', color: LV_COLORS[detail.linhVuc] || '#6B7280' }}
+                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: colorForLinhVuc(detail.tenLinhVuc) + '20', color: colorForLinhVuc(detail.tenLinhVuc) }}
                 >
-                  {detail.linhVuc}
+                  {detail.soHieu ?? '—'}
                 </span>
-                {detail.tags.map(t => (
-                  <span key={t} className="text-sm font-semibold px-3 py-1.5 rounded-full bg-blue-100 text-blue-700">{t}</span>
+              </div>
+            </div>
+          ) : null
+        }
+        footer={[
+          <Button key="close" onClick={closeDetail}>Đóng</Button>,
+        ]}
+      >
+        <Spin spinning={detailLoading}>
+          {!detailLoading && detailErrorKind ? (
+            <div className="text-center py-10">
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <div>
+                    <div className="text-gray-700 font-semibold mb-1">{ERROR_KIND_LABEL[detailErrorKind].title}</div>
+                    <span className="text-gray-500 text-sm">{detailErrorMsg || ERROR_KIND_LABEL[detailErrorKind].desc}</span>
+                  </div>
+                }
+              />
+            </div>
+          ) : detail && (
+            <>
+              {/* Lĩnh vực + tags */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {detail.tenLinhVuc && (
+                  <Tag
+                    style={{
+                      fontWeight: 600,
+                      background: colorForLinhVuc(detail.tenLinhVuc) + '22',
+                      color: colorForLinhVuc(detail.tenLinhVuc),
+                      borderColor: colorForLinhVuc(detail.tenLinhVuc) + '80',
+                    }}
+                  >
+                    {detail.tenLinhVuc}
+                  </Tag>
+                )}
+                {(detail.tags ?? []).map(t => (
+                  <Tag key={t} color="blue">{t}</Tag>
                 ))}
               </div>
 
-              <div className="mb-5">
-                <div className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-2">Tóm tắt</div>
-                <p className="text-gray-800 text-base leading-relaxed bg-gray-50 border border-gray-200 p-4 rounded-lg">{detail.tomTat}</p>
-              </div>
+              {/* Tóm tắt */}
+              {detail.moTa && (
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tóm tắt</div>
+                  <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-gray-700 leading-relaxed">
+                    {detail.moTa}
+                  </div>
+                </div>
+              )}
 
-              <div className="mb-5">
-                <div className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-2">Lợi ích đã ghi nhận</div>
-                <div className="flex items-start gap-2 bg-green-50 border border-green-200 p-4 rounded-lg text-base text-green-900 font-medium">
-                  <i className="fa-regular fa-circle-check mt-0.5 flex-shrink-0 text-green-600"></i>
-                  <span>{detail.loiIch}</span>
+              {/* Lợi ích */}
+              {detail.loiIchGhiNhan && (
+                <div className="mb-4 p-3 rounded-lg" style={{ border: '1px dashed #86efac', background: '#f0fdf4' }}>
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Lợi ích đã ghi nhận</div>
+                  <div className="flex items-start gap-2">
+                    <i className="fa-regular fa-circle-check text-green-500 mt-0.5 shrink-0"></i>
+                    <span className="text-sm text-green-800 font-medium">{detail.loiIchGhiNhan}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Meta */}
+              <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-4">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Tác giả</div>
+                  <div className="text-sm font-semibold text-gray-700">{detail.tacGia?.hoTen ?? '—'}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Đơn vị</div>
+                  <div className="text-sm font-semibold text-gray-700">{detail.tenDonVi ?? '—'}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Ngày công nhận</div>
+                  <div className="text-sm font-semibold text-gray-700">
+                    {detail.ngayXuatBan
+                      ? new Date(detail.ngayXuatBan).toLocaleDateString('vi-VN')
+                      : detail.createdOn
+                      ? new Date(detail.createdOn).toLocaleDateString('vi-VN')
+                      : '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Lượt xem</div>
+                  <div className="text-sm font-semibold text-gray-700">
+                    <i className="fa-regular fa-eye mr-1 text-gray-400"></i>{detail.luotXem ?? 0}
+                  </div>
                 </div>
               </div>
-
-              <div className="flex flex-wrap gap-5 text-sm text-gray-700 border-t border-gray-200 pt-4">
-                <span><i className="fa-regular fa-user mr-1.5 text-gray-500"></i><strong>Tác giả:</strong> {detail.nguoiGui}</span>
-                <span><i className="fa-regular fa-building mr-1.5 text-gray-500"></i><strong>Đơn vị:</strong> {detail.donVi}</span>
-                <span><i className="fa-regular fa-calendar-check mr-1.5 text-gray-500"></i><strong>Công nhận:</strong> {detail.ngayCongnhan}</span>
-                <span><i className="fa-regular fa-eye mr-1.5 text-gray-500"></i>{detail.luotXem} lượt xem</span>
-              </div>
-            </div>
-
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-gray-200">
-              <button
-                className="px-5 py-2.5 text-base font-semibold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
-                onClick={() => setDetail(null)}
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </Spin>
+      </Modal>
     </div>
   );
 };

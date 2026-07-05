@@ -144,10 +144,10 @@ export const CongDongPage: React.FC = () => {
       const res = await searchBaiViets({ congDongId, pageNumber: 1, pageSize: 30 });
       const list = safeList<IBaiViet>(res);
       setPosts(list);
-      // Khởi tạo likedIds từ daTuThich để giữ trạng thái sau refresh
+      // Khởi tạo likedIds từ daThich để giữ trạng thái sau refresh
       setLikedIds(prev => {
         const next = new Set(prev);
-        list.forEach(p => { if (p.daTuThich) next.add(p.id); else next.delete(p.id); });
+        list.forEach(p => { if (p.daThich) next.add(p.id); else next.delete(p.id); });
         return next;
       });
       // Load 3 preview comments per post (fire & forget)
@@ -309,7 +309,7 @@ export const CongDongPage: React.FC = () => {
       });
       if (type === LoaiDoiTuong.BaiViet) {
         setPosts(prev => prev.map(p => p.id === id
-          ? { ...p, soLuotThich: Math.max(0, (p.soLuotThich ?? 0) + (liked ? 1 : -1)), daTuThich: liked }
+          ? { ...p, soLuotThich: Math.max(0, (p.soLuotThich ?? 0) + (liked ? 1 : -1)), daThich: liked }
           : p
         ));
         if (postDetailOpen && postDetail?.id === id) openPost(id);
@@ -417,10 +417,10 @@ export const CongDongPage: React.FC = () => {
         {/* Footer stats */}
         <div className="d-flex gap-3 align-items-center border-top pt-2 mt-1">
           <button
-            className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(bv.id) || bv.daTuThich ? 'text-danger' : 'text-muted'}`}
+            className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(bv.id) || bv.daThich ? 'text-danger' : 'text-muted'}`}
             onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
           >
-            <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
+            <i className={`fa-${likedIds.has(bv.id) || bv.daThich ? 'solid' : 'regular'} fa-heart me-1`} />
             <span className="fs-8">{Math.max(0, bv.soLuotThich ?? 0)}</span>
           </button>
           <button className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
@@ -720,10 +720,10 @@ export const CongDongPage: React.FC = () => {
               {/* Actions */}
               <div className="d-flex gap-3 mb-4">
                 <button
-                  className={`btn btn-sm d-flex align-items-center gap-2 ${likedIds.has(postDetail.id) || postDetail.daTuThich ? 'btn-danger' : 'btn-light-danger'}`}
+                  className={`btn btn-sm d-flex align-items-center gap-2 ${likedIds.has(postDetail.id) || postDetail.daThich ? 'btn-danger' : 'btn-light-danger'}`}
                   onClick={() => handleLike(LoaiDoiTuong.BaiViet, postDetail.id)}
                 >
-                  <i className={`fa-${likedIds.has(postDetail.id) || postDetail.daTuThich ? 'solid' : 'regular'} fa-heart`} />
+                  <i className={`fa-${likedIds.has(postDetail.id) || postDetail.daThich ? 'solid' : 'regular'} fa-heart`} />
                   {Math.max(0, postDetail.soLuotThich ?? 0)} Thích
                 </button>
                 {isAdmin && (
