@@ -106,11 +106,15 @@ export interface ITacGia {
 export interface ITaiLieu {
   id:               string;
   tieuDe:           string;
+  soHieu?:          string | null;
   moTa?:            string;
+  loiIchGhiNhan?:   string | null;
   loaiTaiLieu:      LoaiTaiLieu;
   trangThai:        TrangThaiTaiLieu;
   linhVucKHCNId?:   string;
+  tenLinhVuc?:      string | null;
   donViId?:         string;
+  tenDonVi?:        string | null;
   loaiNguonThamChieu?: LoaiNguonThamChieu | null;
   nguonThamChieuId?:   string | null;
   tenNguonThamChieu?:  string | null;
@@ -125,6 +129,7 @@ export interface ITaiLieu {
   nguoiDuyet?:      ITacGia;
   luotXem:          number;
   luotThich?:       number;
+  ngayXuatBan?:     string | null;
   createdOn?:       string;
   lastModifiedOn?:  string;
 }
@@ -408,7 +413,7 @@ export interface IBaiViet {
   tacGia?:     ITacGia;
   soLuotThich?: number;
   soBinhLuan?:  number;
-  daTuThich?:   boolean;
+  daThich?:     boolean;
   createdOn?:  string;
 }
 
