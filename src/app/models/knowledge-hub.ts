@@ -389,9 +389,9 @@ export interface IBaiViet {
   noiDung:     string;
   loaiBaiViet: LoaiBaiViet;
   tacGia?:     ITacGia;
-  luotThich?:  number;
-  soBinhLuan?: number;
-  daTuThich?:  boolean;
+  soLuotThich?: number;
+  soBinhLuan?:  number;
+  daTuThich?:   boolean;
   createdOn?:  string;
 }
 
