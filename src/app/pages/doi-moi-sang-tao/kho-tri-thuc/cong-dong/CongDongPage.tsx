@@ -18,6 +18,7 @@ import type {
 } from '@/app/models/knowledge-hub';
 import { LoaiBaiViet, LoaiDoiTuong } from '@/app/models/knowledge-hub';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
+import { NguoiThichPopover } from '@/app/components/tuong-tac/NguoiThichPopover';
 
 const { TextArea } = Input;
 
@@ -415,8 +416,12 @@ export const CongDongPage: React.FC = () => {
               onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
             >
               <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart`} />
-              <span className="fs-8">{bv.luotThich ?? 0}</span>
             </button>
+            <NguoiThichPopover loaiDoiTuong={LoaiDoiTuong.BaiViet} doiTuongId={bv.id}>
+              <span className="text-muted fs-8 fw-semibold" style={{ textDecoration: 'underline dotted' }}>
+                {bv.luotThich ?? 0} thích
+              </span>
+            </NguoiThichPopover>
             <button className="btn btn-sm btn-light d-flex align-items-center gap-2 text-muted"
               style={{ borderRadius: 18 }}
               onClick={() => openPost(bv.id)}>
@@ -713,14 +718,25 @@ export const CongDongPage: React.FC = () => {
               </div>
 
               {/* Actions */}
-              <div className="d-flex gap-3 mb-4">
+              <div className="d-flex gap-3 mb-4 align-items-center">
                 <button
                   className={`btn btn-sm d-flex align-items-center gap-2 ${likedIds.has(postDetail.id) || postDetail.daTuThich ? 'btn-danger' : 'btn-light-danger'}`}
                   onClick={() => handleLike(LoaiDoiTuong.BaiViet, postDetail.id)}
                 >
                   <i className={`fa-${likedIds.has(postDetail.id) || postDetail.daTuThich ? 'solid' : 'regular'} fa-heart`} />
-                  {postDetail.luotThich ?? 0} Thích
+                  Thích
                 </button>
+                <NguoiThichPopover loaiDoiTuong={LoaiDoiTuong.BaiViet} doiTuongId={postDetail.id}>
+                  <span className="text-muted fs-8 fw-semibold" style={{ textDecoration: 'underline dotted' }}>
+                    {postDetail.luotThich ?? 0} người đã thích
+                  </span>
+                </NguoiThichPopover>
+                <Button size="small" onClick={() => {
+                  navigator.clipboard.writeText(window.location.origin + '/doi-moi-sang-tao/kho-tri-thuc/cong-dong');
+                  message.success('Đã sao chép liên kết!');
+                }}>
+                  <i className="fa-regular fa-link me-1" />Chia sẻ
+                </Button>
                 {isAdmin && (
                   <Button size="small" onClick={() => { setPostDetailOpen(false); openBvEdit(postDetail); }}>
                     <i className="fa-regular fa-pen me-1" />Chỉnh sửa
