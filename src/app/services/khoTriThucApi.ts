@@ -465,3 +465,17 @@ export const exportKTBaoCaoTongHopExcel = (filter: IKTBaoCaoFilter) =>
 /** Xuất Excel: báo cáo đóng góp người dùng */
 export const exportKTBaoCaoDongGopExcel = (filter: IKTBaoCaoFilter) =>
   requestDownloadFile('KTBaoCao/export-dong-gop', filter);
+
+// ── 16. News Feed V2 (Internal API) ──────────────────────────────────────────
+
+/**
+ * News Feed V2 — dùng API nội bộ thay thế iframe.
+ * Cùng endpoint với getNewsFeed nhưng type-safe với INewsFeedV2Item (contract đúng với backend).
+ */
+export const getNewsFeedV2 = (pageNumber = 1, pageSize = 12, donViId?: string, linhVucKHCNId?: string) => {
+  const params = new URLSearchParams({ pageNumber: String(pageNumber), pageSize: String(pageSize) });
+  if (donViId) params.append('donViId', donViId);
+  if (linhVucKHCNId) params.append('linhVucKHCNId', linhVucKHCNId);
+  // Kiểu INewsFeedV2Item được cast tại hook useNewsFeed để tránh import ngược chiều
+  return requestGET<IPaginationResponse<any[]>>(`NewsFeed?${params}`);
+};
