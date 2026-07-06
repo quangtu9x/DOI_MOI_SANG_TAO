@@ -2,9 +2,22 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Spin, Modal, message } from 'antd';
 import { useAuth } from '@/app/modules/auth';
 import { useNavigate } from 'react-router-dom';
-import { searchIdeas, deleteIdea, cancelIdea, recallIdea } from '@/app/services/ideaPortalApi';
-import type { IIdea } from '@/models/idea-portal';
+import { searchIdeas, deleteIdea, cancelIdea, recallIdea, getIdeaHistories } from '@/app/services/ideaPortalApi';
+import type { IIdea, IIdeaHistory } from '@/models/idea-portal';
 import dayjs from 'dayjs';
+
+// Đánh dấu tài liệu đính kèm được thêm vào lúc công nhận ý tưởng (giống ChiTietYTuongPage.tsx —
+// dùng chung tiền tố tên file để phân biệt với hồ sơ gốc, không cần đổi cấu trúc CSDL).
+const KQCN_TAG = '[Kết quả công nhận] ';
+const stripKqcnTag = (name?: string | null) => (name ?? '').startsWith(KQCN_TAG) ? name!.slice(KQCN_TAG.length) : name;
+const isKqcnAttachment = (name?: string | null) => (name ?? '').startsWith(KQCN_TAG);
+
+const safeList = <T,>(res: any): T[] => {
+  const d = res?.data ?? res;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  return [];
+};
 
 // ── Status mapping ─────────────────────────────────────────────────────────────
 type TrangThai = 'BanNhap' | 'ChoTiepNhan' | 'DaTiepNhan' | 'TraLai' | 'Huy' | 'DuocCongNhan';
@@ -65,6 +78,18 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
   const statusKey = STATUS_MAP[item.status ?? ''] ?? 'ChoTiepNhan';
   const cfg = STATUS_CFG[statusKey] ?? DEFAULT_STATUS;
   const steps = buildSteps(item);
+
+  // Kết quả của người duyệt (thông tin công nhận) — lấy từ lịch sử xử lý
+  const [histories, setHistories] = useState<IIdeaHistory[]>([]);
+  useEffect(() => {
+    if (!item.id) return;
+    getIdeaHistories(item.id)
+      .then(res => setHistories(safeList<IIdeaHistory>(res)))
+      .catch(() => setHistories([]));
+  }, [item.id]);
+
+  const recognitionEntry = histories.find(h => h.actionType === 'Được công nhận');
+  const kqcnAttachments = ((item as any).attachments ?? []).filter((a: any) => isKqcnAttachment(a.originalName));
 
   return (
     <div
@@ -141,6 +166,37 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
             </div>
           </div>
 
+          {/* Kết quả công nhận (kết quả của người duyệt) */}
+          {statusKey === 'DuocCongNhan' && (
+            <div className="rounded-xl p-5" style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', border: '1px solid #ddd6fe' }}>
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <i className="fa-solid fa-medal text-lg" style={{ color: '#722ed1' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold mb-1" style={{ color: '#5b21b6' }}>Kết quả công nhận</p>
+                  {recognitionEntry?.remark && (
+                    <p className="text-sm text-gray-700 mb-1">{recognitionEntry.remark}</p>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    <i className="fa-regular fa-calendar me-1" />
+                    {recognitionEntry ? `Ngày công nhận: ${dayjs(recognitionEntry.actionDate).format('DD/MM/YYYY HH:mm')}` : 'Đang tải thông tin công nhận...'}
+                  </p>
+                  {kqcnAttachments.length > 0 && (
+                    <div className="flex flex-col gap-2 mt-3">
+                      {kqcnAttachments.map((f: any, i: number) => (
+                        <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white" style={{ border: '1px solid #ddd6fe' }}>
+                          <i className="fa-regular fa-file-check" style={{ color: '#722ed1' }} />
+                          <span className="text-sm font-semibold text-gray-800">{stripKqcnTag(f.originalName) ?? f.fileName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Info fields */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
@@ -182,12 +238,21 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
                 <p className="text-base font-bold text-gray-800">📎 Tập tin đính kèm</p>
               </div>
               <div className="px-5 py-4 space-y-2">
-                {((item as any).attachments as any[]).map((a: any, i: number) => (
-                  <div key={i} className="flex items-center gap-3 text-base font-semibold text-[#0a65cc]">
-                    <i className="fa-regular fa-file-lines text-lg" />
-                    <span>{a.fileName ?? a.originalName ?? a.filePath}</span>
-                  </div>
-                ))}
+                {((item as any).attachments as any[]).map((a: any, i: number) => {
+                  const isKqcn = isKqcnAttachment(a.originalName);
+                  return (
+                    <div key={i} className="flex items-center gap-3 text-base font-semibold text-[#0a65cc]">
+                      <i className={`fa-regular ${isKqcn ? 'fa-file-check' : 'fa-file-lines'} text-lg`}
+                        style={isKqcn ? { color: '#722ed1' } : undefined} />
+                      <span>{a.fileName ?? stripKqcnTag(a.originalName) ?? a.filePath}</span>
+                      {isKqcn && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ color: '#722ed1', background: '#f5f3ff' }}>
+                          Kết quả công nhận
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

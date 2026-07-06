@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Select, message, Table, Tag, Spin, Empty, Tabs, Tooltip } from 'antd';
+import { Button, Select, DatePicker, message, Table, Tag, Spin, Empty, Tabs, Tooltip } from 'antd';
+import type { Dayjs } from 'dayjs';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { getIdeaDashboard, getIdeaContributions, exportIdeaReport } from '@/app/services/ideaPortalApi';
+import {
+  getIdeaDashboard, getIdeaContributions,
+  exportIdeaReport, exportIdeaReportExcel, exportIdeaReportPdf, exportIdeaReportWord,
+  IKhoangThoiGian,
+} from '@/app/services/ideaPortalApi';
 import type { IIdeaDashboard, IIdeaContributionReport, IIdeaContribution, INhomSoLuong } from '@/models/idea-portal';
 
 const { Option } = Select;
+const { RangePicker } = DatePicker;
+type DateRange = [Dayjs, Dayjs] | null;
+const toRangeParam = (r: DateRange): IKhoangThoiGian | undefined =>
+  r ? { tuNgay: r[0].format('YYYY-MM-DD'), denNgay: r[1].format('YYYY-MM-DD') } : undefined;
 
 const THIS_YEAR = new Date().getFullYear();
 const YEARS = [THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2];
@@ -38,8 +47,13 @@ const KpiCard: React.FC<{ title: string; value: React.ReactNode; icon: string; c
     </div>
   );
 
+const ALL_TIME = 0; // giá trị đặc biệt cho lựa chọn "Tất cả" trong Select năm
+
 export const BaoCaoPage: React.FC = () => {
-  const [year, setYear]         = useState(THIS_YEAR);
+  // Mặc định "Tất cả" (không lọc theo năm) — tránh trường hợp năm hiện tại chưa có ý tưởng nào
+  // mà hiển thị nhầm thành "chưa có dữ liệu" khi mở trang lần đầu.
+  const [year, setYear]         = useState<number>(ALL_TIME);
+  const [range, setRange]       = useState<DateRange>(null);
   const [loading, setLoading]   = useState(false);
   const [dash, setDash]         = useState<IIdeaDashboard | null>(null);
 
@@ -51,47 +65,76 @@ export const BaoCaoPage: React.FC = () => {
 
   const [exporting, setExporting] = useState(false);
 
-  const loadDash = useCallback(async (y = year) => {
+  const loadDash = useCallback(async (y = year, r = range) => {
     setLoading(true);
     try {
-      const res = await getIdeaDashboard(y);
+      const res = await getIdeaDashboard(y === ALL_TIME ? undefined : y, 72, toRangeParam(r));
       setDash(safeItem<IIdeaDashboard>(res));
     } catch { message.error('Không tải được số liệu báo cáo'); }
     finally { setLoading(false); }
-  }, [year]);
+  }, [year, range]);
 
-  const loadLb = useCallback(async (y = year, period = lbPeriod, value = lbValue) => {
+  const loadLb = useCallback(async (y = year, period = lbPeriod, value = lbValue, r = range) => {
     setLbLoading(true);
     try {
       const res = await getIdeaContributions({
-        nam: y,
+        nam: y === ALL_TIME ? undefined : y,
         quy: period === 'quy' ? value : undefined,
         thang: period === 'thang' ? value : undefined,
         top: 10,
+        ...toRangeParam(r),
       });
       setLb(safeItem<IIdeaContributionReport>(res));
     } catch { /* ignore */ }
     finally { setLbLoading(false); }
-  }, [year, lbPeriod, lbValue]);
+  }, [year, lbPeriod, lbValue, range]);
 
   useEffect(() => { loadDash(); loadLb(); }, []);
 
-  const changeYear = (y: number) => { setYear(y); loadDash(y); loadLb(y); };
+  const changeYear = (y: number) => {
+    setYear(y);
+    setRange(null);
+    // "Tất cả" không hỗ trợ lọc theo quý/tháng cụ thể → về lại chế độ theo năm
+    const period = y === ALL_TIME ? 'nam' : lbPeriod;
+    if (period !== lbPeriod) { setLbPeriod(period); setLbValue(1); }
+    loadDash(y, null);
+    loadLb(y, period, period === lbPeriod ? lbValue : 1, null);
+  };
 
-  const handleExport = async () => {
+  const changeRange = (dates: any) => {
+    const r: DateRange = dates && dates[0] && dates[1] ? [dates[0], dates[1]] : null;
+    setRange(r);
+    loadDash(year, r);
+    loadLb(year, lbPeriod, lbValue, r);
+  };
+
+  const [exportingFormat, setExportingFormat] = useState<'csv' | 'excel' | 'pdf' | 'word' | null>(null);
+
+  const EXPORT_CONFIG = {
+    csv:   { fn: exportIdeaReport,      ext: 'csv',  label: 'CSV — mở bằng Excel' },
+    excel: { fn: exportIdeaReportExcel, ext: 'xlsx', label: 'Excel' },
+    pdf:   { fn: exportIdeaReportPdf,   ext: 'pdf',  label: 'PDF' },
+    word:  { fn: exportIdeaReportWord,  ext: 'docx', label: 'Word' },
+  } as const;
+
+  const handleExport = async (format: 'csv' | 'excel' | 'pdf' | 'word') => {
     setExporting(true);
+    setExportingFormat(format);
     try {
-      const res = await exportIdeaReport(year);
+      const { fn, ext, label } = EXPORT_CONFIG[format];
+      const res = await fn(year === ALL_TIME ? undefined : year, toRangeParam(range));
       if (res?.data) {
         const url = URL.createObjectURL(res.data as Blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `bao-cao-dmst-${year}.csv`; a.click();
+        a.href = url; a.download = `bao-cao-dmst-${year === ALL_TIME ? 'tat-ca' : year}.${ext}`; a.click();
         URL.revokeObjectURL(url);
-        message.success('Đã xuất báo cáo (CSV — mở bằng Excel)');
+        message.success(`Đã xuất báo cáo (${label})`);
       } else {
         message.error('Không xuất được báo cáo');
       }
-    } finally { setExporting(false); }
+    } catch {
+      message.error('Không xuất được báo cáo');
+    } finally { setExporting(false); setExportingFormat(null); }
   };
 
   // ── Charts ──────────────────────────────────────────────────────────────────
@@ -174,16 +217,43 @@ export const BaoCaoPage: React.FC = () => {
             </p>
           </div>
           <div className="d-flex gap-2 align-items-center">
-            <Select value={year} onChange={changeYear} style={{ width: 100 }}>
-              {YEARS.map(y => <Option key={y} value={y}>{y}</Option>)}
-            </Select>
+            <Tooltip title={range ? 'Đang lọc theo khoảng thời gian tùy chọn — bỏ chọn khoảng ngày để quay lại lọc theo năm' : ''}>
+              <Select value={year} onChange={changeYear} style={{ width: 110 }} disabled={!!range}>
+                <Option value={ALL_TIME}>Tất cả</Option>
+                {YEARS.map(y => <Option key={y} value={y}>{y}</Option>)}
+              </Select>
+            </Tooltip>
+            <RangePicker
+              value={range as any}
+              onChange={changeRange}
+              format="DD/MM/YYYY"
+              placeholder={['Từ ngày', 'Đến ngày']}
+              allowClear
+              style={{ width: 240 }}
+            />
             <Tooltip title="Làm mới">
               <Button icon={<i className="fa-regular fa-refresh" />} onClick={() => { loadDash(); loadLb(); }} />
             </Tooltip>
-            <Button type="primary" loading={exporting} onClick={handleExport}
-              icon={<i className="fa-regular fa-file-excel me-1" />}>
-              Xuất báo cáo
-            </Button>
+            <Tooltip title="Xuất CSV (mở bằng Excel)">
+              <Button loading={exporting && exportingFormat === 'csv'} onClick={() => handleExport('csv')}
+                icon={<i className="fa-regular fa-file-csv" />} />
+            </Tooltip>
+            <Tooltip title="Xuất Word">
+              <Button loading={exporting && exportingFormat === 'word'} onClick={() => handleExport('word')}
+                icon={<i className="fa-regular fa-file-word" />} />
+            </Tooltip>
+            <Tooltip title="Xuất Excel">
+              <Button type="primary" loading={exporting && exportingFormat === 'excel'} onClick={() => handleExport('excel')}
+                icon={<i className="fa-regular fa-file-excel me-1" />}>
+                Excel
+              </Button>
+            </Tooltip>
+            <Tooltip title="Xuất PDF">
+              <Button danger loading={exporting && exportingFormat === 'pdf'} onClick={() => handleExport('pdf')}
+                icon={<i className="fa-regular fa-file-pdf me-1" />}>
+                PDF
+              </Button>
+            </Tooltip>
           </div>
         </div>
 
@@ -229,7 +299,7 @@ export const BaoCaoPage: React.FC = () => {
                     <div className="card-body p-5">
                       <div className="fw-bold text-gray-800 mb-3">
                         <i className="fa-regular fa-chart-column text-primary me-2" />
-                        Ý tưởng nộp theo tháng — {dash.nam}
+                        Ý tưởng nộp theo tháng — {dash.nam}{year === ALL_TIME && !range ? ' (năm hiện tại)' : ''}
                       </div>
                       <ReactApexChart type="bar" height={260}
                         series={[{ name: 'Số nộp', data: dash.nopTheoThang }]}
@@ -289,19 +359,27 @@ export const BaoCaoPage: React.FC = () => {
                       Bảng xếp hạng đóng góp {lb?.ky ? `— ${lb.ky}` : ''}
                     </div>
                     <div className="d-flex gap-2">
-                      <Select value={lbPeriod} style={{ width: 110 }}
-                        onChange={(p: 'nam' | 'quy' | 'thang') => { setLbPeriod(p); setLbValue(1); loadLb(year, p, 1); }}>
-                        <Option value="nam">Năm</Option>
-                        <Option value="quy">Quý</Option>
-                        <Option value="thang">Tháng</Option>
-                      </Select>
-                      {lbPeriod !== 'nam' && (
-                        <Select value={lbValue} style={{ width: 110 }}
-                          onChange={(v: number) => { setLbValue(v); loadLb(year, lbPeriod, v); }}>
-                          {(lbPeriod === 'quy' ? [1, 2, 3, 4] : Array.from({ length: 12 }, (_, i) => i + 1)).map(v => (
-                            <Option key={v} value={v}>{lbPeriod === 'quy' ? `Quý ${v}` : `Tháng ${v}`}</Option>
-                          ))}
-                        </Select>
+                      {range ? (
+                        <Tag color="blue" className="d-flex align-items-center">Đang lọc theo khoảng ngày đã chọn</Tag>
+                      ) : year === ALL_TIME ? (
+                        <Tag color="blue" className="d-flex align-items-center">Toàn thời gian</Tag>
+                      ) : (
+                        <>
+                          <Select value={lbPeriod} style={{ width: 110 }}
+                            onChange={(p: 'nam' | 'quy' | 'thang') => { setLbPeriod(p); setLbValue(1); loadLb(year, p, 1); }}>
+                            <Option value="nam">Năm</Option>
+                            <Option value="quy">Quý</Option>
+                            <Option value="thang">Tháng</Option>
+                          </Select>
+                          {lbPeriod !== 'nam' && (
+                            <Select value={lbValue} style={{ width: 110 }}
+                              onChange={(v: number) => { setLbValue(v); loadLb(year, lbPeriod, v); }}>
+                              {(lbPeriod === 'quy' ? [1, 2, 3, 4] : Array.from({ length: 12 }, (_, i) => i + 1)).map(v => (
+                                <Option key={v} value={v}>{lbPeriod === 'quy' ? `Quý ${v}` : `Tháng ${v}`}</Option>
+                              ))}
+                            </Select>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

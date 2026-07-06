@@ -2,6 +2,7 @@ import { requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile, 
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   IIdea,
+  IIdeaAttachment,
   IIdeaCreateRequest,
   IIdeaSearchRequest,
   IIdeaStatusActionRequest,
@@ -24,6 +25,10 @@ export const updateIdea = (id: string, data: IIdeaCreateRequest) =>
 export const getIdeaDetail = (id: string) =>
   requestGET<IIdea>(`ideas/${id}`);
 
+/** Thêm tài liệu đính kèm vào ý tưởng đã có (vd: hồ sơ/quyết định công nhận) */
+export const addIdeaAttachments = (id: string, attachments: IIdeaAttachment[]) =>
+  requestPUT<IResult<string>>(`ideas/${id}/attachments`, attachments);
+
 export const searchIdeas = (data: IIdeaSearchRequest) =>
   requestPOST<IPaginationResponse<IIdea[]>>('ideas/search', data);
 
@@ -33,13 +38,30 @@ export const getIdeaHistories = (ideaId: string) =>
 
 // ── Báo cáo / Dashboard ĐMST ─────────────────────────────────────────────────
 
+/** Khoảng thời gian tùy chọn (ưu tiên hơn `nam` nếu có) — định dạng yyyy-MM-dd */
+export interface IKhoangThoiGian {
+  tuNgay?: string;
+  denNgay?: string;
+}
+
+const rangeQuery = (range?: IKhoangThoiGian) => {
+  const q = new URLSearchParams();
+  if (range?.tuNgay) q.append('tuNgay', range.tuNgay);
+  if (range?.denNgay) q.append('denNgay', range.denNgay);
+  return q;
+};
+
 /** Dashboard điều hành ĐMST (số liệu thật từ dữ liệu ý tưởng) */
-export const getIdeaDashboard = (nam?: number, slaGio = 72) =>
-  requestGET<IResult<IIdeaDashboard>>(`IdeaReports/dashboard?slaGio=${slaGio}${nam ? `&nam=${nam}` : ''}`);
+export const getIdeaDashboard = (nam?: number, slaGio = 72, range?: IKhoangThoiGian) => {
+  const q = rangeQuery(range);
+  q.append('slaGio', String(slaGio));
+  if (nam) q.append('nam', String(nam));
+  return requestGET<IResult<IIdeaDashboard>>(`IdeaReports/dashboard?${q}`);
+};
 
 /** Bảng xếp hạng đóng góp cá nhân/đơn vị theo kỳ */
-export const getIdeaContributions = (params: { nam?: number; quy?: number; thang?: number; top?: number }) => {
-  const q = new URLSearchParams();
+export const getIdeaContributions = (params: { nam?: number; quy?: number; thang?: number; top?: number } & IKhoangThoiGian) => {
+  const q = rangeQuery(params);
   if (params.nam) q.append('nam', String(params.nam));
   if (params.quy) q.append('quy', String(params.quy));
   if (params.thang) q.append('thang', String(params.thang));
@@ -48,8 +70,32 @@ export const getIdeaContributions = (params: { nam?: number; quy?: number; thang
 };
 
 /** Xuất báo cáo ĐMST tổng hợp (CSV mở bằng Excel) */
-export const exportIdeaReport = (nam?: number) =>
-  requestDownloadFile(`IdeaReports/export${nam ? `?nam=${nam}` : ''}`, {});
+export const exportIdeaReport = (nam?: number, range?: IKhoangThoiGian) => {
+  const q = rangeQuery(range);
+  if (nam) q.append('nam', String(nam));
+  return requestDownloadFile(`IdeaReports/export?${q}`, {});
+};
+
+/** Xuất báo cáo ĐMST tổng hợp ra file Excel (.xlsx) */
+export const exportIdeaReportExcel = (nam?: number, range?: IKhoangThoiGian) => {
+  const q = rangeQuery(range);
+  if (nam) q.append('nam', String(nam));
+  return requestDownloadFile(`IdeaReports/export-excel?${q}`, {});
+};
+
+/** Xuất báo cáo ĐMST tổng hợp ra file PDF */
+export const exportIdeaReportPdf = (nam?: number, range?: IKhoangThoiGian) => {
+  const q = rangeQuery(range);
+  if (nam) q.append('nam', String(nam));
+  return requestDownloadFile(`IdeaReports/export-pdf?${q}`, {});
+};
+
+/** Xuất báo cáo ĐMST tổng hợp ra file Word (.docx) */
+export const exportIdeaReportWord = (nam?: number, range?: IKhoangThoiGian) => {
+  const q = rangeQuery(range);
+  if (nam) q.append('nam', String(nam));
+  return requestDownloadFile(`IdeaReports/export-word?${q}`, {});
+};
 
 // ── Status transitions ────────────────────────────────────────────────────────
 

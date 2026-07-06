@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useAuth } from '@/app/modules/auth';
+import { UserType } from '@/models';
 
 export type DMSTRole = 'admin' | 'reviewer' | 'member';
-
-const STORAGE_KEY = 'dmst_demo_role';
 
 export const DMST_ROLE_LABELS: Record<DMSTRole, string> = {
   admin:    'Quản trị viên',
@@ -10,19 +9,23 @@ export const DMST_ROLE_LABELS: Record<DMSTRole, string> = {
   member:   'Thành viên',
 };
 
+/**
+ * Quyền truy cập khu vực Đổi mới sáng tạo, dựa trên loại tài khoản đăng nhập thật (currentUser.type).
+ * - admin:    UserType.Admin (Quản trị, lãnh đạo)
+ * - reviewer: UserType.Admin hoặc UserType.Specialist (quản lý / chuyên gia duyệt)
+ * - member:   các loại tài khoản còn lại
+ *
+ * Trước đây hook này là demo role switcher lưu ở localStorage (không gắn với tài khoản đăng nhập thật),
+ * nay đã đổi sang dùng quyền thật để tránh việc bất kỳ ai cũng có thể tự nâng quyền qua localStorage.
+ */
 export const useDMSTRole = () => {
-  const [role, setRoleState] = useState<DMSTRole>(() => {
-    return (localStorage.getItem(STORAGE_KEY) as DMSTRole) || 'admin';
-  });
+  const { currentUser } = useAuth();
 
-  const setRole = useCallback((r: DMSTRole) => {
-    localStorage.setItem(STORAGE_KEY, r);
-    setRoleState(r);
-  }, []);
+  const isAdmin = currentUser?.type === UserType.Admin;
+  const isReviewer = isAdmin || currentUser?.type === UserType.Specialist;
+  const isMember = !isReviewer;
 
-  const isAdmin    = role === 'admin';
-  const isReviewer = role === 'reviewer' || role === 'admin';
-  const isMember   = role === 'member';
+  const role: DMSTRole = isAdmin ? 'admin' : isReviewer ? 'reviewer' : 'member';
 
-  return { role, setRole, isAdmin, isReviewer, isMember };
+  return { role, isAdmin, isReviewer, isMember };
 };

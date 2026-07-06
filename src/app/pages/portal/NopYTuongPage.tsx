@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Button, Card, Form, Input, Select, Space, Tag, message,
-  Upload, Descriptions, DatePicker, AutoComplete, Spin, Progress,
+  Upload, Descriptions, DatePicker, AutoComplete, Spin, Progress, Tooltip,
 } from 'antd';
 import { useAuth } from '@/app/modules/auth';
 import dayjs from 'dayjs';
@@ -20,6 +20,7 @@ import {
 import type { IIdea, IIdeaTemplate, IAttachmentUploadResult } from '@/models/idea-portal';
 import type { IIdeaFieldConfig } from '@/models/cau-hinh-truong-y-tuong';
 import { requestPOST } from '@/utils/baseAPI';
+import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 
 type KhoiTaoCach = 'new' | 'template' | 'import';
 
@@ -38,6 +39,13 @@ const LINH_VUC_OPTIONS = [
 
 export const NopYTuongPage = () => {
   const { currentUser } = useAuth();
+  /**
+   * Chỉ người có quyền quản lý hoặc quản trị mới được Import hàng loạt bằng Excel/CSV/API.
+   * Dùng chung `useDMSTRole().isReviewer` (Admin hoặc Specialist) — cùng định nghĩa "quản lý/quản trị"
+   * với toàn bộ khu vực Đổi mới sáng tạo (Quản lý ý tưởng, Quy trình duyệt, Báo cáo...).
+   * Lưu ý: `currentUser.roles` KHÔNG được BE trả về (luôn rỗng) nên không dùng được để phân quyền.
+   */
+  const { isReviewer: canImport } = useDMSTRole();
   const [step, setStep] = useState(1);
   const [form] = Form.useForm();
 
@@ -429,20 +437,29 @@ export const NopYTuongPage = () => {
                 >
                   Chọn một mẫu ý tưởng có sẵn, hệ thống nạp sẵn bộ khung nội dung.
                 </Card>
-                <Card
-                  hoverable
-                  className={khoiTaoCach === 'import' ? 'border border-green-500' : ''}
-                  onClick={() => { setKhoiTaoCach('import'); setStep(2); }}
-                  title="Cách 3: Import hàng loạt"
+                <Tooltip
+                  title={canImport ? '' : 'Chỉ người có quyền Quản lý hoặc Quản trị mới được Import hàng loạt bằng Excel.'}
                 >
-                  Import ý tưởng hàng loạt qua file Excel, CSV, API, hoặc tích hợp hệ thống khác.
-                </Card>
+                  <Card
+                    hoverable={canImport}
+                    className={`${khoiTaoCach === 'import' ? 'border border-green-500' : ''} ${!canImport ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => { if (canImport) { setKhoiTaoCach('import'); setStep(2); } }}
+                    title="Cách 3: Import hàng loạt"
+                  >
+                    Import ý tưởng hàng loạt qua file Excel, CSV, API, hoặc tích hợp hệ thống khác.
+                    {!canImport && (
+                      <div className="text-orange-500 text-xs mt-2">
+                        <i className="fa-solid fa-lock mr-1" />Yêu cầu quyền Quản lý/Quản trị
+                      </div>
+                    )}
+                  </Card>
+                </Tooltip>
               </div>
             </div>
           )}
 
           {/* ── Step 2: Import ── */}
-          {step === 2 && khoiTaoCach === 'import' && (
+          {step === 2 && khoiTaoCach === 'import' && canImport && (
             <ImportHangLoatForm
               onBack={() => { setStep(1); setKhoiTaoCach(null); }}
               onSubmit={(records) => {

@@ -1,30 +1,12 @@
 import { SidebarMenuItemWithSub } from '@/_metronic/layout/components/sidebar/sidebar-menu';
 import { SidebarMenuItem } from '@/_metronic/layout/components/sidebar/sidebar-menu';
-import { useDMSTRole, DMST_ROLE_LABELS, DMSTRole } from '@/app/hooks/useDMSTRole';
+import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 
 const SidebarDoiMoiSangTaoMenu = () => {
-  const { role, setRole, isAdmin, isReviewer, isMember } = useDMSTRole();
+  const { isAdmin, isReviewer } = useDMSTRole();
 
   return (
     <>
-      {/* ── Demo Role Switcher ── */}
-      <div className="px-6 pb-3 pt-1">
-        <div className="text-muted fs-8 mb-1 text-uppercase fw-bold ls-1">Demo — vai trò</div>
-        <div className="d-flex gap-1">
-          {(['member', 'reviewer', 'admin'] as DMSTRole[]).map(r => (
-            <button
-              key={r}
-              onClick={() => setRole(r)}
-              className={`btn btn-xs px-2 py-1 fs-8 ${role === r ? 'btn-primary' : 'btn-light-primary'}`}
-              style={{ fontSize: 10, lineHeight: '1.4' }}
-            >
-              {r === 'admin' ? 'Admin' : r === 'reviewer' ? 'Duyệt' : 'TV'}
-            </button>
-          ))}
-        </div>
-        <div className="badge badge-light-primary fs-8 mt-1">{DMST_ROLE_LABELS[role]}</div>
-      </div>
-
       {/* ── Tổng quan (all roles) ── */}
       <SidebarMenuItem
         to='/doi-moi-sang-tao/dashboard'

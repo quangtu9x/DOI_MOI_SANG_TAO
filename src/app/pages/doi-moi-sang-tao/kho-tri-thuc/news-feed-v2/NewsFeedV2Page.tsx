@@ -48,7 +48,7 @@ export const NewsFeedV2Page: React.FC = () => {
         { title: 'Đổi mới sáng tạo', path: '/doi-moi-sang-tao/dashboard', isActive: false, isSeparator: false },
         { title: 'Kho tri thức', path: '/doi-moi-sang-tao/kho-tri-thuc', isActive: false, isSeparator: false },
       ]}>
-        Bảng tin V2
+        Bảng tin
       </PageTitle>
 
       <Content>

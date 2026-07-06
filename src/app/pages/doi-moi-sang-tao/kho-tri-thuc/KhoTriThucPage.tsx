@@ -9,8 +9,8 @@ const BASE_NAV_ITEMS = [
   { to: 'thu-vien',   label: 'Thư viện tài liệu',     icon: 'fa-books',             reviewerOnly: false },
   { to: 'chuyen-gia', label: 'Danh bạ chuyên gia',    icon: 'fa-user-tie',          reviewerOnly: false },
   { to: 'cong-dong',  label: 'Cộng đồng',              icon: 'fa-users',             reviewerOnly: false },
-  { to: 'news-feed',    label: 'Bảng tin',                icon: 'fa-newspaper',         reviewerOnly: false },
-  { to: 'news-feed-v2', label: 'Bảng tin V2',             icon: 'fa-newspaper',         reviewerOnly: false },
+  // { to: 'news-feed',    label: 'Bảng tin',                icon: 'fa-newspaper',         reviewerOnly: false },
+  { to: 'news-feed-v2', label: 'Bảng tin',             icon: 'fa-newspaper',         reviewerOnly: false },
   { to: 'tim-kiem',   label: 'Tìm kiếm',               icon: 'fa-magnifying-glass',  reviewerOnly: false },
   { to: 'bao-cao',    label: 'Báo cáo',                icon: 'fa-file-chart-column', reviewerOnly: true  },
 ];
@@ -21,7 +21,7 @@ const NAV_ITEM_DESC: Record<string, string> = {
   'chuyen-gia': 'Tìm chuyên gia, gửi yêu cầu tư vấn',
   'cong-dong':  'Tham gia thảo luận, chia sẻ kinh nghiệm',
   'news-feed':    'Nội dung mới nhất được cá nhân hóa',
-  'news-feed-v2': 'Bảng tin nội bộ (API trực tiếp, đang phát triển)',
+  'news-feed': 'Bảng tin nội bộ (API trực tiếp, đang phát triển)',
   'tim-kiem':   'Tìm kiếm xuyên suốt tài liệu và chuyên gia',
   'bao-cao':    'Báo cáo chỉ số, đóng góp và xuất Excel/PDF',
 };

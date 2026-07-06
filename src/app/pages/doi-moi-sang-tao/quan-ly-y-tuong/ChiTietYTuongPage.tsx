@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Tag, Spin, Empty, Modal, Input, message, Timeline } from 'antd';
+import { Button, Tag, Spin, Empty, Modal, Input, Upload, message, Timeline } from 'antd';
+import type { UploadFile } from 'antd/es/upload/interface';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { getIdeaDetail, getIdeaHistories, receiveIdea, returnIdea, recognizeIdea } from '@/app/services/ideaPortalApi';
-import type { IIdea, IIdeaHistory } from '@/models/idea-portal';
+import {
+  getIdeaDetail, getIdeaHistories, receiveIdea, returnIdea, recognizeIdea,
+  uploadIdeaFiles, addIdeaAttachments,
+} from '@/app/services/ideaPortalApi';
+import type { IIdea, IIdeaHistory, IIdeaAttachment } from '@/models/idea-portal';
 import { TuongTacSection } from '@/app/components/tuong-tac/TuongTacSection';
 import { LoaiDoiTuong } from '@/app/models/knowledge-hub';
 import { useAuth } from '@/app/modules/auth';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
+
+// Đánh dấu tài liệu đính kèm được thêm vào lúc công nhận ý tưởng (để phân biệt với hồ sơ gốc,
+// không cần đổi cấu trúc CSDL vì IdeaAttachment hiện chưa có trường phân loại).
+const KQCN_TAG = '[Kết quả công nhận] ';
+const stripKqcnTag = (name?: string | null) => (name ?? '').startsWith(KQCN_TAG) ? name!.slice(KQCN_TAG.length) : name;
+const isKqcnAttachment = (name?: string | null) => (name ?? '').startsWith(KQCN_TAG);
 
 // Trạng thái ý tưởng (key = giá trị IdeaStatus phía BE, label = tên hiển thị)
 const STATUS_META: Record<string, { color: string; icon: string; label: string }> = {
@@ -72,6 +82,7 @@ export const ChiTietYTuongPage: React.FC = () => {
   // Công nhận
   const [recognizeOpen, setRecognizeOpen] = useState(false);
   const [recognizeInfo, setRecognizeInfo] = useState('');
+  const [recognizeFiles, setRecognizeFiles] = useState<UploadFile[]>([]);
 
   const load = useCallback(async () => {
     if (!isGuid(id)) { setNotFound(true); return; }
@@ -133,13 +144,36 @@ export const ChiTietYTuongPage: React.FC = () => {
     if (!recognizeInfo.trim()) { message.error('Vui lòng nhập thông tin công nhận'); return; }
     setActionLoading(true);
     try {
+      // Đính kèm tài liệu kết quả công nhận (nếu có) trước khi đổi trạng thái
+      if (recognizeFiles.length > 0) {
+        try {
+          const uploaded = await uploadIdeaFiles(recognizeFiles);
+          if (uploaded.length > 0) {
+            const attachments: IIdeaAttachment[] = uploaded.map(f => ({
+              fileName: f.fileName,
+              originalName: `${KQCN_TAG}${f.originalName ?? f.fileName}`,
+              filePath: f.filePath,
+              fileExt: f.fileExt,
+              fileSize: f.fileSize,
+              bucketName: f.bucketName,
+              prefix: f.prefix,
+              thumbnailUrl: f.thumbnailUrl,
+            }));
+            await addIdeaAttachments(id!, attachments);
+          }
+        } catch {
+          message.error('Không tải lên được tài liệu đính kèm — vui lòng thử lại');
+          return;
+        }
+      }
+
       const res = await recognizeIdea(id!, recognizeInfo.trim());
       if ((res as any)?.status >= 400 || (res as any)?.data?.succeeded === false) {
         message.error((res as any)?.data?.messages?.join(', ') || 'Không công nhận được');
         return;
       }
       message.success('Đã công nhận ý tưởng');
-      setRecognizeOpen(false); setRecognizeInfo('');
+      setRecognizeOpen(false); setRecognizeInfo(''); setRecognizeFiles([]);
       load();
     } catch { message.error('Lỗi'); }
     finally { setActionLoading(false); }
@@ -147,6 +181,8 @@ export const ChiTietYTuongPage: React.FC = () => {
 
   // Thông tin công nhận (lấy từ lịch sử)
   const recognitionEntry = histories.find(h => h.actionType === 'Được công nhận');
+  // Tài liệu đính kèm được thêm khi công nhận (đánh dấu qua tiền tố tên file)
+  const kqcnAttachments = (idea?.attachments ?? []).filter(a => isKqcnAttachment(a.originalName));
 
   const statusMeta = STATUS_META[idea?.status ?? '']
     ?? { color: 'default', icon: 'fa-circle-question', label: idea?.status ?? 'Không rõ' };
@@ -261,9 +297,22 @@ export const ChiTietYTuongPage: React.FC = () => {
                           <div className="text-gray-700 fs-7 mb-1">{recognitionEntry.remark}</div>
                         )}
                         {recognitionEntry && (
-                          <div className="text-muted fs-8">
+                          <div className="text-muted fs-8 mb-2">
                             <i className="fa-regular fa-calendar me-1" />
                             Ngày công nhận: {fmtDateTime(recognitionEntry.actionDate)}
+                          </div>
+                        )}
+                        {kqcnAttachments.length > 0 && (
+                          <div className="d-flex flex-column gap-2 mt-2">
+                            {kqcnAttachments.map((f, i) => (
+                              <div key={i}
+                                className="d-flex align-items-center gap-2 p-2 rounded bg-white"
+                                style={{ border: '1px solid #ddd6fe' }}>
+                                <i className="fa-regular fa-file-check" style={{ color: '#722ed1' }} />
+                                <span className="fs-7 text-gray-800 fw-semibold">{stripKqcnTag(f.originalName)}</span>
+                                <span className="text-muted fs-8">{f.fileExt?.toUpperCase()} · {fmtBytes(f.fileSize)}</span>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -302,15 +351,22 @@ export const ChiTietYTuongPage: React.FC = () => {
                       <div className="text-muted fs-7">Không có tài liệu đính kèm</div>
                     ) : (
                       <div className="d-flex flex-column gap-2">
-                        {idea.attachments.map((f, i) => (
-                          <div key={i} className="d-flex align-items-center gap-3 p-3 rounded bg-light">
-                            <i className="fa-regular fa-file text-primary fs-4" />
-                            <div className="flex-grow-1 min-w-0">
-                              <div className="fw-semibold fs-7 text-truncate">{f.originalName ?? f.fileName}</div>
-                              <div className="text-muted fs-8">{f.fileExt?.toUpperCase()} · {fmtBytes(f.fileSize)}</div>
+                        {idea.attachments.map((f, i) => {
+                          const isKqcn = isKqcnAttachment(f.originalName);
+                          return (
+                            <div key={i} className="d-flex align-items-center gap-3 p-3 rounded bg-light">
+                              <i className={`fa-regular ${isKqcn ? 'fa-file-check' : 'fa-file'} fs-4`}
+                                style={{ color: isKqcn ? '#722ed1' : undefined }} />
+                              <div className="flex-grow-1 min-w-0">
+                                <div className="fw-semibold fs-7 text-truncate">
+                                  {stripKqcnTag(f.originalName) ?? f.fileName}
+                                  {isKqcn && <Tag color="purple" className="ms-2">Kết quả công nhận</Tag>}
+                                </div>
+                                <div className="text-muted fs-8">{f.fileExt?.toUpperCase()} · {fmtBytes(f.fileSize)}</div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -390,7 +446,7 @@ export const ChiTietYTuongPage: React.FC = () => {
         title={<><i className="fa-solid fa-medal me-2" style={{ color: '#722ed1' }} />Công nhận ý tưởng</>}
         open={recognizeOpen}
         onOk={handleRecognize}
-        onCancel={() => { setRecognizeOpen(false); setRecognizeInfo(''); }}
+        onCancel={() => { setRecognizeOpen(false); setRecognizeInfo(''); setRecognizeFiles([]); }}
         okText="Xác nhận công nhận"
         cancelText="Hủy"
         confirmLoading={actionLoading}
@@ -402,6 +458,16 @@ export const ChiTietYTuongPage: React.FC = () => {
           onChange={e => setRecognizeInfo(e.target.value)}
           placeholder="VD: Quyết định số 123/QĐ-TCT ngày ..., công nhận sáng kiến cấp Tổng công ty..."
         />
+        <p className="mt-4 mb-2">Tài liệu đính kèm (quyết định công nhận, minh chứng...):</p>
+        <Upload
+          fileList={recognizeFiles}
+          beforeUpload={() => false}
+          onChange={({ fileList }) => setRecognizeFiles(fileList)}
+          onRemove={file => setRecognizeFiles(prev => prev.filter(f => f.uid !== file.uid))}
+          multiple
+        >
+          <Button icon={<i className="fa-regular fa-paperclip me-1" />}>Chọn file</Button>
+        </Upload>
       </Modal>
     </>
   );

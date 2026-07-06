@@ -524,7 +524,7 @@ export const DashboardDoiMoiPage: React.FC = () => {
             <div className='card mb-4'>
               <div className='card-header border-0 pt-4 pb-2'>
                 <h4 className='card-title fw-semibold text-gray-700 fs-7'>
-                  <i className='fa-regular fa-chart-bar me-2' />Ý tưởng theo tháng (2026)
+                  <i className='fa-regular fa-chart-bar me-2' />Ý tưởng theo tháng{dash?.nam ? ` (${dash.nam})` : ''}
                 </h4>
               </div>
               <div className='card-body pt-2 pb-4'>
