@@ -11,6 +11,7 @@ import {
   IIdeaDashboard,
   IIdeaContributionReport,
   IAttachmentUploadResult,
+  ICauHinhXuLyYTuong,
 } from '@/models/idea-portal';
 import { IPaginationResponse, IResult } from '@/models';
 
@@ -58,6 +59,10 @@ export const getIdeaDashboard = (nam?: number, slaGio = 72, range?: IKhoangThoiG
   if (nam) q.append('nam', String(nam));
   return requestGET<IResult<IIdeaDashboard>>(`IdeaReports/dashboard?${q}`);
 };
+
+/** Cấu hình xử lý hồ sơ ý tưởng: người tiếp nhận mặc định, thời hạn tiếp nhận / kiểm duyệt công nhận (ngày) */
+export const getCauHinhXuLyYTuong = () =>
+  requestGET<IResult<ICauHinhXuLyYTuong>>('Ideas/cau-hinh-xu-ly');
 
 /** Bảng xếp hạng đóng góp cá nhân/đơn vị theo kỳ */
 export const getIdeaContributions = (params: { nam?: number; quy?: number; thang?: number; top?: number } & IKhoangThoiGian) => {

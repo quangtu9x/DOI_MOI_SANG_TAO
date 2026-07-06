@@ -54,6 +54,27 @@ const ALL_TABS: Array<{ key: TrangThai | 'all'; label: string }> = [
   { key: 'DuocCongNhan', label: 'Công nhận' },
 ];
 
+// ── Lấy ngày tương ứng với trạng thái hiện tại ────────────────────────────────
+const getStatusDateInfo = (idea: IIdea): { label: string; date: string } | null => {
+  const statusKey = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
+  switch (statusKey) {
+    case 'BanNhap':
+      return { label: 'Ngày tạo', date: idea.createdAt ? dayjs(idea.createdAt).format('DD/MM/YYYY HH:mm') : '—' };
+    case 'ChoTiepNhan':
+      return { label: 'Ngày nộp', date: idea.submittedAt ? dayjs(idea.submittedAt).format('DD/MM/YYYY HH:mm') : (idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—') };
+    case 'DaTiepNhan':
+      return { label: 'Ngày tiếp nhận', date: idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—' };
+    case 'TraLai':
+      return { label: 'Ngày trả lại', date: idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—' };
+    case 'Huy':
+      return { label: 'Ngày hủy', date: idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—' };
+    case 'DuocCongNhan':
+      return { label: 'Ngày công nhận', date: idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—' };
+    default:
+      return null;
+  }
+};
+
 // ── Timeline helper ────────────────────────────────────────────────────────────
 const buildSteps = (idea: IIdea) => {
   const st = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
@@ -530,6 +551,7 @@ export const TraCuuHoSoPage = () => {
               const accentColor = STATUS_ACCENT[statusKey] ?? '#9CA3AF';
               const isDraft    = statusKey === 'BanNhap';
               const isWaiting  = statusKey === 'ChoTiepNhan';
+              const isReturned = statusKey === 'TraLai';
               const isDeleting  = deletingId === h.id;
               const isRecalling = recallingId === h.id;
 
@@ -582,12 +604,18 @@ export const TraCuuHoSoPage = () => {
                             <i className="fa-regular fa-calendar" />
                             {h.createdAt ? dayjs(h.createdAt).format('DD/MM/YYYY HH:mm') : '—'}
                           </span>
-                          {h.updatedAt && h.updatedAt !== h.createdAt && (
-                            <span className="flex items-center gap-1.5">
-                              <i className="fa-regular fa-clock-rotate-left" />
-                              Cập nhật {dayjs(h.updatedAt).format('DD/MM/YYYY')}
-                            </span>
-                          )}
+                          {(() => {
+                            const statusDate = getStatusDateInfo(h);
+                            if (statusDate && statusDate.date !== '—') {
+                              return (
+                                <span className="flex items-center gap-1.5 font-semibold" style={{ color: STATUS_CFG[STATUS_MAP[h.status ?? ''] ?? 'ChoTiepNhan']?.color ?? '#6B7280' }}>
+                                  <i className="fa-regular fa-clock" />
+                                  {statusDate.label}: {statusDate.date}
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                           {Array.isArray((h as any).attachments) && (h as any).attachments.length > 0 && (
                             <span className="flex items-center gap-1.5">
                               <i className="fa-regular fa-paperclip" />
@@ -647,6 +675,26 @@ export const TraCuuHoSoPage = () => {
                           {isRecalling
                             ? <><i className="fa-solid fa-circle-notch fa-spin" /> Đang thu hồi...</>
                             : <><i className="fa-regular fa-rotate-left" /> Thu hồi</>}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Action bar — Đã trả lại */}
+                    {isReturned && (
+                      <div className="mx-6 mb-5 rounded-xl flex items-center gap-3 px-4 py-3" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+                        <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                          <i className="fa-regular fa-rotate-left text-red-500" />
+                        </div>
+                        <span className="text-sm font-semibold text-red-700 flex-1">
+                          Ý tưởng bị trả lại — vui lòng chỉnh sửa và nộp lại
+                        </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleEdit(h); }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white transition-colors hover:opacity-90"
+                          style={{ background: '#003087' }}
+                        >
+                          <i className="fa-regular fa-pen-to-square" />
+                          Hiệu chỉnh &amp; nộp lại
                         </button>
                       </div>
                     )}

@@ -6,6 +6,8 @@ import { PageTitle } from '@/_metronic/layout/core';
 import { searchIdeas } from '@/app/services/ideaPortalApi';
 import type { IIdea } from '@/models/idea-portal';
 import { useAuth } from '@/app/modules/auth';
+import { useDMSTRole } from '@/app/hooks/useDMSTRole';
+import { CauHinhXuLyYTuongModal } from './components/CauHinhXuLyYTuongModal';
 
 const TRANG_THAI_DISPLAY: Record<string, { label: string; color: string }> = {
   'Bản nháp':       { label: 'Bản nháp', color: 'default' },
@@ -56,12 +58,14 @@ interface QuanLyYTuongDMSTPageProps {
 
 export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myIdeasOnly = false }) => {
   const { currentUser } = useAuth();
+  const { isReviewer } = useDMSTRole();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<IIdea[]>([]);
   const [search, setSearch] = useState('');
   const [linhVuc, setLinhVuc] = useState('');
   const [trangThai, setTrangThai] = useState('');
+  const [cauHinhOpen, setCauHinhOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -226,6 +230,11 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
               <Tooltip title="Làm mới">
                 <Button onClick={loadData} icon={<i className="fa-regular fa-refresh" />} />
               </Tooltip>
+              {!myIdeasOnly && isReviewer && (
+                <Button onClick={() => setCauHinhOpen(true)} icon={<i className="fa-regular fa-sliders me-1" />}>
+                  Cấu hình xử lý
+                </Button>
+              )}
               <Link
                 to="/doi-moi-sang-tao/quan-ly-y-tuong/tao-moi"
                 className="btn btn-primary btn-sm"
@@ -253,6 +262,9 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
           </div>
         </div>
       </Content>
+      {!myIdeasOnly && isReviewer && (
+        <CauHinhXuLyYTuongModal visible={cauHinhOpen} onClose={() => setCauHinhOpen(false)} />
+      )}
     </>
   );
 };

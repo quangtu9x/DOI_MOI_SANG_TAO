@@ -49,6 +49,7 @@ export interface IIdea extends IIdeaCreateRequest {
   createdAt?: string;
   createdOn?: string;
   updatedAt?: string;
+  lastModifiedOn?: string;
   submittedAt?: string;
   submittedOn?: string;
   createdBy?: string;
@@ -94,6 +95,16 @@ export interface IIdeaDashboard {
   slaGio: number;
   soTonDong: number;
   soChoXuLy: number;
+  thoiHanTiepNhanNgay: number;
+  thoiHanKiemDuyetCongNhanNgay: number;
+  soQuaHanTiepNhan: number;
+  soQuaHanKiemDuyet: number;
+}
+
+export interface ICauHinhXuLyYTuong {
+  nguoiTiepNhanUserIds: string[];
+  thoiHanTiepNhanNgay: number;
+  thoiHanKiemDuyetCongNhanNgay: number;
 }
 
 export interface IIdeaContribution {

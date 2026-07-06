@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Button, Card, Form, Input, Select, Space, Tag, message,
@@ -9,6 +9,7 @@ import dayjs from 'dayjs';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { ImportHangLoatForm } from './components/import-y-tuong/ImportHangLoatForm';
 import { UserSelect } from '@/app/components/UserSelect';
+import { OrganizationUnitTreeSelect } from '@/app/components/OrganizationUnitTreeSelect';
 import {
   createIdea,
   updateIdea,
@@ -19,7 +20,8 @@ import {
 } from '@/app/services/ideaPortalApi';
 import type { IIdea, IIdeaTemplate, IAttachmentUploadResult } from '@/models/idea-portal';
 import type { IIdeaFieldConfig } from '@/models/cau-hinh-truong-y-tuong';
-import { requestPOST } from '@/utils/baseAPI';
+import type { IPaginationResponse, IUserDetails, IOrganizationUnit } from '@/models';
+import { requestGET, requestPOST } from '@/utils/baseAPI';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 
 type KhoiTaoCach = 'new' | 'template' | 'import';
@@ -86,6 +88,43 @@ export const NopYTuongPage = () => {
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [receiverName, setReceiverName] = useState('');
+  const [receiverOrgUnitName, setReceiverOrgUnitName] = useState('');
+  const [donViCongTacId, setDonViCongTacId] = useState<string | undefined>(undefined);
+  const [donViTiepNhanId, setDonViTiepNhanId] = useState<string | undefined>(undefined);
+  const [orgUnits, setOrgUnits] = useState<IOrganizationUnit[]>([]);
+
+  // Danh sách đơn vị (dùng để đối chiếu, tự gán lại đơn vị khi chọn cán bộ tiếp nhận)
+  useEffect(() => {
+    requestPOST<IPaginationResponse<IOrganizationUnit[]>>('organizationunits/search', {
+      advancedSearch: { fields: ['name', 'code'], keyword: null },
+      allowParentCodeNull: null,
+      allowParentIdNull: null,
+      pageNumber: 1,
+      pageSize: 100000,
+      orderBy: ['sortOrder'],
+    })
+      .then(res => setOrgUnits((res.data as any)?.data ?? []))
+      .catch(() => {});
+  }, []);
+
+  /** Lọc danh sách cán bộ tiếp nhận theo đơn vị tiếp nhận đã chọn (nếu có) */
+  const fetchReceiverUsers = useCallback(async (keyword: string) => {
+    const res = await requestPOST<IPaginationResponse<IUserDetails[]>>('users/search', {
+      pageNumber: 1,
+      pageSize: 1000,
+      keyword,
+      organizationUnitId: donViTiepNhanId || undefined,
+    }, 'neutral');
+
+    return (
+      res.data?.data?.map(item => ({
+        ...item,
+        label: item?.fullName,
+        value: item?.id,
+      })) ?? []
+    );
+  }, [donViTiepNhanId]);
+  const [submittedAt, setSubmittedAt] = useState<string>('');
 
   const isTemplate = useMemo(() => khoiTaoCach === 'template', [khoiTaoCach]);
   const [draftData, setDraftData] = useState<Record<string, any> | null>(null);
@@ -122,6 +161,17 @@ export const NopYTuongPage = () => {
             thoiGianApDung: idea.ngayApDung ? dayjs(idea.ngayApDung) : undefined,
             templateId:    idea.templateId,
           });
+
+          // Hiển thị đơn vị tiếp nhận (đơn vị của cán bộ tiếp nhận đã chọn trước đó, nếu có)
+          if (idea.receiverId) {
+            requestGET<IUserDetails>(`users/${idea.receiverId}`, 'neutral')
+              .then(userRes => {
+                const orgName = userRes?.data?.organizationUnitName || userRes?.data?.organizationUnitCode || '';
+                if (orgName) setReceiverOrgUnitName(orgName);
+              })
+              .catch(() => {});
+          }
+
           setStep(2);
           message.success('Đã tải ý tưởng để chỉnh sửa!');
         })
@@ -340,6 +390,7 @@ export const NopYTuongPage = () => {
 
       const code = (submitData as any)?.data?.code ?? `YT-${ideaId.slice(-8).toUpperCase()}`;
       setTicketCode(code);
+      setSubmittedAt(dayjs().format('HH:mm:ss DD/MM/YYYY'));
       localStorage.removeItem('yTuongDraft');
       setDraftData(null);
       message.success('Gửi ý tưởng thành công!');
@@ -365,6 +416,7 @@ export const NopYTuongPage = () => {
     setCreatedIdeaId('');
     setTicketCode('');
     setReceiverName('');
+    setSubmittedAt('');
     localStorage.removeItem('yTuongDraft');
     setDraftData(null);
   };
@@ -564,14 +616,25 @@ export const NopYTuongPage = () => {
                 )}
 
                 {fieldShow('donViCongTac') && (
-                  <Form.Item
-                    label="Đơn vị công tác"
-                    name="donViCongTac"
-                    initialValue={currentUser?.businessName || currentUser?.organizationUnitCode || ''}
-                    rules={fieldRules('donViCongTac', true, 'Vui lòng nhập đơn vị công tác.')}
-                  >
-                    <Input placeholder={fieldPh('donViCongTac', 'Đơn vị / phòng ban công tác')} maxLength={fieldMax('donViCongTac')} />
-                  </Form.Item>
+                  <>
+                    <Form.Item
+                      label="Đơn vị công tác"
+                      name="donViCongTacId"
+                      rules={fieldRules('donViCongTac', true, 'Vui lòng chọn đơn vị công tác.')}
+                    >
+                      <OrganizationUnitTreeSelect
+                        useCurrentUserDefault={false}
+                        placeholder={fieldPh('donViCongTac', 'Chọn đơn vị / phòng ban công tác')}
+                        onChange={(value: any, label: any) => {
+                          const tenDonVi = Array.isArray(label) ? String(label[0] ?? '') : String(label ?? '');
+                          setDonViCongTacId(value || undefined);
+                          form.setFieldValue('donViCongTacId', value);
+                          form.setFieldValue('donViCongTac', tenDonVi);
+                        }}
+                      />
+                    </Form.Item>
+                    <Form.Item name="donViCongTac" hidden><Input /></Form.Item>
+                  </>
                 )}
               </div>
 
@@ -621,19 +684,54 @@ export const NopYTuongPage = () => {
 
                 <div>
                   <h4 className="font-semibold mb-3">👤 Cán bộ tiếp nhận</h4>
+
+                  <label className="block text-sm text-gray-600 mb-1">Đơn vị tiếp nhận</label>
+                  <OrganizationUnitTreeSelect
+                    useCurrentUserDefault={false}
+                    placeholder="Chọn đơn vị tiếp nhận để lọc cán bộ (bỏ trống nếu chưa rõ)"
+                    value={donViTiepNhanId}
+                    style={{ width: '100%', marginBottom: 12 }}
+                    onChange={(value: any) => {
+                      setDonViTiepNhanId(value || undefined);
+                      // Đổi đơn vị tiếp nhận thì bỏ chọn cán bộ cũ (có thể không còn thuộc đơn vị mới)
+                      form.setFieldValue('receiverId', undefined);
+                      setReceiverName('');
+                      setReceiverOrgUnitName('');
+                    }}
+                  />
+
                   <Form.Item
                     name="receiverId"
                     rules={[{ required: true, message: 'Vui lòng chọn cán bộ tiếp nhận!' }]}
                     style={{ marginBottom: 0 }}
                   >
                     <UserSelect
-                      placeholder="Tìm và chọn cán bộ tiếp nhận"
-                      onChange={(val: any) => {
+                      placeholder={donViTiepNhanId ? 'Tìm và chọn cán bộ tiếp nhận trong đơn vị' : 'Tìm và chọn cán bộ tiếp nhận'}
+                      fetchUsers={fetchReceiverUsers}
+                      onChange={(val: any, option: any) => {
                         if (val?.label) setReceiverName(val.label);
                         form.setFieldValue('receiverId', val?.value ?? val);
+
+                        const donViNguoiNhan = option?.organizationUnitName || option?.organizationUnitCode || '';
+                        setReceiverOrgUnitName(donViNguoiNhan);
+
+                        // Chưa chọn đơn vị tiếp nhận trước → tự gán lại theo đơn vị của người vừa chọn
+                        if (!donViTiepNhanId) {
+                          const matchedUnit = orgUnits.find(u =>
+                            (option?.organizationUnitCode && u.code === option.organizationUnitCode) ||
+                            (option?.organizationUnitName && u.name === option.organizationUnitName)
+                          );
+                          if (matchedUnit) setDonViTiepNhanId(matchedUnit.id);
+                        }
                       }}
                     />
                   </Form.Item>
+                  {receiverOrgUnitName && (
+                    <div className="text-sm text-gray-500 mt-2">
+                      <i className="fa-regular fa-building me-1" />
+                      Đơn vị tiếp nhận: <span className="font-semibold text-gray-700">{receiverOrgUnitName}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -749,6 +847,9 @@ export const NopYTuongPage = () => {
               <h3 className="text-2xl font-semibold text-[#18191c] mb-2">Gửi ý tưởng thành công!</h3>
               <p className="text-gray-600 mb-1">
                 Mã hồ sơ: <span className="font-bold text-[#18191c]">{ticketCode}</span>
+              </p>
+              <p className="text-gray-600 mb-1">
+                Thời gian nộp: <span className="font-bold text-[#18191c]">{submittedAt}</span>
               </p>
               {createdIdeaId && (
                 <p className="text-xs text-gray-400 mb-4">ID: {createdIdeaId}</p>

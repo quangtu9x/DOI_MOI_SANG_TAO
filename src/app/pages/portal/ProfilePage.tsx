@@ -144,8 +144,6 @@ export const ProfilePage = () => {
             setIsLoading(false)
         }
     }
-
-
     return (
         <div className="w-full">
             <div className="max-w-[1440px] mx-auto px-4 py-8 lg:py-16">
@@ -156,8 +154,6 @@ export const ProfilePage = () => {
                             <nav className="space-y-1">
                                 {[
                                     { id: "account", label: "Thông tin tài khoản", icon: Settings },
-                                    { id: "y-tuong", label: "Ý tưởng của tôi", icon: Lightbulb },
-                                    // "Nhiệm vụ NCKH", "Sáng kiến", "Dự án CNTT" — ẩn, giai đoạn sau
                                 ].map((item) => {
                                     const isVisible = !(item as any).purpose
                                         || currentUser?.type !== UserType.FromPortal
