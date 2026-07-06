@@ -213,11 +213,12 @@ export const KhoTriThucPortalPage = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-gray-50">
+    <div className="min-h-full bg-gray-50">
+      <div className="max-w-7xl mx-auto w-full px-6 pt-6 pb-8">
 
       {/* Hero */}
       <div
-        className="mx-4 mt-4 mb-5 rounded-xl overflow-hidden shadow-sm"
+        className="mb-5 rounded-xl overflow-hidden shadow-sm"
         style={{ backgroundImage: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%)' }}
       >
         <div className="flex items-center gap-4 px-6 py-6">
@@ -237,7 +238,7 @@ export const KhoTriThucPortalPage = () => {
       </div>
 
       {/* Toolbar */}
-      <div className="mx-4 mb-5 bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="mb-5 bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
           {/* Thống kê */}
           <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -282,8 +283,7 @@ export const KhoTriThucPortalPage = () => {
       </div>
 
       {/* Danh sách card */}
-      <div className="px-4 pb-8 flex-1">
-        <Spin spinning={loading}>
+      <Spin spinning={loading}>
           {!loading && errorKind ? (
             <div className="text-center py-16">
               <Empty

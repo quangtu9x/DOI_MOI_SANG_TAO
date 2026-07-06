@@ -10,6 +10,7 @@ import { ThuVienTaiLieuPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/th
 import { DanhBaChuyenGiaPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia/DanhBaChuyenGiaPage';
 import { CongDongPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/cong-dong/CongDongPage';
 import { NewsFeedPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed/NewsFeedPage';
+import { NewsFeedV2Page } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed-v2/NewsFeedV2Page';
 import { TimKiemPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/tim-kiem/TimKiemPage';
 import { KTAnalyticsPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/analytics/KTAnalyticsPage';
 import { KTBaoCaoPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/bao-cao/KTBaoCaoPage';
@@ -67,7 +68,8 @@ export const DoiMoiSangTaoRoutes: FC = () => {
         <Route path="thu-vien"   element={<ThuVienTaiLieuPage />} />
         <Route path="chuyen-gia" element={<DanhBaChuyenGiaPage />} />
         <Route path="cong-dong"  element={<CongDongPage />} />
-        <Route path="news-feed"  element={<NewsFeedPage />} />
+        <Route path="news-feed"    element={<NewsFeedPage />} />
+        <Route path="news-feed-v2" element={<NewsFeedV2Page />} />
         <Route path="tim-kiem"   element={<TimKiemPage />} />
         <Route path="bao-cao"    element={<ReviewerRoute element={<KTBaoCaoPage />} />} />
       </Route>
