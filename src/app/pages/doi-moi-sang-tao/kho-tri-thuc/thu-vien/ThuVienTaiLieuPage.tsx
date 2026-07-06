@@ -229,6 +229,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [workflowLoading, setWorkflowLoading] = useState(false);
   const [workflowSaving, setWorkflowSaving] = useState(false);
+  const [workflowReviewerLoading, setWorkflowReviewerLoading] = useState(false);
   const [workflowConfig, setWorkflowConfig] = useState<IKhoTriThucWorkflowConfig>(DEFAULT_WORKFLOW_CONFIG);
   const [workflowReviewerOptions, setWorkflowReviewerOptions] = useState<Array<{ label: string; value: string }>>([]);
   const [workflowForm] = Form.useForm();
@@ -329,11 +330,12 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
   const loadWorkflowReviewerOptions = useCallback(async () => {
     try {
+      setWorkflowReviewerLoading(true);
       const res = await requestPOST<IPaginationResponse<IUserDetails[]>>('users/search', {
         pageNumber: 1,
         pageSize: 1000,
         keyword: null,
-      });
+      }, 'neutral');
 
       const options = (res.data?.data ?? []).map(u => ({
         value: u.id,
@@ -342,6 +344,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       setWorkflowReviewerOptions(options);
     } catch {
       setWorkflowReviewerOptions([]);
+    } finally {
+      setWorkflowReviewerLoading(false);
     }
   }, []);
 
@@ -1670,6 +1674,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                 optionFilterProp="label"
                 placeholder="Chọn người kiểm duyệt mặc định"
                 options={workflowReviewerOptions}
+                loading={workflowReviewerLoading}
+                notFoundContent={workflowReviewerLoading ? 'Đang tải người dùng...' : 'Không có dữ liệu người dùng'}
               />
             </Form.Item>
 

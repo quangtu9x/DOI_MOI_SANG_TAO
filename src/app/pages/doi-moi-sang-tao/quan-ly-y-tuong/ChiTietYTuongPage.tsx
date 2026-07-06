@@ -179,8 +179,11 @@ export const ChiTietYTuongPage: React.FC = () => {
     finally { setActionLoading(false); }
   };
 
-  // Thông tin công nhận (lấy từ lịch sử)
-  const recognitionEntry = histories.find(h => h.actionType === 'Được công nhận');
+  // Thông tin công nhận (lấy từ lịch sử): ưu tiên bản ghi có nội dung remark.
+  const recognitionEntry =
+    histories.find(h => h.actionType === 'Được công nhận' && !!h.remark?.trim())
+    ?? histories.find(h => h.actionType === 'Được công nhận');
+  const recognitionRemark = recognitionEntry?.remark?.trim() ?? '';
   // Tài liệu đính kèm được thêm khi công nhận (đánh dấu qua tiền tố tên file)
   const kqcnAttachments = (idea?.attachments ?? []).filter(a => isKqcnAttachment(a.originalName));
 
@@ -293,8 +296,12 @@ export const ChiTietYTuongPage: React.FC = () => {
                       </div>
                       <div>
                         <div className="fw-bold fs-5 mb-1" style={{ color: '#5b21b6' }}>Ý tưởng đã được công nhận</div>
-                        {recognitionEntry?.remark && (
-                          <div className="text-gray-700 fs-7 mb-1">{recognitionEntry.remark}</div>
+                        {recognitionRemark ? (
+                          <div className="text-gray-700 fs-7 mb-1" style={{ whiteSpace: 'pre-wrap' }}>
+                            {recognitionRemark}
+                          </div>
+                        ) : (
+                          <div className="text-muted fs-8 mb-1">Chưa có nội dung công nhận.</div>
                         )}
                         {recognitionEntry && (
                           <div className="text-muted fs-8 mb-2">
@@ -404,7 +411,11 @@ export const ChiTietYTuongPage: React.FC = () => {
                           children: (
                             <div>
                               <div className="fw-semibold fs-7 text-gray-800">{h.actionType}</div>
-                              {h.remark && <div className="text-muted fs-8 mt-1">{h.remark}</div>}
+                              {h.remark && (
+                                <div className="text-muted fs-8 mt-1" style={{ whiteSpace: 'pre-wrap' }}>
+                                  {h.remark}
+                                </div>
+                              )}
                               <div className="text-muted fs-9 mt-1">
                                 <i className="fa-regular fa-clock me-1" />{fmtDateTime(h.actionDate)}
                               </div>

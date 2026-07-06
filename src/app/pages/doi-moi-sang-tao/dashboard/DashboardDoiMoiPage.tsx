@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import { Tag, message } from 'antd';
-import { getIdeaDashboard } from '@/app/services/ideaPortalApi';
-import type { IIdeaDashboard } from '@/models/idea-portal';
+import { getIdeaDashboard, searchIdeas } from '@/app/services/ideaPortalApi';
+import type { IIdea, IIdeaDashboard } from '@/models/idea-portal';
 
 // ── constants ────────────────────────────────────────────────────────────────
 
@@ -14,10 +14,11 @@ const VNA_GOLD = '#C5A028';
 const LV_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16'];
 
 const STATUS_COLORS: Record<string, string> = {
-  'Đang soạn thảo': 'default',
-  'Chờ duyệt':      'processing',
-  'Đã duyệt':       'success',
-  'Từ chối':        'error',
+  'Bản nháp':       'default',
+  'Đã nộp':         'processing',
+  'Đã tiếp nhận':   'success',
+  'Đã trả lại':     'error',
+  'Đã hủy':         'default',
   'Được công nhận': 'purple',
 };
 
@@ -35,48 +36,37 @@ interface IFeedPost {
   initComments: number;
 }
 
-const FEED_POSTS: IFeedPost[] = [
-  {
-    id: '1', ma: 'YT-2026061501',
-    ten:  'Số hóa check-in nội địa — tăng tốc phục vụ hành khách',
-    moTa: 'Đề xuất triển khai hệ thống self check-in kiosk tại 8 sân bay nội địa trọng điểm, tích hợp nhận dạng khuôn mặt và mã QR, rút ngắn thời gian check-in xuống còn 90 giây/khách.',
-    nguoiGui: 'Nguyễn Minh Tuấn', donVi: 'Ban Dịch vụ Mặt đất',
-    ngay: '25/06/2026', trangThai: 'Chờ duyệt', linhVuc: 'Dịch vụ mặt đất',
-    initLikes: 24, initComments: 7,
-  },
-  {
-    id: '2', ma: 'YT-2026061502',
-    ten:  'AI dự báo bảo trì động cơ phòng ngừa',
-    moTa: 'Ứng dụng mô hình Machine Learning phân tích dữ liệu cảm biến động cơ theo thời gian thực, dự báo nguy cơ hỏng hóc trước 200 giờ bay để chủ động lên lịch bảo trì, giảm AOG.',
-    nguoiGui: 'Trần Quang Hùng', donVi: 'Trung tâm Kỹ thuật A76',
-    ngay: '24/06/2026', trangThai: 'Đã duyệt', linhVuc: 'Kỹ thuật bảo dưỡng',
-    initLikes: 41, initComments: 12,
-  },
-  {
-    id: '3', ma: 'YT-2026061503',
-    ten:  'Tối ưu lịch trình bay — giảm tiêu hao nhiên liệu',
-    moTa: 'Xây dựng thuật toán tối ưu hóa hành trình bay dựa trên dữ liệu thời tiết, luồng gió và mật độ không phận. Thí điểm trên 18 đường bay quốc tế, tiết kiệm 12 tỷ đồng/năm.',
-    nguoiGui: 'Phạm Thị Lan', donVi: 'Ban Khai thác Bay',
-    ngay: '23/06/2026', trangThai: 'Được công nhận', linhVuc: 'Khai thác bay',
-    initLikes: 88, initComments: 21,
-  },
-  {
-    id: '4', ma: 'YT-2026061504',
-    ten:  'Hệ thống phản hồi hành khách thời gian thực qua QR',
-    moTa: 'Lắp đặt màn hình QR tại các điểm tiếp xúc dịch vụ (cổng lên máy bay, khoang khách, phòng chờ), thu thập phản hồi tức thì và tổng hợp dashboard cho quản lý ca.',
-    nguoiGui: 'Lê Thị Hương', donVi: 'Ban Dịch vụ Hành khách',
-    ngay: '22/06/2026', trangThai: 'Đã duyệt', linhVuc: 'Dịch vụ hành khách',
-    initLikes: 35, initComments: 9,
-  },
-  {
-    id: '5', ma: 'YT-2026061505',
-    ten:  'Blended Learning cho đào tạo phi công & tiếp viên',
-    moTa: 'Xây dựng nền tảng e-learning kết hợp với buổi thực hành tại chỗ (70% online / 30% offline). Mô phỏng tình huống khẩn nguy bằng VR, giảm 30% thời gian đào tạo chứng chỉ định kỳ.',
-    nguoiGui: 'Nguyễn Thành Nam', donVi: 'Trung tâm Đào tạo Bay',
-    ngay: '21/06/2026', trangThai: 'Chờ duyệt', linhVuc: 'Đào tạo nhân lực',
-    initLikes: 19, initComments: 4,
-  },
-];
+const fmtDate = (value?: string | null) => {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('vi-VN');
+};
+
+const toFeedPost = (idea: IIdea): IFeedPost => {
+  const shortId = (idea.id ?? '').replace(/-/g, '').slice(-6).toUpperCase();
+  return {
+    id: idea.id,
+    ma: idea.code ?? `YT-${shortId}`,
+    ten: idea.title,
+    moTa: idea.expectedBenefit || idea.problemDescription || idea.ideaContent || 'Không có mô tả',
+    nguoiGui: idea.nguoiDeXuat || (idea.createdBy ? String(idea.createdBy) : 'Ẩn danh'),
+    donVi: idea.donViCongTac || '—',
+    ngay: fmtDate(idea.submittedOn || idea.submittedAt || idea.createdOn || idea.createdAt),
+    trangThai: idea.status || 'Bản nháp',
+    linhVuc: idea.linhVuc || 'Khác',
+    initLikes: 0,
+    initComments: 0,
+  };
+};
+
+const extractIdeas = (res: any): IIdea[] => {
+  const d = res?.data ?? res;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.result)) return d.result;
+  return [];
+};
 
 // ── sub: PostCard ────────────────────────────────────────────────────────────
 
@@ -344,10 +334,10 @@ const ActionBtn: React.FC<{
 // ── main page ────────────────────────────────────────────────────────────────
 
 export const DashboardDoiMoiPage: React.FC = () => {
+  const [feedPosts, setFeedPosts] = useState<IFeedPost[]>([]);
+  const [feedLoading, setFeedLoading] = useState(true);
   const [likes, setLikes] = useState<Record<string, boolean>>({});
-  const [likeCounts, setLikeCounts] = useState<Record<string, number>>(
-    Object.fromEntries(FEED_POSTS.map(p => [p.id, p.initLikes]))
-  );
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
 
   // ── Số liệu thật từ API báo cáo ──────────────────────────────────────────
@@ -360,6 +350,48 @@ export const DashboardDoiMoiPage: React.FC = () => {
         setDash(d?.data ?? d ?? null);
       })
       .catch(() => { /* giữ giá trị 0 */ });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadFeed = async () => {
+      try {
+        const [recognizedRes, latestRes] = await Promise.allSettled([
+          searchIdeas({ pageNumber: 1, pageSize: 8, status: 'Được công nhận' }),
+          searchIdeas({ pageNumber: 1, pageSize: 24 }),
+        ]);
+
+        const recognized = recognizedRes.status === 'fulfilled' ? extractIdeas(recognizedRes.value) : [];
+        const latest = latestRes.status === 'fulfilled' ? extractIdeas(latestRes.value) : [];
+
+        const postMap = new Map<string, IFeedPost>();
+        [...recognized, ...latest].forEach(x => {
+          if (!x?.id || postMap.has(x.id)) return;
+          postMap.set(x.id, toFeedPost(x));
+        });
+
+        const merged = Array.from(postMap.values()).slice(0, 8);
+        if (!active) return;
+
+        setFeedPosts(merged);
+        setLikeCounts(prev => {
+          const next: Record<string, number> = {};
+          merged.forEach(p => {
+            next[p.id] = prev[p.id] ?? p.initLikes;
+          });
+          return next;
+        });
+      } catch {
+        if (!active) return;
+        setFeedPosts([]);
+      } finally {
+        if (active) setFeedLoading(false);
+      }
+    };
+
+    loadFeed();
+    return () => { active = false; };
   }, []);
 
   const STATS = [
@@ -450,7 +482,19 @@ export const DashboardDoiMoiPage: React.FC = () => {
             </div>
 
             {/* Post cards */}
-            {FEED_POSTS.map(post => (
+            {feedLoading && (
+              <div className='card border-0 shadow-sm mb-4'>
+                <div className='card-body py-10 text-center text-muted'>Đang tải hoạt động mới nhất...</div>
+              </div>
+            )}
+
+            {!feedLoading && feedPosts.length === 0 && (
+              <div className='card border-0 shadow-sm mb-4'>
+                <div className='card-body py-10 text-center text-muted'>Chưa có hoạt động nào để hiển thị.</div>
+              </div>
+            )}
+
+            {feedPosts.map(post => (
               <PostCard
                 key={post.id}
                 post={post}

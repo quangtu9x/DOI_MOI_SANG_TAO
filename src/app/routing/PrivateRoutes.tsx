@@ -1,4 +1,4 @@
-import { FC, Suspense, useEffect } from 'react';
+import { FC, Suspense, lazy, useEffect } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { MasterLayout } from '../../_metronic/layout/MasterLayout';
 import { PortalLayout } from '../../_metronic/layout/PortalLayout';
@@ -20,50 +20,59 @@ import { hasAll, uiManage } from '@/utils/utils';
 import { useAuth } from '../modules/auth';
 import { useDispatch } from 'react-redux';
 
-// Page Imports
-import { DashboardWrapper } from '../pages/dashboard/DashboardWrapper';
-import { CatalogRoutes, SystemAdminRoutes, NotificationRoutes, DataSharingRoutes } from './admins';
 import { R } from '@/data';
 import { UserType } from '@/models';
 import { AppDispatch } from '@/redux/Store';
 import * as businessActions from '@/redux/business-filter/Actions';
-// import { BusinessGuard } from '../modules/errors/components/BusinessGuard';
-import { NguonLucRoutes } from './nguon-luc';
-import { DangKyNhiemVuRoutes, ThucHienNhiemVuRoutes, TrienKhaiThucHienRoutes, XetDuyetChuNhiemRoutes, KetQuaHDKHRoutes, QuanLyTaiChinhRoutes } from './nhiem-vu';
-import { NghiemThuThanhLyRoutes } from './nhiem-vu/NghiemThuThanhLyRoutes';
-import { DangKySangKienRoutes, KiemTraTrungLapRoutes, TiepNhanXuLyRoutes, XetCongNhanRoutes, QuanLyGiaiPhapRoutes, QuanLySangKienNangCaoRoutes } from './sang-kien';
-import { QuanLyYTuongRoutes } from './y-tuong';
-import { DoiMoiSangTaoRoutes } from './doi-moi-sang-tao/DoiMoiSangTaoRoutes';
-import {
-  LapKeHoachVonRoutes,
-  QuanLyTienTrinhRoutes,
-  TraCuuHoSoRoutes,
-  TheoDoiDieuHanhRoutes,
-  GiaiDoanXinVonRoutes,
-} from './ke-hoach-von';
 
-// Direct page imports for danh-muc
-import {
-  DanhMucCoQuanDonViPage,
-  DanhMucChuDauTuPage,
-  DanhMucTinhThanhPhoPage,
-  DanhMucPhuongXaPage,
-  DanhMucNhaThauPage,
-  DanhMucNguonVonDauTuPage,
-  DanhMucLoaiDuAnPage,
-  DanhMucNhomDuAnPage
-} from '@/app/pages/ke-hoach-von/danh-muc';
+const DashboardWrapper = lazy(() => import('../pages/dashboard/DashboardWrapper').then(m => ({ default: m.DashboardWrapper })));
 
-// Direct page imports for lich-su
-import {
-  LichSuCapNhatThongTinDuAnPage,
-  LichSuCapNhatDuLieuNguoiDungPage,
-  LichSuSuDungHeThongPage
-} from '@/app/pages/ke-hoach-von/lich-su';
+const CatalogRoutes = lazy(() => import('./admins').then(m => ({ default: m.CatalogRoutes })));
+const SystemAdminRoutes = lazy(() => import('./admins').then(m => ({ default: m.SystemAdminRoutes })));
+const NotificationRoutes = lazy(() => import('./admins').then(m => ({ default: m.NotificationRoutes })));
+const DataSharingRoutes = lazy(() => import('./admins').then(m => ({ default: m.DataSharingRoutes })));
 
-// Direct page imports for eform
-import { QLEformPage } from '@/app/pages/ke-hoach-von/eform/ql-eform/QLEformPage';
-import { ThietKePage } from '@/app/pages/ke-hoach-von/eform/thiet-ke/ThietKePage';
+const NguonLucRoutes = lazy(() => import('./nguon-luc').then(m => ({ default: m.NguonLucRoutes })));
+
+const DangKyNhiemVuRoutes = lazy(() => import('./nhiem-vu').then(m => ({ default: m.DangKyNhiemVuRoutes })));
+const ThucHienNhiemVuRoutes = lazy(() => import('./nhiem-vu').then(m => ({ default: m.ThucHienNhiemVuRoutes })));
+const TrienKhaiThucHienRoutes = lazy(() => import('./nhiem-vu').then(m => ({ default: m.TrienKhaiThucHienRoutes })));
+const XetDuyetChuNhiemRoutes = lazy(() => import('./nhiem-vu').then(m => ({ default: m.XetDuyetChuNhiemRoutes })));
+const KetQuaHDKHRoutes = lazy(() => import('./nhiem-vu').then(m => ({ default: m.KetQuaHDKHRoutes })));
+const QuanLyTaiChinhRoutes = lazy(() => import('./nhiem-vu').then(m => ({ default: m.QuanLyTaiChinhRoutes })));
+const NghiemThuThanhLyRoutes = lazy(() => import('./nhiem-vu/NghiemThuThanhLyRoutes').then(m => ({ default: m.NghiemThuThanhLyRoutes })));
+
+const DangKySangKienRoutes = lazy(() => import('./sang-kien').then(m => ({ default: m.DangKySangKienRoutes })));
+const KiemTraTrungLapRoutes = lazy(() => import('./sang-kien').then(m => ({ default: m.KiemTraTrungLapRoutes })));
+const TiepNhanXuLyRoutes = lazy(() => import('./sang-kien').then(m => ({ default: m.TiepNhanXuLyRoutes })));
+const XetCongNhanRoutes = lazy(() => import('./sang-kien').then(m => ({ default: m.XetCongNhanRoutes })));
+const QuanLyGiaiPhapRoutes = lazy(() => import('./sang-kien').then(m => ({ default: m.QuanLyGiaiPhapRoutes })));
+const QuanLySangKienNangCaoRoutes = lazy(() => import('./sang-kien').then(m => ({ default: m.QuanLySangKienNangCaoRoutes })));
+
+const QuanLyYTuongRoutes = lazy(() => import('./y-tuong').then(m => ({ default: m.QuanLyYTuongRoutes })));
+const DoiMoiSangTaoRoutes = lazy(() => import('./doi-moi-sang-tao/DoiMoiSangTaoRoutes').then(m => ({ default: m.DoiMoiSangTaoRoutes })));
+
+const LapKeHoachVonRoutes = lazy(() => import('./ke-hoach-von').then(m => ({ default: m.LapKeHoachVonRoutes })));
+const QuanLyTienTrinhRoutes = lazy(() => import('./ke-hoach-von').then(m => ({ default: m.QuanLyTienTrinhRoutes })));
+const TraCuuHoSoRoutes = lazy(() => import('./ke-hoach-von').then(m => ({ default: m.TraCuuHoSoRoutes })));
+const TheoDoiDieuHanhRoutes = lazy(() => import('./ke-hoach-von').then(m => ({ default: m.TheoDoiDieuHanhRoutes })));
+const GiaiDoanXinVonRoutes = lazy(() => import('./ke-hoach-von').then(m => ({ default: m.GiaiDoanXinVonRoutes })));
+
+const DanhMucCoQuanDonViPage = lazy(() => import('@/app/pages/ke-hoach-von/danh-muc').then(m => ({ default: m.DanhMucCoQuanDonViPage })));
+const DanhMucChuDauTuPage = lazy(() => import('@/app/pages/ke-hoach-von/danh-muc').then(m => ({ default: m.DanhMucChuDauTuPage })));
+const DanhMucTinhThanhPhoPage = lazy(() => import('@/app/pages/ke-hoach-von/danh-muc').then(m => ({ default: m.DanhMucTinhThanhPhoPage })));
+const DanhMucPhuongXaPage = lazy(() => import('@/app/pages/ke-hoach-von/danh-muc').then(m => ({ default: m.DanhMucPhuongXaPage })));
+const DanhMucNhaThauPage = lazy(() => import('@/app/pages/ke-hoach-von/danh-muc').then(m => ({ default: m.DanhMucNhaThauPage })));
+const DanhMucNguonVonDauTuPage = lazy(() => import('@/app/pages/ke-hoach-von/danh-muc').then(m => ({ default: m.DanhMucNguonVonDauTuPage })));
+const DanhMucLoaiDuAnPage = lazy(() => import('@/app/pages/ke-hoach-von/danh-muc').then(m => ({ default: m.DanhMucLoaiDuAnPage })));
+const DanhMucNhomDuAnPage = lazy(() => import('@/app/pages/ke-hoach-von/danh-muc').then(m => ({ default: m.DanhMucNhomDuAnPage })));
+
+const LichSuCapNhatThongTinDuAnPage = lazy(() => import('@/app/pages/ke-hoach-von/lich-su').then(m => ({ default: m.LichSuCapNhatThongTinDuAnPage })));
+const LichSuCapNhatDuLieuNguoiDungPage = lazy(() => import('@/app/pages/ke-hoach-von/lich-su').then(m => ({ default: m.LichSuCapNhatDuLieuNguoiDungPage })));
+const LichSuSuDungHeThongPage = lazy(() => import('@/app/pages/ke-hoach-von/lich-su').then(m => ({ default: m.LichSuSuDungHeThongPage })));
+
+const QLEformPage = lazy(() => import('@/app/pages/ke-hoach-von/eform/ql-eform/QLEformPage').then(m => ({ default: m.QLEformPage })));
+const ThietKePage = lazy(() => import('@/app/pages/ke-hoach-von/eform/thiet-ke/ThietKePage').then(m => ({ default: m.ThietKePage })));
 
 // Reusable ProtectedSuspenseView
 interface ProtectedSuspenseViewProps {
@@ -95,7 +104,7 @@ interface RouteConfig {
   type?: UserType;
 }
 interface ProtectedRouteConfig extends Omit<RouteConfig, 'element'> {
-  component: FC<Record<string, never>>;
+  component: React.ComponentType<any>;
   permissions?: string[];
 }
 

@@ -88,7 +88,10 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
       .catch(() => setHistories([]));
   }, [item.id]);
 
-  const recognitionEntry = histories.find(h => h.actionType === 'Được công nhận');
+  const recognitionEntry =
+    histories.find(h => h.actionType === 'Được công nhận' && !!h.remark?.trim())
+    ?? histories.find(h => h.actionType === 'Được công nhận');
+  const recognitionRemark = recognitionEntry?.remark?.trim() ?? '';
   const kqcnAttachments = ((item as any).attachments ?? []).filter((a: any) => isKqcnAttachment(a.originalName));
 
   return (
@@ -175,8 +178,10 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-bold mb-1" style={{ color: '#5b21b6' }}>Kết quả công nhận</p>
-                  {recognitionEntry?.remark && (
-                    <p className="text-sm text-gray-700 mb-1">{recognitionEntry.remark}</p>
+                  {recognitionRemark ? (
+                    <p className="text-sm text-gray-700 mb-1 whitespace-pre-wrap">{recognitionRemark}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-1">Chưa có nội dung công nhận.</p>
                   )}
                   <p className="text-xs text-gray-500">
                     <i className="fa-regular fa-calendar me-1" />
