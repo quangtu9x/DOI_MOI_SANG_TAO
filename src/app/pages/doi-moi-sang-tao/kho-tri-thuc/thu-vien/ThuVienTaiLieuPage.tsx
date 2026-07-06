@@ -3,8 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Input, Select, Button, Tag, Modal, Form, Upload, Spin, Empty,
   Tabs, Tooltip, Popconfirm, message, Badge, Divider, Progress,
-  Tree, TreeSelect,
+  Tree, TreeSelect, DatePicker, Checkbox,
 } from 'antd';
+import dayjs from 'dayjs';
 import type { DataNode } from 'antd/es/tree';
 import type { UploadFile, RcFile } from 'antd/es/upload/interface';
 import { Content } from '@/_metronic/layout/components/content';
@@ -207,6 +208,11 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [tuChoiId, setTuChoiId]         = useState('');
   const [tuChoiForm] = Form.useForm();
 
+  // nộp kiểm duyệt
+  const [nopOpen, setNopOpen]           = useState(false);
+  const [nopId, setNopId]               = useState('');
+  const [nopForm] = Form.useForm();
+
   // chia sẻ
   const [shareOpen, setShareOpen]       = useState(false);
   const [shareTarget, setShareTarget]   = useState<ITaiLieu | null>(null);
@@ -405,6 +411,10 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     const req = { ...searchReq, trangThai: v ?? null, pageNumber: 1 };
     setSearchReq(req); loadItems(req);
   };
+  const onChiGiaoChoToiChange = (checked: boolean) => {
+    const req = { ...searchReq, nguoiKiemDuyetId: checked ? currentUser?.id : null, pageNumber: 1 };
+    setSearchReq(req); loadItems(req);
+  };
   const onPageChange = (pg: number) => {
     const req = { ...searchReq, pageNumber: pg };
     setSearchReq(req); loadItems(req);
@@ -541,14 +551,18 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   };
 
   // ── Workflow actions
-  const handleNop = async (id: string) => {
+  const openNop = (id: string) => { setNopId(id); nopForm.resetFields(); setNopOpen(true); };
+  const handleNop = async () => {
     try {
-      const res = await nopKiemDuyetTaiLieu(id);
+      const { nguoiKiemDuyetId, hanXuLy } = await nopForm.validateFields();
+      const hanXuLyGio = hanXuLy ? Math.max(1, Math.ceil(dayjs(hanXuLy).diff(dayjs(), 'hour', true))) : undefined;
+      const res = await nopKiemDuyetTaiLieu(nopId, nguoiKiemDuyetId, hanXuLyGio);
       const err = getApiError(res);
       if (err) { message.error(err); return; }
-      message.success('Đã nộp kiểm duyệt'); loadItems();
+      message.success('Đã nộp kiểm duyệt'); setNopOpen(false);
+      loadItems(); if (detail?.id === nopId) openDetail(nopId);
     }
-    catch { message.error('Không nộp được'); }
+    catch (e: any) { if (!e?.errorFields) message.error('Không nộp được'); }
   };
   const handlePheDuyet = async (id: string) => {
     try {
@@ -662,6 +676,19 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             )}
           </div>
 
+          {item.trangThai === TrangThaiTaiLieu.ChoXetDuyet && (item.nguoiKiemDuyet || item.hanXuLy) && (
+            <div className="text-muted fs-8 mb-2 d-flex align-items-center gap-2 flex-wrap">
+              {item.nguoiKiemDuyet && (
+                <span><i className="fa-regular fa-user-check me-1" />{item.nguoiKiemDuyet.hoTen}</span>
+              )}
+              {item.hanXuLy && (
+                <Tag color={dayjs(item.hanXuLy).isBefore(dayjs()) ? 'red' : 'default'} style={{ margin: 0 }}>
+                  Hạn: {dayjs(item.hanXuLy).format('DD/MM HH:mm')}
+                </Tag>
+              )}
+            </div>
+          )}
+
           {/* Footer */}
           <div className="d-flex justify-content-between align-items-center border-top pt-3 mt-auto">
             <div className="text-muted fs-8 d-flex gap-3">
@@ -690,7 +717,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
               )}
               {item.trangThai === TrangThaiTaiLieu.NhapLieu && (
                 <Tooltip title="Nộp kiểm duyệt">
-                  <Button size="small" type="primary" ghost onClick={() => handleNop(item.id)}>
+                  <Button size="small" type="primary" ghost onClick={() => openNop(item.id)}>
                     <i className="fa-regular fa-paper-plane" />
                   </Button>
                 </Tooltip>
@@ -830,6 +857,14 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                   <Select placeholder="Trạng thái" allowClear onChange={onTrangThaiChange} style={{ width: 160 }}>
                     {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
                   </Select>
+                  {canApprove && (
+                    <Checkbox
+                      checked={!!searchReq.nguoiKiemDuyetId}
+                      onChange={e => onChiGiaoChoToiChange(e.target.checked)}
+                    >
+                      Chỉ giao cho tôi
+                    </Checkbox>
+                  )}
                 </div>
                 <div className="text-muted fs-8">
                   <span className="badge badge-light-primary me-2">{total} tài liệu</span>
@@ -1013,7 +1048,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             </Button>
           ),
           detail?.trangThai === TrangThaiTaiLieu.NhapLieu && (
-            <Button key="nop" type="primary" ghost onClick={() => handleNop(detail.id)}>
+            <Button key="nop" type="primary" ghost onClick={() => openNop(detail.id)}>
               <i className="fa-regular fa-paper-plane me-1" />Nộp kiểm duyệt
             </Button>
           ),
@@ -1096,6 +1131,23 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                           <div className="col-6">
                             <div className="text-muted fs-8 mb-1">Người duyệt</div>
                             <div className="fw-semibold">{detail.nguoiDuyet?.hoTen ?? '—'}</div>
+                          </div>
+                        )}
+                        {detail.trangThai === TrangThaiTaiLieu.ChoXetDuyet && detail.nguoiKiemDuyet && (
+                          <div className="col-6">
+                            <div className="text-muted fs-8 mb-1">Người kiểm duyệt</div>
+                            <div className="fw-semibold">{detail.nguoiKiemDuyet?.hoTen ?? '—'}</div>
+                          </div>
+                        )}
+                        {detail.trangThai === TrangThaiTaiLieu.ChoXetDuyet && detail.hanXuLy && (
+                          <div className="col-6">
+                            <div className="text-muted fs-8 mb-1">Hạn xử lý</div>
+                            <div className="fw-semibold">
+                              {dayjs(detail.hanXuLy).format('DD/MM/YYYY HH:mm')}
+                              {dayjs(detail.hanXuLy).isBefore(dayjs()) && (
+                                <Tag color="red" className="ms-2">Quá hạn</Tag>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1467,6 +1519,31 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         <Form form={tuChoiForm} layout="vertical">
           <Form.Item name="lyDo" label="Lý do từ chối" rules={[{ required: true, message: 'Nhập lý do' }]}>
             <TextArea rows={3} placeholder="Vui lòng nêu rõ lý do từ chối..." maxLength={1024} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* ── Nộp kiểm duyệt Modal ───────────────────────────────────────────── */}
+      <Modal
+        open={nopOpen} onCancel={() => setNopOpen(false)}
+        title="Nộp tài liệu chờ kiểm duyệt" onOk={handleNop} okText="Nộp kiểm duyệt"
+      >
+        <Form form={nopForm} layout="vertical">
+          <Form.Item name="nguoiKiemDuyetId" label="Người kiểm duyệt (tùy chọn)">
+            <UserSelect
+              placeholder="Chỉ định trước người kiểm duyệt (bỏ trống nếu chưa xác định)"
+              allowClear
+              onChange={(val: any) => nopForm.setFieldValue('nguoiKiemDuyetId', val?.value ?? val)}
+            />
+          </Form.Item>
+          <Form.Item name="hanXuLy" label="Hạn xử lý (tùy chọn)">
+            <DatePicker
+              showTime
+              format="DD/MM/YYYY HH:mm"
+              style={{ width: '100%' }}
+              placeholder="Chọn thời hạn xử lý"
+              disabledDate={d => d && d.isBefore(dayjs(), 'day')}
+            />
           </Form.Item>
         </Form>
       </Modal>

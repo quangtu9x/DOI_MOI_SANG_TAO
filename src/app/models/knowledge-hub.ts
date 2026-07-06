@@ -127,6 +127,9 @@ export interface ITaiLieu {
   tags:             string[];
   tacGia?:          ITacGia;
   nguoiDuyet?:      ITacGia;
+  nguoiKiemDuyetId?: string | null;
+  hanXuLy?:         string | null;
+  nguoiKiemDuyet?:  ITacGia;
   luotXem:          number;
   luotThich?:       number;
   ngayXuatBan?:     string | null;
@@ -146,6 +149,8 @@ export interface ISearchTaiLieuRequest extends IPageRequest {
   thuMucId?:      string | null;
   chuaPhanLoai?:  boolean | null;
   tagIds?:        string[];
+  nguoiKiemDuyetId?: string | null;
+  quaHan?:        boolean | null;
 }
 
 export interface ICreateTaiLieuRequest {

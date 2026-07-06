@@ -83,9 +83,9 @@ export const createTaiLieu = (req: ICreateTaiLieuRequest) =>
 export const updateTaiLieu = (id: string, req: IUpdateTaiLieuRequest) =>
   requestPUT<IResult<boolean>>(`TaiLieus/${id}`, req);
 
-/** Nộp kiểm duyệt: NhapLieu → ChoXetDuyet */
-export const nopKiemDuyetTaiLieu = (id: string) =>
-  requestPOST<IResult<boolean>>(`TaiLieus/${id}/nop-kiem-duyet`, {});
+/** Nộp kiểm duyệt: NhapLieu → ChoXetDuyet — có thể chỉ định trước người kiểm duyệt và hạn xử lý (giờ) */
+export const nopKiemDuyetTaiLieu = (id: string, nguoiKiemDuyetId?: string, hanXuLyGio?: number) =>
+  requestPOST<IResult<boolean>>(`TaiLieus/${id}/nop-kiem-duyet`, { id, nguoiKiemDuyetId, hanXuLyGio });
 
 /** Phê duyệt: ChoXetDuyet → DaXuatBan (cần quyền Specialist/Admin) */
 export const pheDuyetTaiLieu = (id: string) =>

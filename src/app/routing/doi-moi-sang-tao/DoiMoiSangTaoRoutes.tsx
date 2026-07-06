@@ -15,6 +15,7 @@ import { TimKiemPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/tim-kiem/
 import { KTAnalyticsPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/analytics/KTAnalyticsPage';
 import { KTBaoCaoPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/bao-cao/KTBaoCaoPage';
 import { BaoCaoPage } from '@/app/pages/doi-moi-sang-tao/bao-cao/BaoCaoPage';
+import { BaoCaoDayDuPage } from '@/app/pages/doi-moi-sang-tao/bao-cao/BaoCaoDayDuPage';
 import { QuanLyNguoiDungPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-nguoi-dung/QuanLyNguoiDungPage';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 
@@ -76,6 +77,8 @@ export const DoiMoiSangTaoRoutes: FC = () => {
 
       {/* Báo cáo — reviewer + admin only */}
       <Route path="bao-cao" element={<ReviewerRoute element={<BaoCaoPage />} />} />
+      {/* Báo cáo tổng hợp đầy đủ IV.1–IV.19 (trang minh họa) — reviewer + admin only */}
+      <Route path="bao-cao-day-du" element={<ReviewerRoute element={<BaoCaoDayDuPage />} />} />
 
       {/* Quản lý người dùng — admin only */}
       <Route path="quan-ly-nguoi-dung" element={<AdminRoute element={<QuanLyNguoiDungPage />} />} />

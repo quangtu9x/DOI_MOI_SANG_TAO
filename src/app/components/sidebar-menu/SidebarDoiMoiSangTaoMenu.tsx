@@ -82,11 +82,22 @@ const SidebarDoiMoiSangTaoMenu = () => {
 
       {/* ── Báo cáo & Thống kê (reviewer + admin only) ── */}
       {isReviewer && (
-        <SidebarMenuItem
+        <SidebarMenuItemWithSub
           to='/doi-moi-sang-tao/bao-cao'
           title='Báo cáo & thống kê'
           fontIcon='fa-regular fa-file-chart-column'
-        />
+        >
+          <SidebarMenuItem
+            to='/doi-moi-sang-tao/bao-cao'
+            title='Báo cáo Ý tưởng ĐMST'
+            hasBullet={true}
+          />
+          <SidebarMenuItem
+            to='/doi-moi-sang-tao/bao-cao-day-du'
+            title='Báo cáo tổng hợp đầy đủ (Demo)'
+            hasBullet={true}
+          />
+        </SidebarMenuItemWithSub>
       )}
 
       {/* ── Quản lý người dùng (admin only) ── */}
