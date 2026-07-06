@@ -766,7 +766,7 @@ export const CongDongPage: React.FC = () => {
                   className={`btn btn-sm d-flex align-items-center gap-2 ${likedIds.has(postDetail.id) || postDetail.daThich ? 'btn-danger' : 'btn-light-danger'}`}
                   onClick={() => handleLike(LoaiDoiTuong.BaiViet, postDetail.id)}
                 >
-                  <i className={`fa-${likedIds.has(postDetail.id) || postDetail.daTuThich ? 'solid' : 'regular'} fa-heart`} />
+                  <i className={`fa-${likedIds.has(postDetail.id) || postDetail.daThich ? 'solid' : 'regular'} fa-heart`} />
                   {Math.max(0, postDetail.soLuotThich ?? 0)} Thích
                 </button>
                 <NguoiThichPopover loaiDoiTuong={LoaiDoiTuong.BaiViet} doiTuongId={postDetail.id}>

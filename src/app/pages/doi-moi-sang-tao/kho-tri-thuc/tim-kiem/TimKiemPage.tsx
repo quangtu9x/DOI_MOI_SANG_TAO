@@ -3,10 +3,10 @@ import { Input, Button, Tag, Spin, Empty, Avatar, Tabs, message, Select, Badge }
 import { useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { timKiem, searchChuyenGias, goiYTuKhoa, searchTaiLieus, searchTags } from '@/app/services/khoTriThucApi';
+import { timKiem, searchChuyenGias, goiYTuKhoa, searchTaiLieus, searchTags, searchBaiViets } from '@/app/services/khoTriThucApi';
 import { requestPOST } from '@/utils/baseAPI';
-import type { ITaiLieuSearchResult, IChuyenGia, ITag } from '@/app/models/knowledge-hub';
-import { LoaiTaiLieu, TrangThaiTaiLieu } from '@/app/models/knowledge-hub';
+import type { ITaiLieuSearchResult, IChuyenGia, ITag, IBaiViet } from '@/app/models/knowledge-hub';
+import { LoaiTaiLieu, TrangThaiTaiLieu, LoaiBaiViet } from '@/app/models/knowledge-hub';
 
 const { Option } = Select;
 
@@ -53,6 +53,22 @@ const TRANG_THAI_COLOR: Record<TrangThaiTaiLieu, string> = {
   [TrangThaiTaiLieu.ChoXetDuyet]: '#1677ff',
   [TrangThaiTaiLieu.DaXuatBan]:   '#52c41a',
   [TrangThaiTaiLieu.TuChoi]:      '#ff4d4f',
+};
+
+const LOAI_BAI_VIET_LABEL: Record<LoaiBaiViet, string> = {
+  [LoaiBaiViet.ThaoCuan]: 'Thảo luận',
+  [LoaiBaiViet.HoiDap]:   'Hỏi đáp',
+  [LoaiBaiViet.ChiaSe]:   'Chia sẻ',
+};
+const LOAI_BAI_VIET_COLOR: Record<LoaiBaiViet, string> = {
+  [LoaiBaiViet.ThaoCuan]: 'blue',
+  [LoaiBaiViet.HoiDap]:   'orange',
+  [LoaiBaiViet.ChiaSe]:   'green',
+};
+const LOAI_BAI_VIET_BAR: Record<LoaiBaiViet, string> = {
+  [LoaiBaiViet.ThaoCuan]: '#1677ff',
+  [LoaiBaiViet.HoiDap]:   '#fa8c16',
+  [LoaiBaiViet.ChiaSe]:   '#52c41a',
 };
 
 const FALLBACK_SUGGESTIONS = ['đổi mới', 'quy trình', 'LEAN', 'chuyển đổi số', 'tiết kiệm', 'nâng cao chất lượng'];
@@ -111,6 +127,8 @@ export const TimKiemPage: React.FC = () => {
   const [tailieuxTotal, setTailieuxTotal] = useState(0);
   const [chuyenGias, setChuyenGias]   = useState<IChuyenGia[]>([]);
   const [chuyenGiasTotal, setChuyenGiasTotal] = useState(0);
+  const [baiViets, setBaiViets]       = useState<IBaiViet[]>([]);
+  const [baiVietsTotal, setBaiVietsTotal] = useState(0);
 
   const inputRef      = useRef<any>(null);
   const suggestTimer  = useRef<ReturnType<typeof setTimeout>>();
@@ -195,9 +213,11 @@ export const TimKiemPage: React.FC = () => {
           })
         : timKiem(q, 1, 20);
 
-      const [tlRes, cgRes] = await Promise.allSettled([
+      const [tlRes, cgRes, bvRes] = await Promise.allSettled([
         tlPromise,
         q ? searchChuyenGias({ keyword: q, pageNumber: 1, pageSize: 12 })
+          : Promise.resolve(null),
+        q ? searchBaiViets({ keyword: q, pageNumber: 1, pageSize: 12 })
           : Promise.resolve(null),
       ]);
 
@@ -213,6 +233,14 @@ export const TimKiemPage: React.FC = () => {
       } else if (!q) {
         setChuyenGias([]);
         setChuyenGiasTotal(0);
+      }
+
+      if (bvRes.status === 'fulfilled' && bvRes.value) {
+        setBaiViets(safeList<IBaiViet>(bvRes.value));
+        setBaiVietsTotal(safeTotal(bvRes.value));
+      } else {
+        setBaiViets([]);
+        setBaiVietsTotal(0);
       }
     } catch {
       message.error('Tìm kiếm thất bại');
@@ -232,7 +260,7 @@ export const TimKiemPage: React.FC = () => {
     if (hasSearched) handleSearch(query, EMPTY_FILTERS);
   };
 
-  const totalResults = tailieuxTotal + chuyenGiasTotal;
+  const totalResults = tailieuxTotal + chuyenGiasTotal + baiVietsTotal;
 
   return (
     <>
@@ -440,6 +468,75 @@ export const TimKiemPage: React.FC = () => {
                       <div className="text-center py-2">
                         <Button type="link" onClick={() => navigate('/doi-moi-sang-tao/kho-tri-thuc/thu-vien')}>
                           Xem thêm {tailieuxTotal - tailieux.length} tài liệu trong Thư viện →
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabPane>
+
+              {/* ── Bài viết */}
+              <TabPane
+                tab={<span><i className="fa-regular fa-comments me-2" />Bài viết <span className="badge badge-light-warning ms-1">{baiVietsTotal}</span></span>}
+                key="bai-viet"
+              >
+                {baiViets.length === 0 ? (
+                  <Empty description="Không tìm thấy bài viết" className="py-8" />
+                ) : (
+                  <div className="d-flex flex-column gap-3">
+                    {baiViets.map(item => (
+                      <div key={item.id} className="card border-0 shadow-sm"
+                        style={{ cursor: 'pointer', transition: 'box-shadow 0.2s' }}
+                        onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)')}
+                        onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.boxShadow = '')}
+                        onClick={() => navigate('/doi-moi-sang-tao/kho-tri-thuc/cong-dong')}>
+                        <div className="card-body p-4">
+                          <div className="d-flex align-items-start gap-3">
+                            <div style={{
+                              width: 4, minHeight: 60, borderRadius: 2, flexShrink: 0,
+                              background: LOAI_BAI_VIET_BAR[item.loaiBaiViet],
+                            }} />
+                            <div className="flex-grow-1">
+                              <div className="d-flex align-items-center gap-2 mb-1">
+                                <Tag color={LOAI_BAI_VIET_COLOR[item.loaiBaiViet]} style={{ margin: 0 }}>
+                                  {LOAI_BAI_VIET_LABEL[item.loaiBaiViet]}
+                                </Tag>
+                                {item.congDong?.ten && (
+                                  <Tag style={{ fontSize: 11, margin: 0 }}>
+                                    <i className="fa-regular fa-users me-1" />{item.congDong.ten}
+                                  </Tag>
+                                )}
+                              </div>
+                              <h6 className="fw-bold text-gray-800 mb-1 fs-6">
+                                <Highlight text={item.tieuDe} keyword={activeQuery} />
+                              </h6>
+                              {item.noiDung && (
+                                <p className="text-muted fs-7 mb-2"
+                                  style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  <Highlight text={item.noiDung} keyword={activeQuery} />
+                                </p>
+                              )}
+                              <div className="d-flex gap-3 text-muted fs-8">
+                                <span><i className="fa-regular fa-user me-1" />{item.tacGia?.hoTen ?? '—'}</span>
+                                <span><i className="fa-regular fa-heart me-1" />{item.soLuotThich ?? 0}</span>
+                                <span><i className="fa-regular fa-comment me-1" />{item.soBinhLuan ?? 0}</span>
+                                {item.createdOn && (
+                                  <span><i className="fa-regular fa-calendar me-1" />{new Date(item.createdOn).toLocaleDateString('vi-VN')}</span>
+                                )}
+                              </div>
+                            </div>
+                            <Button type="link" size="small" style={{ flexShrink: 0 }}
+                              onClick={e => { e.stopPropagation(); navigate('/doi-moi-sang-tao/kho-tri-thuc/cong-dong'); }}>
+                              Xem →
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {baiVietsTotal > baiViets.length && (
+                      <div className="text-center py-2">
+                        <Button type="link" onClick={() => navigate('/doi-moi-sang-tao/kho-tri-thuc/cong-dong')}>
+                          Xem thêm {baiVietsTotal - baiViets.length} bài viết trong Cộng đồng →
                         </Button>
                       </div>
                     )}
