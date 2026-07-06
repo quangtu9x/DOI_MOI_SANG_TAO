@@ -61,6 +61,7 @@ import type {
   IKTBaoCaoTongHop,
   IKTBaoCaoDongGop,
   IKTBaoCaoTaiLieu,
+  IKhoTriThucWorkflowConfig,
 } from '@/app/models/knowledge-hub';
 
 // HOST_API đã bao gồm /api/v1/ — KHÔNG thêm prefix v1/ vào các endpoint
@@ -86,6 +87,41 @@ export const updateTaiLieu = (id: string, req: IUpdateTaiLieuRequest) =>
 /** Nộp kiểm duyệt: NhapLieu → ChoXetDuyet — có thể chỉ định trước người kiểm duyệt và hạn xử lý (giờ) */
 export const nopKiemDuyetTaiLieu = (id: string, nguoiKiemDuyetId?: string, hanXuLyGio?: number) =>
   requestPOST<IResult<boolean>>(`TaiLieus/${id}/nop-kiem-duyet`, { id, nguoiKiemDuyetId, hanXuLyGio });
+
+/** Lấy cấu hình quy trình kiểm duyệt/phê duyệt tài liệu tri thức */
+export const getKhoTriThucWorkflowConfig = () =>
+  requestGET<IResult<IKhoTriThucWorkflowConfig>>(`TaiLieus/quy-trinh-kiem-duyet`);
+
+/** Lưu cấu hình quy trình kiểm duyệt/phê duyệt tài liệu tri thức */
+export const saveKhoTriThucWorkflowConfig = (config: IKhoTriThucWorkflowConfig) =>
+  requestPOST<IResult<boolean>>('appconfigs/createall', {
+    data: [
+      {
+        key: 'KhoTriThuc_NguoiKiemDuyetMacDinh_UserIds',
+        value: (config.nguoiKiemDuyetMacDinhUserIds ?? []).join(','),
+        description: 'Danh sach UserId nguoi kiem duyet mac dinh tai lieu tri thuc',
+        isActivePortal: false,
+      },
+      {
+        key: 'KhoTriThuc_BatBuocChiDinhNguoiKiemDuyet',
+        value: String(!!config.batBuocChiDinhNguoiKiemDuyet),
+        description: 'Bat buoc chi dinh nguoi kiem duyet khi nop tai lieu',
+        isActivePortal: false,
+      },
+      {
+        key: 'KhoTriThuc_BatBuocHanXuLy',
+        value: String(!!config.batBuocHanXuLy),
+        description: 'Bat buoc dat han xu ly khi nop tai lieu',
+        isActivePortal: false,
+      },
+      {
+        key: 'KhoTriThuc_MacDinhHanXuLy_Gio',
+        value: String(config.macDinhHanXuLyGio ?? ''),
+        description: 'Han xu ly mac dinh theo gio cho tai lieu nop kiem duyet',
+        isActivePortal: false,
+      },
+    ],
+  });
 
 /** Phê duyệt: ChoXetDuyet → DaXuatBan (cần quyền Specialist/Admin) */
 export const pheDuyetTaiLieu = (id: string) =>

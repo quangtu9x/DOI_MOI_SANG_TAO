@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Input, Select, Button, Tag, Modal, Form, Upload, Spin, Empty,
-  Tabs, Tooltip, Popconfirm, message, Badge, Divider, Progress,
+  Tabs, Tooltip, Popconfirm, message, Badge, Divider, Progress, InputNumber,
   Tree, TreeSelect, DatePicker, Checkbox,
 } from 'antd';
 import dayjs from 'dayjs';
@@ -19,8 +19,10 @@ import {
   createTaiLieu,
   updateTaiLieu,
   deleteTaiLieu,
+  getKhoTriThucWorkflowConfig,
   nopKiemDuyetTaiLieu,
   pheDuyetTaiLieu,
+  saveKhoTriThucWorkflowConfig,
   tuChoiTaiLieu,
   getTaiLieuDownloadUrl,
   getRankingTaiLieus,
@@ -40,11 +42,14 @@ import {
 import { UserSelect } from '@/app/components/UserSelect';
 import type {
   ITaiLieu,
+  IKhoTriThucWorkflowConfig,
   ISearchTaiLieuRequest,
   ITaiLieuDinhKem,
   IThuMucTaiLieu,
 } from '@/app/models/knowledge-hub';
 import { TrangThaiTaiLieu, LoaiTaiLieu, LoaiNguonThamChieu } from '@/app/models/knowledge-hub';
+import { requestPOST } from '@/utils/baseAPI';
+import { IPaginationResponse, IUserDetails } from '@/models';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -165,6 +170,13 @@ const DEFAULT_SEARCH: ISearchTaiLieuRequest = {
   linhVucKHCNId: null, donViId: null, tagIds: [],
 };
 
+const DEFAULT_WORKFLOW_CONFIG: IKhoTriThucWorkflowConfig = {
+  nguoiKiemDuyetMacDinhUserIds: [],
+  batBuocChiDinhNguoiKiemDuyet: false,
+  batBuocHanXuLy: false,
+  macDinhHanXuLyGio: 24,
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const ThuVienTaiLieuPage: React.FC = () => {
@@ -212,6 +224,14 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [nopOpen, setNopOpen]           = useState(false);
   const [nopId, setNopId]               = useState('');
   const [nopForm] = Form.useForm();
+
+  // cấu hình quy trình kiểm duyệt/phê duyệt
+  const [workflowOpen, setWorkflowOpen] = useState(false);
+  const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [workflowSaving, setWorkflowSaving] = useState(false);
+  const [workflowConfig, setWorkflowConfig] = useState<IKhoTriThucWorkflowConfig>(DEFAULT_WORKFLOW_CONFIG);
+  const [workflowReviewerOptions, setWorkflowReviewerOptions] = useState<Array<{ label: string; value: string }>>([]);
+  const [workflowForm] = Form.useForm();
 
   // chia sẻ
   const [shareOpen, setShareOpen]       = useState(false);
@@ -281,6 +301,84 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     } catch {}
     finally { setRankLoading(false); }
   }, []);
+
+  const loadWorkflowConfig = useCallback(async () => {
+    try {
+      setWorkflowLoading(true);
+      const res = await getKhoTriThucWorkflowConfig();
+      const err = getApiError(res);
+      if (err) {
+        message.error(err);
+        setWorkflowConfig(DEFAULT_WORKFLOW_CONFIG);
+        return;
+      }
+
+      const data = safeItem<IKhoTriThucWorkflowConfig>(res);
+      setWorkflowConfig({
+        nguoiKiemDuyetMacDinhUserIds: data?.nguoiKiemDuyetMacDinhUserIds ?? [],
+        batBuocChiDinhNguoiKiemDuyet: !!data?.batBuocChiDinhNguoiKiemDuyet,
+        batBuocHanXuLy: !!data?.batBuocHanXuLy,
+        macDinhHanXuLyGio: data?.macDinhHanXuLyGio ?? DEFAULT_WORKFLOW_CONFIG.macDinhHanXuLyGio,
+      });
+    } catch {
+      setWorkflowConfig(DEFAULT_WORKFLOW_CONFIG);
+    } finally {
+      setWorkflowLoading(false);
+    }
+  }, []);
+
+  const loadWorkflowReviewerOptions = useCallback(async () => {
+    try {
+      const res = await requestPOST<IPaginationResponse<IUserDetails[]>>('users/search', {
+        pageNumber: 1,
+        pageSize: 1000,
+        keyword: null,
+      });
+
+      const options = (res.data?.data ?? []).map(u => ({
+        value: u.id,
+        label: `${u.fullName || u.userName || u.id}${u.userName ? ` (${u.userName})` : ''}`,
+      }));
+      setWorkflowReviewerOptions(options);
+    } catch {
+      setWorkflowReviewerOptions([]);
+    }
+  }, []);
+
+  const openWorkflowConfig = async () => {
+    setWorkflowOpen(true);
+    await Promise.all([loadWorkflowConfig(), loadWorkflowReviewerOptions()]);
+  };
+
+  const handleSaveWorkflowConfig = async () => {
+    try {
+      const values = await workflowForm.validateFields();
+      const nextConfig: IKhoTriThucWorkflowConfig = {
+        nguoiKiemDuyetMacDinhUserIds: values.nguoiKiemDuyetMacDinhUserIds ?? [],
+        batBuocChiDinhNguoiKiemDuyet: !!values.batBuocChiDinhNguoiKiemDuyet,
+        batBuocHanXuLy: !!values.batBuocHanXuLy,
+        macDinhHanXuLyGio: values.macDinhHanXuLyGio ?? null,
+      };
+
+      setWorkflowSaving(true);
+      const res = await saveKhoTriThucWorkflowConfig(nextConfig);
+      const err = getApiError(res);
+      if (err) {
+        message.error(err);
+        return;
+      }
+
+      setWorkflowConfig(nextConfig);
+      message.success('Đã lưu cấu hình quy trình kiểm duyệt.');
+      setWorkflowOpen(false);
+    } catch (e: any) {
+      if (!e?.errorFields) {
+        message.error('Không lưu được cấu hình quy trình.');
+      }
+    } finally {
+      setWorkflowSaving(false);
+    }
+  };
 
   // ── Cây thư mục tri thức ────────────────────────────────────────────────────
   const [folders, setFolders] = useState<IThuMucTaiLieu[]>([]);
@@ -397,6 +495,17 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
   useEffect(() => { loadItems(); }, []);
   useEffect(() => { if (activeTab === 'ranking') loadRanking(); }, [activeTab]);
+  useEffect(() => { loadWorkflowConfig(); }, [loadWorkflowConfig]);
+
+  useEffect(() => {
+    if (!workflowOpen) return;
+    workflowForm.setFieldsValue({
+      nguoiKiemDuyetMacDinhUserIds: workflowConfig.nguoiKiemDuyetMacDinhUserIds,
+      batBuocChiDinhNguoiKiemDuyet: workflowConfig.batBuocChiDinhNguoiKiemDuyet,
+      batBuocHanXuLy: workflowConfig.batBuocHanXuLy,
+      macDinhHanXuLyGio: workflowConfig.macDinhHanXuLyGio,
+    });
+  }, [workflowOpen, workflowConfig, workflowForm]);
 
   // ── Search helpers
   const onSearch = (kw: string) => {
@@ -551,7 +660,21 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   };
 
   // ── Workflow actions
-  const openNop = (id: string) => { setNopId(id); nopForm.resetFields(); setNopOpen(true); };
+  const openNop = (id: string) => {
+    setNopId(id);
+    nopForm.resetFields();
+    const defaultReviewerId = workflowConfig.nguoiKiemDuyetMacDinhUserIds.length === 1
+      ? workflowConfig.nguoiKiemDuyetMacDinhUserIds[0]
+      : undefined;
+    const defaultHanXuLy = workflowConfig.macDinhHanXuLyGio && workflowConfig.macDinhHanXuLyGio > 0
+      ? dayjs().add(workflowConfig.macDinhHanXuLyGio, 'hour')
+      : undefined;
+    nopForm.setFieldsValue({
+      nguoiKiemDuyetId: defaultReviewerId,
+      hanXuLy: defaultHanXuLy,
+    });
+    setNopOpen(true);
+  };
   const handleNop = async () => {
     try {
       const { nguoiKiemDuyetId, hanXuLy } = await nopForm.validateFields();
@@ -773,11 +896,23 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            <Button size="large" onClick={openCreate}
-              style={{ background: '#fff', color: '#1e3a8a', fontWeight: 600, border: 'none' }}
-              icon={<i className="fa-regular fa-plus me-1" />}>
-              Thêm tài liệu
-            </Button>
+            <div className="d-flex align-items-center gap-2">
+              {canApprove && (
+                <Button
+                  size="large"
+                  onClick={openWorkflowConfig}
+                  style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 600, border: '1px solid rgba(255,255,255,0.35)' }}
+                  icon={<i className="fa-regular fa-diagram-project me-1" />}
+                >
+                  Thiết lập quy trình
+                </Button>
+              )}
+              <Button size="large" onClick={openCreate}
+                style={{ background: '#fff', color: '#1e3a8a', fontWeight: 600, border: 'none' }}
+                icon={<i className="fa-regular fa-plus me-1" />}>
+                Thêm tài liệu
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -1513,6 +1648,52 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
       {/* ── Từ chối Modal ──────────────────────────────────────────────────── */}
       <Modal
+        open={workflowOpen}
+        onCancel={() => setWorkflowOpen(false)}
+        title="Thiết lập quy trình kiểm duyệt & phê duyệt"
+        onOk={handleSaveWorkflowConfig}
+        okText="Lưu cấu hình"
+        cancelText="Đóng"
+        okButtonProps={{ loading: workflowSaving }}
+      >
+        <Spin spinning={workflowLoading}>
+          <Form form={workflowForm} layout="vertical" initialValues={workflowConfig}>
+            <Form.Item
+              name="nguoiKiemDuyetMacDinhUserIds"
+              label="Người kiểm duyệt mặc định"
+              extra="Danh sách này được gợi ý khi nộp tài liệu chờ duyệt. Nếu chỉ có 1 người thì hệ thống tự điền sẵn."
+            >
+              <Select
+                mode="multiple"
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                placeholder="Chọn người kiểm duyệt mặc định"
+                options={workflowReviewerOptions}
+              />
+            </Form.Item>
+
+            <Form.Item name="batBuocChiDinhNguoiKiemDuyet" valuePropName="checked">
+              <Checkbox>Bắt buộc chỉ định người kiểm duyệt khi nộp tài liệu</Checkbox>
+            </Form.Item>
+
+            <Form.Item name="batBuocHanXuLy" valuePropName="checked">
+              <Checkbox>Bắt buộc thiết lập hạn xử lý trước khi nộp</Checkbox>
+            </Form.Item>
+
+            <Form.Item
+              name="macDinhHanXuLyGio"
+              label="Hạn xử lý mặc định (giờ)"
+              extra="Áp dụng tự động nếu người nộp chưa nhập hạn xử lý."
+            >
+              <InputNumber min={1} max={24 * 30} style={{ width: '100%' }} placeholder="Ví dụ: 24" />
+            </Form.Item>
+          </Form>
+        </Spin>
+      </Modal>
+
+      {/* ── Từ chối Modal ──────────────────────────────────────────────────── */}
+      <Modal
         open={tuChoiOpen} onCancel={() => setTuChoiOpen(false)}
         title="Từ chối tài liệu" onOk={handleTuChoi} okText="Xác nhận từ chối" okButtonProps={{ danger: true }}
       >
@@ -1528,15 +1709,30 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         open={nopOpen} onCancel={() => setNopOpen(false)}
         title="Nộp tài liệu chờ kiểm duyệt" onOk={handleNop} okText="Nộp kiểm duyệt"
       >
+        <div className="alert alert-info py-2 px-3 mb-3 fs-8">
+          <i className="fa-regular fa-circle-info me-1" />
+          Quy trình hiện tại: {workflowConfig.batBuocChiDinhNguoiKiemDuyet ? 'Bắt buộc chỉ định người kiểm duyệt' : 'Cho phép không chỉ định người kiểm duyệt'};
+          {' '}
+          {workflowConfig.batBuocHanXuLy ? 'Bắt buộc đặt hạn xử lý' : 'Cho phép không đặt hạn xử lý'}.
+          {workflowConfig.macDinhHanXuLyGio ? ` Hạn xử lý mặc định: ${workflowConfig.macDinhHanXuLyGio} giờ.` : ''}
+        </div>
         <Form form={nopForm} layout="vertical">
-          <Form.Item name="nguoiKiemDuyetId" label="Người kiểm duyệt (tùy chọn)">
+          <Form.Item
+            name="nguoiKiemDuyetId"
+            label={`Người kiểm duyệt${workflowConfig.batBuocChiDinhNguoiKiemDuyet ? '' : ' (tùy chọn)'}`}
+            rules={workflowConfig.batBuocChiDinhNguoiKiemDuyet ? [{ required: true, message: 'Vui lòng chỉ định người kiểm duyệt.' }] : undefined}
+          >
             <UserSelect
               placeholder="Chỉ định trước người kiểm duyệt (bỏ trống nếu chưa xác định)"
               allowClear
               onChange={(val: any) => nopForm.setFieldValue('nguoiKiemDuyetId', val?.value ?? val)}
             />
           </Form.Item>
-          <Form.Item name="hanXuLy" label="Hạn xử lý (tùy chọn)">
+          <Form.Item
+            name="hanXuLy"
+            label={`Hạn xử lý${workflowConfig.batBuocHanXuLy ? '' : ' (tùy chọn)'}`}
+            rules={workflowConfig.batBuocHanXuLy ? [{ required: true, message: 'Vui lòng chọn hạn xử lý.' }] : undefined}
+          >
             <DatePicker
               showTime
               format="DD/MM/YYYY HH:mm"

@@ -137,6 +137,13 @@ export interface ITaiLieu {
   lastModifiedOn?:  string;
 }
 
+export interface IKhoTriThucWorkflowConfig {
+  nguoiKiemDuyetMacDinhUserIds: string[];
+  batBuocChiDinhNguoiKiemDuyet: boolean;
+  batBuocHanXuLy: boolean;
+  macDinhHanXuLyGio?: number | null;
+}
+
 export interface ISearchTaiLieuRequest extends IPageRequest {
   keyword?:       string;
   trangThai?:     TrangThaiTaiLieu | null;
