@@ -54,22 +54,31 @@ const ALL_TABS: Array<{ key: TrangThai | 'all'; label: string }> = [
   { key: 'DuocCongNhan', label: 'Công nhận' },
 ];
 
+// ── Truy xuất ngày tháng — BE trả về *_On (createdOn/submittedOn/lastModifiedOn),
+//    một số nơi khác (vd: bản nháp lưu local) dùng *_At — ưu tiên field BE, dự phòng field At.
+const getCreatedOn = (idea: IIdea) => idea.createdOn ?? idea.createdAt;
+const getSubmittedOn = (idea: IIdea) => idea.submittedOn ?? idea.submittedAt;
+const getLastModifiedOn = (idea: IIdea) => idea.lastModifiedOn ?? idea.updatedAt;
+
 // ── Lấy ngày tương ứng với trạng thái hiện tại ────────────────────────────────
 const getStatusDateInfo = (idea: IIdea): { label: string; date: string } | null => {
   const statusKey = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
+  const createdOn = getCreatedOn(idea);
+  const submittedOn = getSubmittedOn(idea);
+  const lastModifiedOn = getLastModifiedOn(idea);
   switch (statusKey) {
     case 'BanNhap':
-      return { label: 'Ngày tạo', date: idea.createdAt ? dayjs(idea.createdAt).format('DD/MM/YYYY HH:mm') : '—' };
+      return { label: 'Ngày tạo', date: createdOn ? dayjs(createdOn).format('DD/MM/YYYY HH:mm') : '—' };
     case 'ChoTiepNhan':
-      return { label: 'Ngày nộp', date: idea.submittedAt ? dayjs(idea.submittedAt).format('DD/MM/YYYY HH:mm') : (idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—') };
+      return { label: 'Ngày nộp', date: submittedOn ? dayjs(submittedOn).format('DD/MM/YYYY HH:mm') : (lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—') };
     case 'DaTiepNhan':
-      return { label: 'Ngày tiếp nhận', date: idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—' };
+      return { label: 'Ngày tiếp nhận', date: lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—' };
     case 'TraLai':
-      return { label: 'Ngày trả lại', date: idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—' };
+      return { label: 'Ngày trả lại', date: lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—' };
     case 'Huy':
-      return { label: 'Ngày hủy', date: idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—' };
+      return { label: 'Ngày hủy', date: lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—' };
     case 'DuocCongNhan':
-      return { label: 'Ngày công nhận', date: idea.updatedAt ? dayjs(idea.updatedAt).format('DD/MM/YYYY HH:mm') : '—' };
+      return { label: 'Ngày công nhận', date: lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—' };
     default:
       return null;
   }
@@ -80,9 +89,9 @@ const buildSteps = (idea: IIdea) => {
   const st = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
   const ORDER: TrangThai[] = ['BanNhap', 'ChoTiepNhan', 'DaTiepNhan', 'DuocCongNhan'];
   const stepDefs = [
-    { key: 'BanNhap',      label: 'Khởi tạo hồ sơ',          date: idea.createdAt },
-    { key: 'ChoTiepNhan',  label: 'Đã nộp/Chờ xét duyệt',    date: idea.submittedAt ?? idea.updatedAt },
-    { key: 'DaTiepNhan',   label: 'Đã tiếp nhận',            date: idea.updatedAt },
+    { key: 'BanNhap',      label: 'Khởi tạo hồ sơ',          date: getCreatedOn(idea) },
+    { key: 'ChoTiepNhan',  label: 'Đã nộp/Chờ xét duyệt',    date: getSubmittedOn(idea) ?? getLastModifiedOn(idea) },
+    { key: 'DaTiepNhan',   label: 'Đã tiếp nhận',            date: getLastModifiedOn(idea) },
     { key: 'DuocCongNhan', label: 'Công nhận & lưu kho',     date: null },
   ];
   const idx = ORDER.indexOf(st);
