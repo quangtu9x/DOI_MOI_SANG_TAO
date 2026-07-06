@@ -87,6 +87,7 @@ export const R = {
 
   KeHoachs: 'KeHoachs',
 
+  QuanLyTriThuc: 'QuanLyTriThuc',
 
 } as const;
   

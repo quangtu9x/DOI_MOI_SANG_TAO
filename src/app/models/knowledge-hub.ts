@@ -442,6 +442,7 @@ export interface IBinhLuan {
   loaiDoiTuong:   LoaiDoiTuong;
   doiTuongId:     string;
   binhLuanChaId?: string;
+  tacGiaId?:      string;
   noiDung:        string;
   tacGia?:        ITacGia;
   luotThich?:     number;
@@ -476,16 +477,24 @@ export interface IThichRequest {
 
 // ── News Feed ─────────────────────────────────────────────────────────────────
 
+export enum LoaiNewsFeedItem {
+  TaiLieu = 0,
+  BaiViet = 1,
+}
+
 export interface INewsFeedItem {
-  id:          string;
-  tieuDe?:     string;
-  moTa?:       string;
-  loai?:       string;       // TaiLieu | BaiViet
-  tacGia?:     ITacGia;
-  luotXem?:    number;
-  luotThich?:  number;
-  tags?:       string[];
-  createdOn?:  string;
+  id:              string;
+  loaiItem:        LoaiNewsFeedItem;
+  tieuDe:          string;
+  moTa?:           string;
+  tacGiaId?:       string;
+  linhVucKHCNId?:  string;
+  donViId?:        string;
+  congDongId?:     string;
+  soLuotThich?:    number;
+  soBinhLuan?:     number;
+  createdOn?:      string;
+  tacGia?:         ITacGia;
 }
 
 // ── Analytics (Phase 2A) ──────────────────────────────────────────────────────

@@ -9,7 +9,9 @@ import type { DataNode } from 'antd/es/tree';
 import type { UploadFile, RcFile } from 'antd/es/upload/interface';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { useDMSTRole } from '@/app/hooks/useDMSTRole';
+import { useAuth } from '@/app/modules/auth';
+import { hasAll } from '@/utils/utils';
+import { P, R } from '@/data/permission-constant';
 import {
   searchTaiLieus,
   getTaiLieu,
@@ -165,8 +167,12 @@ const DEFAULT_SEARCH: ISearchTaiLieuRequest = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const ThuVienTaiLieuPage: React.FC = () => {
-  const { isReviewer, isAdmin } = useDMSTRole();
-  const canApprove = isReviewer || isAdmin;
+  const { currentUser } = useAuth();
+  const currentPermissions = new Set(currentUser?.permissions ?? []);
+  const canApprove = hasAll(currentPermissions, [P.of(R.QuanLyTriThuc, 'Approve')]);
+  // Quyền quản trị nội dung (sửa/xóa tài liệu của người khác) — dùng chung quyền Approve
+  // vì FE chưa có cờ vai trò Admin riêng cho module Quản lý tri thức.
+  const isAdmin = canApprove;
 
   // ── State
   const [activeTab, setActiveTab]       = useState('danh-sach');
