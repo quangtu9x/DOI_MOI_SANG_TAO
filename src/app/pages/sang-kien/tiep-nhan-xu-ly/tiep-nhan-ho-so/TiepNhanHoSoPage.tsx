@@ -1,11 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { SearchData } from '@/types';
 import { Content } from '@/_metronic/layout/components/content';
 import { TiepNhanHoSoTable } from './components/TiepNhanHoSoTable';
-import { TrangThaiHoSoSangKien, UserType } from '@/models';
+import { ICauHinhXuLyHoSoSangKien, IResult, TrangThaiHoSoSangKien, UserType } from '@/models';
 import { useAuth } from '@/app/modules/auth';
 import clsx from 'clsx';
+import { requestGET } from '@/utils/baseAPI';
 
 type TiepNhanHoSoTableHandle = {
   handleBulkAction: (type: 'approve' | 'reject' | 'requestInfo') => void;
@@ -16,9 +17,20 @@ const statusTabs = [
   { label: 'Đã tiếp nhận', value: TrangThaiHoSoSangKien.DaTiepNhan },
 ];
 
+const overdueOptions = [
+  { label: 'Tất cả hồ sơ', value: 'all' },
+  { label: 'Quá hạn tiếp nhận', value: 'receive' },
+  { label: 'Có quá hạn bất kỳ', value: 'any' },
+] as const;
+
+type OverdueFilterValue = (typeof overdueOptions)[number]['value'];
+
 export const TiepNhanHoSoPage = () => {
   const { currentUser } = useAuth();
   const userType = currentUser?.type;
+  const [configLoading, setConfigLoading] = useState(false);
+  const [xuLyConfig, setXuLyConfig] = useState<ICauHinhXuLyHoSoSangKien | null>(null);
+  const [overdueFilter, setOverdueFilter] = useState<OverdueFilterValue>('all');
   const [searchData, setSearchData] = useState<SearchData | undefined>({
     trangThai: TrangThaiHoSoSangKien.ChoTiepNhan,
     capQuanLyCode: userType === UserType.Admin ? 'CAP_THANH_PHO' : 'CAP_CO_SO',
@@ -26,6 +38,26 @@ export const TiepNhanHoSoPage = () => {
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const tableRef = useRef<TiepNhanHoSoTableHandle>(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        setConfigLoading(true);
+        const response = await requestGET<IResult<ICauHinhXuLyHoSoSangKien>>('HoSoSangKiens/cau-hinh-xu-ly');
+        if (response?.data?.succeeded && response?.data?.data) {
+          setXuLyConfig(response.data.data);
+        } else {
+          setXuLyConfig(null);
+        }
+      } catch {
+        setXuLyConfig(null);
+      } finally {
+        setConfigLoading(false);
+      }
+    };
+
+    fetchConfig();
+  }, []);
 
   const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setSearchData(prev => ({
@@ -49,6 +81,16 @@ export const TiepNhanHoSoPage = () => {
     setSelectedRowKeys([]);
   };
 
+  const handleOverdueFilterChange = (value: OverdueFilterValue): void => {
+    setOverdueFilter(value);
+    setSearchData(prev => ({
+      ...prev,
+      quaHanTiepNhan: value === 'receive' ? true : undefined,
+      quaHanTong: value === 'any' ? true : undefined,
+    }));
+    setSelectedRowKeys([]);
+  };
+
   const isPendingTab = searchData?.trangThai === TrangThaiHoSoSangKien.ChoTiepNhan;
 
   return (
@@ -61,6 +103,15 @@ export const TiepNhanHoSoPage = () => {
               <div className="d-flex align-items-center">
                 <div className="btn-group w-250px me-2">
                   <input type="text" className="form-control form-control-sm" placeholder="Nhập từ khoá tìm kiếm" onChange={handleKeywordChange} />
+                </div>
+                <div className="btn-group w-250px me-2">
+                  <select className="form-select form-select-sm" value={overdueFilter} onChange={e => handleOverdueFilterChange(e.target.value as OverdueFilterValue)}>
+                    {overdueOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="d-flex">
                   {isPendingTab && (
@@ -109,6 +160,11 @@ export const TiepNhanHoSoPage = () => {
                   </li>
                 ))}
               </ul>
+            </div>
+            <div className="mt-3 mb-2 text-muted fs-7">
+              {configLoading
+                ? 'Đang tải cấu hình xử lý hồ sơ...'
+                : `Cấu hình hiện tại: Thời hạn tiếp nhận ${xuLyConfig?.thoiHanTiepNhanNgay ?? 5} ngày; thời hạn kiểm duyệt công nhận ${xuLyConfig?.thoiHanKiemDuyetCongNhanNgay ?? 30} ngày; số người tiếp nhận được cấu hình ${xuLyConfig?.nguoiTiepNhanUserIds?.length ?? 0}.`}
             </div>
           </div>
           <TiepNhanHoSoTable

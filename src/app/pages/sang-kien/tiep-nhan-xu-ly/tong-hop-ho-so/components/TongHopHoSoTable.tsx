@@ -12,6 +12,7 @@ import { TDTable } from '@/app/components';
 import { useTongHopHoSoTable } from './useTongHopHoSoTable';
 import { TongHopHoSoDetailModal } from './TongHopHoSoDetailModal';
 import { TRANG_THAI_HO_SO_SANG_KIEN } from '@/data/sang-kien';
+import dayjs from 'dayjs';
 
 interface HoSoSangKienTableProps {
   searchData?: SearchData;
@@ -118,6 +119,24 @@ export const TongHopHoSoTable: React.FC<HoSoSangKienTableProps> = ({ searchData,
           </span>
         );
       },
+    },
+    {
+      title: 'Hạn kiểm duyệt',
+      dataIndex: 'hanKiemDuyetCongNhan',
+      key: 'hanKiemDuyetCongNhan',
+      className: 'text-center',
+      width: 140,
+      render: value => (value ? dayjs(value).format('DD/MM/YYYY') : '--'),
+    },
+    {
+      title: 'Quá hạn kiểm duyệt',
+      dataIndex: 'quaHanKiemDuyetCongNhan',
+      key: 'quaHanKiemDuyetCongNhan',
+      className: 'text-center',
+      width: 155,
+      render: (value: boolean) => (
+        <span className={value ? 'badge badge-light-danger' : 'badge badge-light-success'}>{value ? 'Quá hạn' : 'Trong hạn'}</span>
+      ),
     },
     searchData?.trangThai !== TrangThaiHoSoSangKien.DaTiepNhan && {
       title: 'Hội đồng đánh giá',

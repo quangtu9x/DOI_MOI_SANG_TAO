@@ -17,6 +17,7 @@ import { TiepNhanHoSoDetailModal } from './TiepNhanHoSoDetailModal';
 import { TRANG_THAI_HO_SO_SANG_KIEN } from '@/data/sang-kien';
 import { NhanXetHoSoModal } from './NhanXetHoSoModal';
 import { TrungLapHoSoModal } from './TrungLapHoSoModal';
+import dayjs from 'dayjs';
 
 interface HoSoSangKienTableProps {
   searchData?: SearchData;
@@ -185,6 +186,24 @@ export const TiepNhanHoSoTable = forwardRef<any, HoSoSangKienTableProps>(({ sear
           </span>
         );
       },
+    },
+    {
+      title: 'Hạn tiếp nhận',
+      dataIndex: 'hanTiepNhan',
+      key: 'hanTiepNhan',
+      className: 'text-center',
+      width: 130,
+      render: value => (value ? dayjs(value).format('DD/MM/YYYY') : '--'),
+    },
+    {
+      title: 'Quá hạn tiếp nhận',
+      dataIndex: 'quaHanTiepNhan',
+      key: 'quaHanTiepNhan',
+      className: 'text-center',
+      width: 140,
+      render: (value: boolean) => (
+        <span className={value ? 'badge badge-light-danger' : 'badge badge-light-success'}>{value ? 'Quá hạn' : 'Trong hạn'}</span>
+      ),
     },
     {
       title: 'Thao tác',

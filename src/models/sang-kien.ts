@@ -154,6 +154,13 @@ export interface IHoSoSangKien {
 
     /** Điểm trung bình đánh giá */
     diemTrungBinh?: number | null;
+    ngayTiepNhan?: string | null;
+    hanTiepNhan?: string | null;
+    quaHanTiepNhan?: boolean | null;
+    ngayCoKetQua?: string | null;
+    hanKiemDuyetCongNhan?: string | null;
+    quaHanKiemDuyetCongNhan?: boolean | null;
+    quaHanTong?: boolean | null;
     ketQuaSangKienId?: string | null;
     ketQuaSangKienSoQuyetDinh?: string | null;
     giayChungNhanSangKienId?: string | null;
@@ -166,6 +173,12 @@ export interface IHoSoSangKien {
     tacGias?: INguoiThamGia[] | null;
     thanhVienThamGiaApDungThus?: INguoiThamGia[] | null;
     readOnly?: boolean | null;
+}
+
+export interface ICauHinhXuLyHoSoSangKien {
+    nguoiTiepNhanUserIds: string[];
+    thoiHanTiepNhanNgay: number;
+    thoiHanKiemDuyetCongNhanNgay: number;
 }
 
 export interface IYKien {

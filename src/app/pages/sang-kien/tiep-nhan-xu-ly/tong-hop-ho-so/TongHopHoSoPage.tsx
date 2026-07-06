@@ -18,6 +18,7 @@ import { TransferHoiDongModal } from './components/TransferHoiDongModal';
 import { CapNhatDiemTrungBinhModal } from './components/CapNhatDiemTrungBinhModal';
 import { IHoSoSangKien } from '@/models';
 import clsx from 'clsx';
+import { CauHinhXuLyHoSoModal } from './components/CauHinhXuLyHoSoModal';
 
 type TongHopHoSoTab = 'chuaChuyenHoiDong' | 'daChuyenHoiDong';
 
@@ -25,6 +26,14 @@ const statusTabs: { label: string; value: TongHopHoSoTab }[] = [
   { label: 'Chưa chuyển hội đồng', value: 'chuaChuyenHoiDong' },
   { label: 'Đã chuyển hội đồng', value: 'daChuyenHoiDong' },
 ];
+
+const overdueOptions = [
+  { label: 'Tất cả hồ sơ', value: 'all' },
+  { label: 'Quá hạn kiểm duyệt', value: 'review' },
+  { label: 'Có quá hạn bất kỳ', value: 'any' },
+] as const;
+
+type OverdueFilterValue = (typeof overdueOptions)[number]['value'];
 
 const getTabSearchStatus = (tab: TongHopHoSoTab) =>
   tab === 'chuaChuyenHoiDong'
@@ -40,11 +49,13 @@ const getTabSearchStatus = (tab: TongHopHoSoTab) =>
 export const TongHopHoSoPage = () => {
   const dispatch: AppDispatch = useDispatch();
   const [activeTab, setActiveTab] = useState<TongHopHoSoTab>('chuaChuyenHoiDong');
+  const [overdueFilter, setOverdueFilter] = useState<OverdueFilterValue>('all');
   const [searchData, setSearchData] = useState<SearchData | undefined>({
     capQuanLyCode: 'CAP_THANH_PHO',
     ...getTabSearchStatus('chuaChuyenHoiDong'),
   });
   const [showFilter, setShowFilter] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [form] = Form.useForm();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [selectedRows, setSelectedRows] = useState<IHoSoSangKien[]>([]);
@@ -83,10 +94,24 @@ export const TongHopHoSoPage = () => {
     setActiveTab(tab);
     setSelectedRowKeys([]);
     setSelectedRows([]);
+    setOverdueFilter('all');
     setSearchData(prev => ({
       ...prev,
       ...getTabSearchStatus(tab),
+      quaHanKiemDuyetCongNhan: undefined,
+      quaHanTong: undefined,
     }));
+  };
+
+  const handleOverdueFilterChange = (value: OverdueFilterValue): void => {
+    setOverdueFilter(value);
+    setSearchData(prev => ({
+      ...prev,
+      quaHanKiemDuyetCongNhan: value === 'review' ? true : undefined,
+      quaHanTong: value === 'any' ? true : undefined,
+    }));
+    setSelectedRowKeys([]);
+    setSelectedRows([]);
   };
 
   const handleUpdateDiemTrungBinh = () => {
@@ -137,10 +162,25 @@ export const TongHopHoSoPage = () => {
                 <div className="btn-group w-250px me-2">
                   <input type="text" className="form-control form-control-sm" placeholder="Nhập từ khoá tìm kiếm" onChange={handleKeywordChange} />
                 </div>
+                <div className="btn-group w-250px me-2">
+                  <select className="form-select form-select-sm" value={overdueFilter} onChange={e => handleOverdueFilterChange(e.target.value as OverdueFilterValue)}>
+                    {overdueOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button className="btn btn-secondary btn-sm py-2 text-hover-primary me-2" onClick={() => setShowFilter(!showFilter)}>
                   <span>
                     <i className="fa-regular fa-filter me-2 text-dark"></i>
                     <span className="">Bộ lọc</span>
+                  </span>
+                </button>
+                <button className="btn btn-info btn-sm py-2 me-2" onClick={() => setShowConfigModal(true)}>
+                  <span>
+                    <i className="fa-regular fa-sliders me-2"></i>
+                    <span className="">Cấu hình xử lý</span>
                   </span>
                 </button>
                 {isChuaChuyenHoiDongTab ? (
@@ -302,6 +342,13 @@ export const TongHopHoSoPage = () => {
           setDiemModalVisible(false);
           setSelectedRowKeys([]);
           setSelectedRows([]);
+          dispatch(actionsGlobal.setRandom());
+        }}
+      />
+      <CauHinhXuLyHoSoModal
+        visible={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        onSaved={() => {
           dispatch(actionsGlobal.setRandom());
         }}
       />

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Row, Col, Statistic, Spin, Empty, Tabs, Table, Tag, Select, Alert,
+  Card, Row, Col, Statistic, Spin, Empty, Tabs, Table, Tag, Select, Alert, Modal, Checkbox, Button,
 } from 'antd';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
+import { useAuth } from '@/app/modules/auth';
 import {
   getKTDashboard,
   getKTLeaderboardTaiLieu,
@@ -44,6 +45,30 @@ const MONTHS_VI = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
 
+const KPI_CARD_IDS = [
+  'tongSoTaiLieu',
+  'taiLieuDaXuatBan',
+  'taiLieuChoXetDuyet',
+  'tongLuotXem',
+  'tongSoChuyenGia',
+  'tongSoCongDong',
+  'tongLuotThich',
+  'tongBinhLuan',
+] as const;
+
+type KpiCardId = (typeof KPI_CARD_IDS)[number];
+
+type KpiLayout = {
+  order: KpiCardId[];
+  visible: KpiCardId[];
+};
+
+type KpiCardConfig = {
+  id: KpiCardId;
+  title: string;
+  render: () => React.ReactNode;
+};
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const padTrend = (trend: IKTTrendThang[]): number[] => {
@@ -53,11 +78,33 @@ const padTrend = (trend: IKTTrendThang[]): number[] => {
 
 const fmtNum = (n?: number) => (n ?? 0).toLocaleString('vi-VN');
 
+const defaultKpiLayout: KpiLayout = {
+  order: [...KPI_CARD_IDS],
+  visible: [...KPI_CARD_IDS],
+};
+
+const mergeLayout = (layout?: Partial<KpiLayout> | null): KpiLayout => {
+  const order = (layout?.order ?? []).filter((id): id is KpiCardId => KPI_CARD_IDS.includes(id as KpiCardId));
+  const visible = (layout?.visible ?? []).filter((id): id is KpiCardId => KPI_CARD_IDS.includes(id as KpiCardId));
+
+  const fullOrder = [...order, ...KPI_CARD_IDS.filter(id => !order.includes(id))];
+  const fullVisible = visible.length > 0 ? visible : [...KPI_CARD_IDS];
+
+  return {
+    order: fullOrder,
+    visible: fullVisible,
+  };
+};
+
 // ── Page component ───────────────────────────────────────────────────────────
 
 export const KTAnalyticsPage: React.FC = () => {
+  const { currentUser } = useAuth();
   const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [kpiLayout, setKpiLayout] = useState<KpiLayout>(defaultKpiLayout);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [draggingCardId, setDraggingCardId] = useState<KpiCardId | null>(null);
 
   const [loadingDash, setLoadingDash] = useState(false);
   const [loadingLB, setLoadingLB]     = useState(false);
@@ -68,6 +115,31 @@ export const KTAnalyticsPage: React.FC = () => {
   const [lbChuyen, setLbChuyen]   = useState<IKTLeaderboardChuyenGia[]>([]);
   const [lbCongDong, setLbCongDong] = useState<IKTLeaderboardCongDong[]>([]);
   const [lbNguoiDung, setLbNguoiDung] = useState<IKTLeaderboardNguoiDung[]>([]);
+
+  const kpiStorageKey = `kt-analytics-kpi-layout-${currentUser?.id ?? 'anonymous'}`;
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(kpiStorageKey);
+      if (!raw) {
+        setKpiLayout(defaultKpiLayout);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as Partial<KpiLayout>;
+      setKpiLayout(mergeLayout(parsed));
+    } catch {
+      setKpiLayout(defaultKpiLayout);
+    }
+  }, [kpiStorageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(kpiStorageKey, JSON.stringify(kpiLayout));
+    } catch {
+      // Ignore localStorage failures in private mode.
+    }
+  }, [kpiLayout, kpiStorageKey]);
 
   // ── Fetch dashboard ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -228,6 +300,158 @@ export const KTAnalyticsPage: React.FC = () => {
   // ── Scope badge ────────────────────────────────────────────────────────────
   const scopeMeta = ROLE_SCOPE_META[stats?.roleScope ?? 'all'];
 
+  const kpiCards: KpiCardConfig[] = [
+    {
+      id: 'tongSoTaiLieu',
+      title: 'Tổng tài liệu',
+      render: () => (
+        <Statistic
+          title="Tổng tài liệu"
+          value={stats?.tongSoTaiLieu ?? 0}
+          prefix={<i className="fa-regular fa-books text-primary me-2" />}
+          valueStyle={{ color: '#3699FF', fontWeight: 700 }}
+        />
+      ),
+    },
+    {
+      id: 'taiLieuDaXuatBan',
+      title: 'Đã xuất bản',
+      render: () => (
+        <Statistic
+          title="Đã xuất bản"
+          value={stats?.taiLieuDaXuatBan ?? 0}
+          prefix={<i className="fa-regular fa-circle-check text-success me-2" />}
+          valueStyle={{ color: '#0BB783', fontWeight: 700 }}
+        />
+      ),
+    },
+    {
+      id: 'taiLieuChoXetDuyet',
+      title: 'Chờ xét duyệt',
+      render: () => (
+        <Statistic
+          title="Chờ xét duyệt"
+          value={stats?.taiLieuChoXetDuyet ?? 0}
+          prefix={<i className="fa-regular fa-clock text-warning me-2" />}
+          valueStyle={{
+            color: (stats?.taiLieuChoXetDuyet ?? 0) > 0 ? '#FFA800' : '#a0a0a0',
+            fontWeight: 700,
+          }}
+        />
+      ),
+    },
+    {
+      id: 'tongLuotXem',
+      title: 'Lượt xem tổng',
+      render: () => (
+        <Statistic
+          title="Lượt xem tổng"
+          value={stats?.tongLuotXem ?? 0}
+          prefix={<i className="fa-regular fa-eye text-info me-2" />}
+          valueStyle={{ color: '#1BC5BD', fontWeight: 700 }}
+        />
+      ),
+    },
+    {
+      id: 'tongSoChuyenGia',
+      title: 'Chuyên gia',
+      render: () => (
+        <>
+          <Statistic
+            title="Chuyên gia"
+            value={stats?.tongSoChuyenGia ?? 0}
+            prefix={<i className="fa-regular fa-user-tie text-primary me-2" />}
+          />
+          <div className="text-muted fs-8 mt-1">
+            {(stats?.yeuCauTuVanCho ?? 0) > 0 && (
+              <span className="text-warning me-3">
+                <i className="fa-regular fa-bell me-1" />{stats?.yeuCauTuVanCho} yêu cầu chờ
+              </span>
+            )}
+            ⭐ TB: {stats?.diemTrungBinhHT?.toFixed(1) ?? '—'}
+          </div>
+        </>
+      ),
+    },
+    {
+      id: 'tongSoCongDong',
+      title: 'Cộng đồng',
+      render: () => (
+        <>
+          <Statistic
+            title="Cộng đồng"
+            value={stats?.tongSoCongDong ?? 0}
+            prefix={<i className="fa-regular fa-users text-primary me-2" />}
+          />
+          <div className="text-muted fs-8 mt-1">
+            {fmtNum(stats?.tongSoThanhVien)} thành viên · {fmtNum(stats?.tongSoBaiViet)} bài viết
+          </div>
+        </>
+      ),
+    },
+    {
+      id: 'tongLuotThich',
+      title: 'Lượt thích',
+      render: () => (
+        <Statistic
+          title="Lượt thích"
+          value={stats?.tongLuotThich ?? 0}
+          prefix={<i className="fa-regular fa-heart text-danger me-2" />}
+          valueStyle={{ color: '#F64E60', fontWeight: 700 }}
+        />
+      ),
+    },
+    {
+      id: 'tongBinhLuan',
+      title: 'Bình luận',
+      render: () => (
+        <Statistic
+          title="Bình luận"
+          value={stats?.tongBinhLuan ?? 0}
+          prefix={<i className="fa-regular fa-comments text-muted me-2" />}
+        />
+      ),
+    },
+  ];
+
+  const visibleKpiCards = kpiLayout.order
+    .filter(id => kpiLayout.visible.includes(id))
+    .map(id => kpiCards.find(card => card.id === id))
+    .filter((card): card is KpiCardConfig => Boolean(card));
+
+  const handleVisibleChange = (checkedIds: KpiCardId[]) => {
+    if (checkedIds.length === 0) {
+      return;
+    }
+
+    setKpiLayout(prev => ({
+      ...prev,
+      visible: prev.order.filter(id => checkedIds.includes(id)),
+    }));
+  };
+
+  const moveCard = (dragId: KpiCardId, targetId: KpiCardId) => {
+    if (dragId === targetId) {
+      return;
+    }
+
+    setKpiLayout(prev => {
+      const nextOrder = [...prev.order];
+      const from = nextOrder.indexOf(dragId);
+      const to = nextOrder.indexOf(targetId);
+      if (from < 0 || to < 0) {
+        return prev;
+      }
+
+      nextOrder.splice(from, 1);
+      nextOrder.splice(to, 0, dragId);
+      return {
+        ...prev,
+        order: nextOrder,
+      };
+    });
+  };
+
   const breadcrumbs = [
     { title: 'Đổi mới sáng tạo', path: '/doi-moi-sang-tao/dashboard', isActive: false, isSeparator: false },
     { title: 'Kho tri thức', path: '/doi-moi-sang-tao/kho-tri-thuc', isActive: false, isSeparator: false },
@@ -252,6 +476,9 @@ export const KTAnalyticsPage: React.FC = () => {
                 <i className="fa-regular fa-building me-1" />{scopeMeta.label}
               </Tag>
             )}
+            <Button size="small" onClick={() => setShowConfigModal(true)}>
+              <i className="fa-regular fa-sliders me-1" />Tùy chỉnh ô số liệu
+            </Button>
             <Select
               value={selectedYear}
               onChange={setSelectedYear}
@@ -291,101 +518,28 @@ export const KTAnalyticsPage: React.FC = () => {
             <>
               {/* Row 1: Tài liệu */}
               <Row gutter={[16, 16]} className="mb-4">
-                <Col xs={12} sm={6}>
-                  <Card bordered={false} className="shadow-sm h-100">
-                    <Statistic
-                      title="Tổng tài liệu"
-                      value={stats?.tongSoTaiLieu ?? 0}
-                      prefix={<i className="fa-regular fa-books text-primary me-2" />}
-                      valueStyle={{ color: '#3699FF', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Card bordered={false} className="shadow-sm h-100">
-                    <Statistic
-                      title="Đã xuất bản"
-                      value={stats?.taiLieuDaXuatBan ?? 0}
-                      prefix={<i className="fa-regular fa-circle-check text-success me-2" />}
-                      valueStyle={{ color: '#0BB783', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Card bordered={false} className="shadow-sm h-100">
-                    <Statistic
-                      title="Chờ xét duyệt"
-                      value={stats?.taiLieuChoXetDuyet ?? 0}
-                      prefix={<i className="fa-regular fa-clock text-warning me-2" />}
-                      valueStyle={{
-                        color: (stats?.taiLieuChoXetDuyet ?? 0) > 0 ? '#FFA800' : '#a0a0a0',
-                        fontWeight: 700,
-                      }}
-                    />
-                  </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Card bordered={false} className="shadow-sm h-100">
-                    <Statistic
-                      title="Lượt xem tổng"
-                      value={stats?.tongLuotXem ?? 0}
-                      prefix={<i className="fa-regular fa-eye text-info me-2" />}
-                      valueStyle={{ color: '#1BC5BD', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-              </Row>
-
-              {/* Row 2: Chuyên gia + Cộng đồng + Tương tác */}
-              <Row gutter={[16, 16]} className="mb-6">
-                <Col xs={12} sm={6}>
-                  <Card bordered={false} className="shadow-sm h-100">
-                    <Statistic
-                      title="Chuyên gia"
-                      value={stats?.tongSoChuyenGia ?? 0}
-                      prefix={<i className="fa-regular fa-user-tie text-primary me-2" />}
-                    />
-                    <div className="text-muted fs-8 mt-1">
-                      {(stats?.yeuCauTuVanCho ?? 0) > 0 && (
-                        <span className="text-warning me-3">
-                          <i className="fa-regular fa-bell me-1" />{stats?.yeuCauTuVanCho} yêu cầu chờ
-                        </span>
-                      )}
-                      ⭐ TB: {stats?.diemTrungBinhHT?.toFixed(1) ?? '—'}
-                    </div>
-                  </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Card bordered={false} className="shadow-sm h-100">
-                    <Statistic
-                      title="Cộng đồng"
-                      value={stats?.tongSoCongDong ?? 0}
-                      prefix={<i className="fa-regular fa-users text-primary me-2" />}
-                    />
-                    <div className="text-muted fs-8 mt-1">
-                      {fmtNum(stats?.tongSoThanhVien)} thành viên · {fmtNum(stats?.tongSoBaiViet)} bài viết
-                    </div>
-                  </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Card bordered={false} className="shadow-sm h-100">
-                    <Statistic
-                      title="Lượt thích"
-                      value={stats?.tongLuotThich ?? 0}
-                      prefix={<i className="fa-regular fa-heart text-danger me-2" />}
-                      valueStyle={{ color: '#F64E60', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Card bordered={false} className="shadow-sm h-100">
-                    <Statistic
-                      title="Bình luận"
-                      value={stats?.tongBinhLuan ?? 0}
-                      prefix={<i className="fa-regular fa-comments text-muted me-2" />}
-                    />
-                  </Card>
-                </Col>
+                {visibleKpiCards.map(card => (
+                  <Col
+                    key={card.id}
+                    xs={12}
+                    sm={6}
+                    draggable
+                    onDragStart={() => setDraggingCardId(card.id)}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={() => {
+                      if (draggingCardId) {
+                        moveCard(draggingCardId, card.id);
+                      }
+                      setDraggingCardId(null);
+                    }}
+                    onDragEnd={() => setDraggingCardId(null)}
+                    style={{ cursor: 'move' }}
+                  >
+                    <Card bordered={false} className="shadow-sm h-100">
+                      {card.render()}
+                    </Card>
+                  </Col>
+                ))}
               </Row>
 
               {/* Charts */}
@@ -509,6 +663,47 @@ export const KTAnalyticsPage: React.FC = () => {
             />
           </Spin>
         </Card>
+
+        <Modal
+          title="Tùy chỉnh ô số liệu"
+          open={showConfigModal}
+          onCancel={() => setShowConfigModal(false)}
+          footer={[
+            <Button
+              key="reset"
+              onClick={() => {
+                setKpiLayout(defaultKpiLayout);
+              }}
+            >
+              Khôi phục mặc định
+            </Button>,
+            <Button key="ok" type="primary" onClick={() => setShowConfigModal(false)}>
+              Xong
+            </Button>,
+          ]}
+        >
+          <div className="text-muted mb-3 fs-7">
+            Chọn các ô số liệu cần hiển thị. Bạn có thể kéo thả trực tiếp các ô trên dashboard để đổi vị trí theo nhu cầu cá nhân.
+          </div>
+          <Checkbox.Group
+            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+            value={kpiLayout.visible}
+            onChange={values => handleVisibleChange(values as KpiCardId[])}
+          >
+            {kpiLayout.order.map(id => {
+              const card = kpiCards.find(x => x.id === id);
+              if (!card) {
+                return null;
+              }
+
+              return (
+                <Checkbox key={id} value={id}>
+                  {card.title}
+                </Checkbox>
+              );
+            })}
+          </Checkbox.Group>
+        </Modal>
       </Content>
     </>
   );
