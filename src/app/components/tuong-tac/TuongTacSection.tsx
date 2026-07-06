@@ -70,7 +70,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const handleLike = async () => {
     try {
       const res = await toggleThich({ loaiDoiTuong: LoaiDoiTuong.BinhLuan, doiTuongId: comment.id });
-      const nowLiked: boolean = (res as any)?.data ?? !liked;
+      const nowLiked: boolean = (res as any)?.data?.data ?? !liked;
       setLiked(nowLiked);
       setLikeCount(prev => nowLiked ? prev + 1 : Math.max(0, prev - 1));
     } catch {
@@ -88,8 +88,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
         pageNumber:     page,
         pageSize:       5,
       });
-      const data: IBinhLuan[] = (res as any)?.data ?? [];
-      const total: number     = (res as any)?.totalCount ?? 0;
+      const payload = (res as any)?.data;
+      const data: IBinhLuan[] = Array.isArray(payload) ? payload : (payload?.data ?? []);
+      const total: number     = payload?.totalCount ?? 0;
       setReplies(prev => reset ? data : [...prev, ...data]);
       const loaded = reset ? data.length : replies.length + data.length;
       setReplyHasMore(loaded < total);
@@ -107,7 +108,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
     setShowReplies(v => !v);
   };
 
-  const isOwn = currentUserId && comment.tacGia?.id === currentUserId;
+  const isOwn = !!currentUserId && comment.tacGiaId === currentUserId;
 
   return (
     <div style={{ display: 'flex', gap: 10, marginBottom: depth === 0 ? 20 : 12 }}>
@@ -281,8 +282,9 @@ export const TuongTacSection: React.FC<TuongTacSectionProps> = ({
         pageNumber:    p,
         pageSize:      PAGE_SIZE,
       });
-      const data: IBinhLuan[] = (res as any)?.data ?? [];
-      const tot: number       = (res as any)?.totalCount ?? 0;
+      const payload = (res as any)?.data;
+      const data: IBinhLuan[] = Array.isArray(payload) ? payload : (payload?.data ?? []);
+      const tot: number       = payload?.totalCount ?? 0;
       setComments(prev => reset ? data : [...prev, ...data]);
       setTotal(tot);
       const loaded = reset ? data.length : comments.length + data.length;
@@ -304,7 +306,7 @@ export const TuongTacSection: React.FC<TuongTacSectionProps> = ({
   const handleLike = async () => {
     try {
       const res = await toggleThich({ loaiDoiTuong, doiTuongId });
-      const nowLiked: boolean = (res as any)?.data ?? !liked;
+      const nowLiked: boolean = (res as any)?.data?.data ?? !liked;
       setLiked(nowLiked);
       setLikeCount(prev => nowLiked ? prev + 1 : Math.max(0, prev - 1));
     } catch {

@@ -14,6 +14,7 @@ const YEARS = [THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2];
 
 const safeItem = <T,>(res: any): T | null => {
   const d = res?.data ?? res;
+  if (d && d.succeeded === false) return null;
   return (d?.data ?? d ?? null) as T | null;
 };
 
@@ -285,7 +286,7 @@ export const BaoCaoPage: React.FC = () => {
                   <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
                     <div className="fw-bold text-gray-800">
                       <i className="fa-regular fa-ranking-star text-primary me-2" />
-                      Bảng xếp hạng đóng góp {lb ? `— ${lb.ky}` : ''}
+                      Bảng xếp hạng đóng góp {lb?.ky ? `— ${lb.ky}` : ''}
                     </div>
                     <div className="d-flex gap-2">
                       <Select value={lbPeriod} style={{ width: 110 }}

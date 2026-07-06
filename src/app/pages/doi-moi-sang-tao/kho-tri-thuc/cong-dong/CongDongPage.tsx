@@ -3,6 +3,7 @@ import {
   Input, Button, Tag, Modal, Form, Spin, Empty,
   Avatar, Divider, message, Tooltip, Popconfirm,
 } from 'antd';
+import { useSearchParams } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import {
@@ -18,7 +19,10 @@ import type {
 } from '@/app/models/knowledge-hub';
 import { LoaiBaiViet, LoaiDoiTuong } from '@/app/models/knowledge-hub';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
+import { useAuth } from '@/app/modules/auth';
 import { NguoiThichPopover } from '@/app/components/tuong-tac/NguoiThichPopover';
+import { requestPOST } from '@/utils/baseAPI';
+import { Select } from 'antd';
 
 const { TextArea } = Input;
 
@@ -70,6 +74,7 @@ const relativeTime = (date?: string) => {
 
 export const CongDongPage: React.FC = () => {
   const { isAdmin } = useDMSTRole();
+  const { currentUser } = useAuth();
 
   // ── Communities list
   const [loading, setLoading]         = useState(false);
@@ -106,6 +111,19 @@ export const CongDongPage: React.FC = () => {
   const [cdFormMode, setCdFormMode]   = useState<'create' | 'edit'>('create');
   const [cdFormLoading, setCdFormLoading] = useState(false);
   const [cdForm] = Form.useForm();
+
+  // ── Danh mục lĩnh vực chuyên môn (cho cộng đồng thực hành)
+  const [linhVucs, setLinhVucs] = useState<{ id: string; ten: string }[]>([]);
+  useEffect(() => {
+    requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 200 })
+      .then(res => {
+        const d = res?.data;
+        const list = Array.isArray(d?.data) ? d.data : [];
+        setLinhVucs(list.map((x: any) => ({ id: x.id, ten: x.ten ?? x.name ?? '' })));
+      })
+      .catch(() => { /* ignore */ });
+  }, []);
+  const tenLinhVuc = (id?: string | null) => linhVucs.find(lv => lv.id === id)?.ten;
 
   // ── Post create/edit form
   const [bvFormOpen, setBvFormOpen]   = useState(false);
@@ -191,6 +209,18 @@ export const CongDongPage: React.FC = () => {
     } catch { message.error('Không tải được bài viết'); }
     finally { setCommLoading(false); }
   };
+
+  // deep-link: ?postId=xxx → mở thẳng chi tiết bài viết (vd. từ Bảng tin)
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const sharedPostId = searchParams.get('postId');
+    if (sharedPostId) {
+      openPost(sharedPostId);
+      searchParams.delete('postId');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Tham gia / rời
   const handleThamGia = async (id: string) => {
@@ -417,13 +447,22 @@ export const CongDongPage: React.FC = () => {
 
         {/* Footer stats */}
         <div className="d-flex gap-3 align-items-center border-top pt-2 mt-1">
-          <button
-            className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(bv.id) || bv.daTuThich ? 'text-danger' : 'text-muted'}`}
-            onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
-          >
-            <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
-            <span className="fs-8">{Math.max(0, bv.soLuotThich ?? 0)}</span>
-          </button>
+          <div className="d-flex align-items-center gap-1">
+            <button
+              className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(bv.id) || bv.daTuThich ? 'text-danger' : 'text-muted'}`}
+              onClick={() => handleLike(LoaiDoiTuong.BaiViet, bv.id)}
+            >
+              <i className={`fa-${likedIds.has(bv.id) || bv.daTuThich ? 'solid' : 'regular'} fa-heart me-1`} />
+            </button>
+            <NguoiThichPopover loaiDoiTuong={LoaiDoiTuong.BaiViet} doiTuongId={bv.id}>
+              <span
+                className={`fs-8 ${likedIds.has(bv.id) || bv.daTuThich ? 'text-danger' : 'text-muted'}`}
+                style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
+              >
+                {Math.max(0, bv.soLuotThich ?? 0)}
+              </span>
+            </NguoiThichPopover>
+          </div>
           <button className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
             onClick={() => openPost(bv.id)}>
             <i className="fa-regular fa-comment me-1" />
@@ -512,13 +551,11 @@ export const CongDongPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            {isAdmin && (
-              <Button size="large" onClick={openCdCreate}
-                style={{ background: '#fff', color: '#065f46', fontWeight: 600, border: 'none' }}
-                icon={<i className="fa-regular fa-plus me-1" />}>
-                Tạo cộng đồng
-              </Button>
-            )}
+            <Button size="large" onClick={openCdCreate}
+              style={{ background: '#fff', color: '#065f46', fontWeight: 600, border: 'none' }}
+              icon={<i className="fa-regular fa-plus me-1" />}>
+              Tạo cộng đồng
+            </Button>
           </div>
         </div>
 
@@ -629,7 +666,12 @@ export const CongDongPage: React.FC = () => {
                       </div>
                     </div>
                     {selected.moTa && <div className="text-muted fs-7 mt-3">{selected.moTa}</div>}
-                    <div className="d-flex gap-2 mt-3">
+                    <div className="d-flex gap-2 mt-3 flex-wrap">
+                      {tenLinhVuc(selected.linhVucKHCNId) && (
+                        <span className="badge badge-light-success">
+                          <i className="fa-regular fa-tag me-1" />{tenLinhVuc(selected.linhVucKHCNId)}
+                        </span>
+                      )}
                       <span className="badge badge-light-primary">
                         <i className="fa-regular fa-users me-1" />{selected.soThanhVien ?? 0} thành viên
                       </span>
@@ -780,17 +822,28 @@ export const CongDongPage: React.FC = () => {
                               className={`btn btn-text btn-sm p-0 fs-8 ${likedIds.has(cmt.id) ? 'text-danger' : 'text-muted'}`}
                               onClick={() => handleLike(LoaiDoiTuong.BinhLuan, cmt.id)}>
                               <i className={`fa-${likedIds.has(cmt.id) ? 'solid' : 'regular'} fa-thumbs-up me-1`} />
-                              Thích {cmt.luotThich ? `(${cmt.luotThich})` : ''}
+                              Thích
                             </button>
-                            <button className="btn btn-text btn-sm p-0 text-muted fs-8"
-                              onClick={() => { setEditingCmt(cmt); setEditCmtText(cmt.noiDung); }}>
-                              <i className="fa-regular fa-pen me-1" />Sửa
-                            </button>
-                            <Popconfirm title="Xóa bình luận?" onConfirm={() => handleDeleteCmt(cmt.id)} okText="Xóa" cancelText="Hủy">
-                              <button className="btn btn-text btn-sm p-0 text-danger fs-8">
-                                <i className="fa-regular fa-trash me-1" />Xóa
-                              </button>
-                            </Popconfirm>
+                            {(cmt.luotThich ?? 0) > 0 && (
+                              <NguoiThichPopover loaiDoiTuong={LoaiDoiTuong.BinhLuan} doiTuongId={cmt.id}>
+                                <span className="text-muted fs-8" style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}>
+                                  ({cmt.luotThich})
+                                </span>
+                              </NguoiThichPopover>
+                            )}
+                            {(isAdmin || (!!currentUser?.id && cmt.tacGiaId === currentUser.id)) && (
+                              <>
+                                <button className="btn btn-text btn-sm p-0 text-muted fs-8"
+                                  onClick={() => { setEditingCmt(cmt); setEditCmtText(cmt.noiDung); }}>
+                                  <i className="fa-regular fa-pen me-1" />Sửa
+                                </button>
+                                <Popconfirm title="Xóa bình luận?" onConfirm={() => handleDeleteCmt(cmt.id)} okText="Xóa" cancelText="Hủy">
+                                  <button className="btn btn-text btn-sm p-0 text-danger fs-8">
+                                    <i className="fa-regular fa-trash me-1" />Xóa
+                                  </button>
+                                </Popconfirm>
+                              </>
+                            )}
                             <span className="text-muted fs-8 ms-auto">{relativeTime(cmt.createdOn)}</span>
                           </div>
                         )}
@@ -832,6 +885,12 @@ export const CongDongPage: React.FC = () => {
         <Form form={cdForm} layout="vertical">
           <Form.Item name="ten" label="Tên cộng đồng" rules={[{ required: true }]}>
             <Input placeholder="Tên cộng đồng..." />
+          </Form.Item>
+          <Form.Item name="linhVucKHCNId" label="Lĩnh vực chuyên môn">
+            <Select allowClear showSearch optionFilterProp="children"
+              placeholder="Chọn lĩnh vực của cộng đồng thực hành...">
+              {linhVucs.map(lv => <Select.Option key={lv.id} value={lv.id}>{lv.ten}</Select.Option>)}
+            </Select>
           </Form.Item>
           <Form.Item name="moTa" label="Mô tả">
             <Input.TextArea rows={3} placeholder="Mô tả mục đích, phạm vi của cộng đồng..." />
