@@ -36,6 +36,11 @@ export const PortalNavbar = () => {
       items: [
         { label: "Khởi tạo ý tưởng", to: "/doi-moi/y-tuong" },
         { label: "Tra cứu hồ sơ", to: "/doi-moi/tra-cuu" },
+        // Mục cá nhân — chỉ hiện khi đã đăng nhập (CBNV không còn menu Quản lý ĐMST)
+        ...(currentUser ? [
+          { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi" },
+          { label: "Thông báo hệ thống", to: "/doi-moi-sang-tao/thong-bao" },
+        ] : []),
         // { label: "Import hàng loạt", to: "/doi-moi/y-tuong?mode=import" },
       ]
     },
@@ -52,10 +57,12 @@ export const PortalNavbar = () => {
         { label: "Tìm kiếm tri thức", to: "/doi-moi-sang-tao/kho-tri-thuc/tim-kiem" },
       ]
     },
-    {
+    // Menu Quản lý ĐMST — ẨN TOÀN BỘ với tài khoản không có quyền quản lý
+    // (chỉ hiện với Lãnh đạo đơn vị / Lãnh đạo TCT / Quản trị — isReviewer từ vai trò thật;
+    //  từng mục bên trong tiếp tục lọc theo ReviewerRoute/AdminRoute của DoiMoiSangTaoRoutes.tsx)
+    ...(currentUser && isReviewer ? [{
       title: "Quản lý ĐMST",
       key: "quan-ly-dmst",
-      // Khớp đúng quyền truy cập từng route trong DoiMoiSangTaoRoutes.tsx (ReviewerRoute/AdminRoute)
       items: [
         { label: "Dashboard", to: "/doi-moi-sang-tao/dashboard", show: true },
         { label: "Danh sách ý tưởng", to: "/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach", show: isReviewer },
@@ -66,7 +73,7 @@ export const PortalNavbar = () => {
         { label: "Báo cáo & thống kê", to: "/doi-moi-sang-tao/bao-cao", show: isReviewer },
         { label: "Quản lý người dùng", to: "/doi-moi-sang-tao/quan-ly-nguoi-dung", show: isAdmin },
       ].filter(item => item.show),
-    },
+    }] : []),
     // {
     //   title: "Báo cáo",
     //   key: "bao-cao",
@@ -75,8 +82,9 @@ export const PortalNavbar = () => {
     //     { label: "Báo cáo tổng hợp đầy đủ", to: "/doi-moi-sang-tao/bao-cao-day-du", show: isReviewer },
     //   ].filter(item => item.show),
     // },
-    // Menu Quản trị hệ thống — chỉ hiện khi có quyền
-    ...(adminItems.length > 0 ? [{
+    // Menu Quản trị hệ thống — CHỈ hiện với tài khoản có vai trò Quản trị (isAdmin),
+    // các tài khoản khác (kể cả lãnh đạo có vài quyền xem danh mục) ẩn toàn bộ.
+    ...(currentUser && isAdmin && adminItems.length > 0 ? [{
       title: "Quản trị",
       key: "quan-tri",
       items: adminItems.map(({ label, to }) => ({ label, to })),
@@ -104,6 +112,12 @@ export const PortalNavbar = () => {
                 Trang chủ
               </Link>
             </li>
+{/* 
+            <li>
+              <Link to="/doi-moi-sang-tao/dashboard" className="flex items-center h-[50px] px-5 text-white hover:bg-portal-hover transition-colors font-bold text-[14px] border-r border-white/5">
+                Dashboard
+              </Link>
+            </li> */}
 
             {menuItems.map((item) => (
               <li key={item.key} className="relative group">

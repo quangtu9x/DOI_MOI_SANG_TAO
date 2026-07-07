@@ -40,14 +40,17 @@ import {
   deleteThuMuc,
   chiaSeTaiLieu,
   getTaiLieuShareLink,
+  searchTags,
 } from '@/app/services/khoTriThucApi';
 import { UserSelect } from '@/app/components/UserSelect';
+import { searchOrganizationUnits } from '@/services/organizationUnit.service';
 import type {
   ITaiLieu,
   IKhoTriThucWorkflowConfig,
   ISearchTaiLieuRequest,
   ITaiLieuDinhKem,
   IThuMucTaiLieu,
+  ITag,
 } from '@/app/models/knowledge-hub';
 import { TrangThaiTaiLieu, LoaiTaiLieu, LoaiNguonThamChieu } from '@/app/models/knowledge-hub';
 import { requestPOST } from '@/utils/baseAPI';
@@ -433,6 +436,23 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     }
   };
 
+  // ── Dữ liệu cho các ô lọc bổ sung (Lĩnh vực KHCN, Đơn vị, Tags) ─────────────
+  const [linhVucOptions, setLinhVucOptions] = useState<{ id: string; ten: string }[]>([]);
+  const [donViOptions, setDonViOptions] = useState<{ id: string; name: string }[]>([]);
+  const [tagOptions, setTagOptions] = useState<ITag[]>([]);
+
+  useEffect(() => {
+    requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 200 })
+      .then(res => setLinhVucOptions(safeList<any>(res).map((x: any) => ({ id: x.id, ten: x.ten ?? x.name ?? '' }))))
+      .catch(() => {});
+    searchOrganizationUnits({ pageNumber: 1, pageSize: 200 } as any)
+      .then(res => setDonViOptions(safeList<any>(res).map((x: any) => ({ id: x.id, name: x.name ?? x.ten ?? '' }))))
+      .catch(() => {});
+    searchTags({ pageNumber: 1, pageSize: 200 })
+      .then(res => setTagOptions(safeList<ITag>(res)))
+      .catch(() => {});
+  }, []);
+
   // ── Cây thư mục tri thức ────────────────────────────────────────────────────
   const [folders, setFolders] = useState<IThuMucTaiLieu[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string>('all'); // 'all' | 'none' | folderId
@@ -577,6 +597,39 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     const req = { ...searchReq, nguoiKiemDuyetId: checked ? currentUser?.id : null, pageNumber: 1 };
     setSearchReq(req); loadItems(req);
   };
+  const onTacGiaChange = (v: any) => {
+    const req = { ...searchReq, tacGiaId: v ?? null, pageNumber: 1 };
+    setSearchReq(req); loadItems(req);
+  };
+  const onLinhVucChange = (v: any) => {
+    const req = { ...searchReq, linhVucKHCNId: v ?? null, pageNumber: 1 };
+    setSearchReq(req); loadItems(req);
+  };
+  const onDonViFilterChange = (v: any) => {
+    const req = { ...searchReq, donViId: v ?? null, pageNumber: 1 };
+    setSearchReq(req); loadItems(req);
+  };
+  const onNguonChange = (v: any) => {
+    const req = { ...searchReq, loaiNguonThamChieu: v ?? null, pageNumber: 1 };
+    setSearchReq(req); loadItems(req);
+  };
+  const onTagsFilterChange = (v: string[]) => {
+    const req = { ...searchReq, tagIds: v ?? [], pageNumber: 1 };
+    setSearchReq(req); loadItems(req);
+  };
+  const onQuaHanChange = (checked: boolean) => {
+    const req = { ...searchReq, quaHan: checked ? true : null, pageNumber: 1 };
+    setSearchReq(req); loadItems(req);
+  };
+  const [filterResetKey, setFilterResetKey] = useState(0);
+  const onClearFilters = () => {
+    const req: ISearchTaiLieuRequest = { ...DEFAULT_SEARCH, thuMucId: searchReq.thuMucId, chuaPhanLoai: searchReq.chuaPhanLoai };
+    setSearchReq(req); loadItems(req);
+    setFilterResetKey(k => k + 1); // remount UserSelect (bỏ chọn tác giả)
+  };
+  const hasExtraFilters = !!(searchReq.keyword || searchReq.loaiTaiLieu || searchReq.trangThai
+    || searchReq.tacGiaId || searchReq.linhVucKHCNId || searchReq.donViId || searchReq.loaiNguonThamChieu
+    || (searchReq.tagIds && searchReq.tagIds.length > 0) || searchReq.nguoiKiemDuyetId || searchReq.quaHan);
   const onPageChange = (pg: number) => {
     const req = { ...searchReq, pageNumber: pg };
     setSearchReq(req); loadItems(req);
@@ -1071,15 +1124,72 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
             {/* Toolbar */}
             <div className="card border-0 shadow-sm mb-5">
-              <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 py-4">
-                <div className="d-flex gap-2 flex-wrap">
-                  <Input.Search placeholder="Tìm kiếm tài liệu..." onSearch={onSearch} style={{ width: 260 }} allowClear />
-                  <Select placeholder="Loại tài liệu" allowClear onChange={onLoaiChange} style={{ width: 180 }}>
-                    {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+              <div className="card-body py-4">
+                <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                  <div className="d-flex gap-2 flex-wrap">
+                    <Input.Search key={filterResetKey} placeholder="Tìm kiếm tài liệu..." onSearch={onSearch} style={{ width: 260 }} allowClear defaultValue={searchReq.keyword ?? ''} />
+                    <Select placeholder="Loại tài liệu" allowClear value={searchReq.loaiTaiLieu ?? undefined} onChange={onLoaiChange} style={{ width: 170 }}>
+                      {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                    </Select>
+                    <Select placeholder="Trạng thái" allowClear value={searchReq.trangThai ?? undefined} onChange={onTrangThaiChange} style={{ width: 150 }}>
+                      {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                    </Select>
+                  </div>
+                  <div className="text-muted fs-8">
+                    <span className="badge badge-light-primary me-2">{total} tài liệu</span>
+                    Trang {searchReq.pageNumber}/{Math.max(1, totalPages)}
+                  </div>
+                </div>
+
+                <div className="d-flex gap-2 flex-wrap align-items-center">
+                  <UserSelect
+                    key={filterResetKey}
+                    placeholder="Tác giả"
+                    allowClear
+                    style={{ width: 190 }}
+                    onUserIdChange={onTacGiaChange}
+                  />
+                  <Select
+                    placeholder="Lĩnh vực KHCN"
+                    allowClear showSearch optionFilterProp="children"
+                    style={{ width: 190 }}
+                    value={searchReq.linhVucKHCNId ?? undefined}
+                    onChange={onLinhVucChange}
+                  >
+                    {linhVucOptions.map(lv => <Option key={lv.id} value={lv.id}>{lv.ten}</Option>)}
                   </Select>
-                  <Select placeholder="Trạng thái" allowClear onChange={onTrangThaiChange} style={{ width: 160 }}>
-                    {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                  <Select
+                    placeholder="Đơn vị"
+                    allowClear showSearch optionFilterProp="children"
+                    style={{ width: 190 }}
+                    value={searchReq.donViId ?? undefined}
+                    onChange={onDonViFilterChange}
+                  >
+                    {donViOptions.map(dv => <Option key={dv.id} value={dv.id}>{dv.name}</Option>)}
                   </Select>
+                  <Select
+                    placeholder="Nguồn tham chiếu"
+                    allowClear
+                    style={{ width: 170 }}
+                    value={searchReq.loaiNguonThamChieu ?? undefined}
+                    onChange={onNguonChange}
+                  >
+                    {Object.entries(NGUON_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                  </Select>
+                  <Select
+                    mode="multiple"
+                    placeholder="Tags"
+                    allowClear showSearch optionFilterProp="children"
+                    style={{ minWidth: 190, maxWidth: 320 }}
+                    value={searchReq.tagIds ?? []}
+                    onChange={onTagsFilterChange}
+                    maxTagCount="responsive"
+                  >
+                    {tagOptions.map(t => <Option key={t.id} value={t.id}>{t.ten}</Option>)}
+                  </Select>
+                  <Checkbox checked={!!searchReq.quaHan} onChange={e => onQuaHanChange(e.target.checked)}>
+                    Quá hạn kiểm duyệt
+                  </Checkbox>
                   {canApprove && (
                     <Checkbox
                       checked={!!searchReq.nguoiKiemDuyetId}
@@ -1088,10 +1198,11 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                       Chỉ giao cho tôi
                     </Checkbox>
                   )}
-                </div>
-                <div className="text-muted fs-8">
-                  <span className="badge badge-light-primary me-2">{total} tài liệu</span>
-                  Trang {searchReq.pageNumber}/{Math.max(1, totalPages)}
+                  {hasExtraFilters && (
+                    <Button size="small" type="link" onClick={onClearFilters}>
+                      <i className="fa-regular fa-filter-circle-xmark me-1" />Xóa lọc
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

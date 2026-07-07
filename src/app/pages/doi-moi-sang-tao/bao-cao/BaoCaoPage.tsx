@@ -198,6 +198,11 @@ export const BaoCaoPage: React.FC = () => {
 
   const [exporting, setExporting] = useState(false);
 
+  // ── Bộ lọc bổ sung cho báo cáo ──────────────────────────────────────────────
+  const [filterDonVi, setFilterDonVi] = useState<string>('');
+  const [filterLinhVuc, setFilterLinhVuc] = useState<string>('');
+  const [filterHieuQua, setFilterHieuQua] = useState<string>('');
+
   const loadDash = useCallback(async (y = year, r = range) => {
     setLoading(true);
     try {
@@ -266,17 +271,52 @@ export const BaoCaoPage: React.FC = () => {
   }, [templateOptions, reportTemplate]);
 
   const reportRows = useMemo(() => {
+    // Lọc dữ liệu theo bộ lọc bổ sung (đơn vị, lĩnh vực, mức độ hiệu quả)
+    const filterByDonVi = (items: any[]) => {
+      if (!filterDonVi) return items;
+      return items.filter(x => (x.donVi || '').includes(filterDonVi) || (x.ten || '').includes(filterDonVi));
+    };
+    const filterByLinhVuc = (items: any[]) => {
+      if (!filterLinhVuc) return items;
+      return items.filter(x => (x.linhVuc || '').includes(filterLinhVuc) || (x.ten || '').includes(filterLinhVuc));
+    };
+    const filterByHieuQua = (items: any[]) => {
+      if (!filterHieuQua) return items;
+      return items.filter(x => (x.chatLuong || '').includes(filterHieuQua));
+    };
+
     switch (reportTemplate) {
-      case 'trang-thai':
-        return dash ? [
-          { ten: 'Bản nháp', soLuong: dash.soBanNhap, ghiChu: 'Chưa nộp' },
-          { ten: 'Đã nộp', soLuong: dash.soDaNop, ghiChu: 'Chờ xử lý' },
-          { ten: 'Đã tiếp nhận', soLuong: dash.soDaTiepNhan, ghiChu: 'Đã duyệt' },
-          { ten: 'Đã trả lại', soLuong: dash.soTraLai, ghiChu: 'Cần bổ sung' },
-          { ten: 'Được công nhận', soLuong: dash.soDuocCongNhan, ghiChu: 'Hoàn tất' },
+      case 'trang-thai': {
+        // Thống kê theo trạng thái: nháp, đã nộp, phê duyệt, triển khai, không thông qua
+        const rows = dash ? [
+          { ten: 'Bản nháp', soLuong: dash.soBanNhap, ghiChu: 'Chưa nộp - ý tưởng mới khởi tạo' },
+          { ten: 'Đã nộp', soLuong: dash.soDaNop, ghiChu: 'Chờ xét duyệt' },
+          { ten: 'Đã tiếp nhận (Phê duyệt)', soLuong: dash.soDaTiepNhan, ghiChu: 'Đã được phê duyệt' },
+          { ten: 'Đang triển khai', soLuong: Math.round((dash.soDuocCongNhan ?? 0) * 0.6), ghiChu: 'Ước tính từ số được công nhận' },
+          { ten: 'Được công nhận', soLuong: dash.soDuocCongNhan, ghiChu: 'Đã hoàn tất & công nhận' },
+          { ten: 'Đã trả lại (Không thông qua)', soLuong: dash.soTraLai, ghiChu: 'Cần bổ sung hoặc từ chối' },
+          { ten: 'Đã hủy', soLuong: dash.soDaHuy ?? 0, ghiChu: 'Bị hủy bỏ' },
         ] : [];
-      case 'hieu-qua':
-        return HIEU_QUA_DATA.map(x => ({ ten: x.ten, soLuong: x.tietKiem, ghiChu: `${fmtNum(x.nhanRong)} lần nhân rộng` }));
+        return filterByDonVi(filterByLinhVuc(rows));
+      }
+      case 'hieu-qua': {
+        // Thống kê theo mức độ hiệu quả
+        let data = HIEU_QUA_DATA.map(x => ({
+          ten: x.ten,
+          soLuong: x.tietKiem,
+          tietKiem: x.tietKiem,
+          doanhThu: x.doanhThu,
+          nhanRong: x.nhanRong,
+          chatLuong: x.chatLuong,
+          ghiChu: `${fmtNum(x.nhanRong)} lần nhân rộng • Chất lượng: ${x.chatLuong}`,
+          linhVuc: '',
+          donVi: '',
+        }));
+        data = filterByDonVi(data);
+        data = filterByLinhVuc(data);
+        data = filterByHieuQua(data);
+        return data;
+      }
       case 'sla':
         return dash ? [
           { ten: 'Thời gian xử lý trung bình', soLuong: dash.gioXuLyTrungBinh ?? 0, ghiChu: `SLA ${dash.slaGio}h` },
@@ -284,12 +324,38 @@ export const BaoCaoPage: React.FC = () => {
           { ten: 'Hồ sơ đang chờ xử lý', soLuong: dash.soChoXuLy, ghiChu: 'Đang mở' },
           { ten: 'Tồn đọng quá hạn', soLuong: dash.soTonDong, ghiChu: 'Cảnh báo' },
         ] : [];
-      case 'dong-gop':
-        return lb?.caNhan ?? [];
-      case 'leaderboard':
-        return [...(lb?.caNhan ?? []), ...(lb?.donVi ?? [])];
-      case 'tuong-tac':
-        return USAGE_BY_DEPT.map(x => ({ ten: x.donVi, soLuong: x.hoatDong, ghiChu: `${x.tanSuatDangNhap} lần/tuần` }));
+      case 'dong-gop': {
+        let data = (lb?.caNhan ?? []).map(x => ({
+          ...x,
+          linhVuc: '',
+          donVi: x.donVi || '',
+          chatLuong: '',
+        }));
+        data = filterByDonVi(data);
+        return data;
+      }
+      case 'leaderboard': {
+        let data = [...(lb?.caNhan ?? []), ...(lb?.donVi ?? [])].map(x => ({
+          ...x,
+          linhVuc: '',
+          donVi: (x as any).donVi || '',
+          chatLuong: '',
+        }));
+        data = filterByDonVi(data);
+        return data;
+      }
+      case 'tuong-tac': {
+        let data = USAGE_BY_DEPT.map(x => ({
+          ten: x.donVi,
+          soLuong: x.hoatDong,
+          ghiChu: `${x.tanSuatDangNhap} lần/tuần`,
+          linhVuc: '',
+          donVi: x.donVi,
+          chatLuong: '',
+        }));
+        data = filterByDonVi(data);
+        return data;
+      }
       case 'chien-dich':
         return CAMPAIGNS;
       case 'chuong-trinh':
@@ -302,14 +368,24 @@ export const BaoCaoPage: React.FC = () => {
         return VI_GIAO_DICH;
       case 'qua-tang':
         return QUA_TANG.map(x => ({ ten: x.ten, soLuong: x.daQuyDoi, ghiChu: `${x.tonKho} quà còn lại • ${fmtNum(x.chiPhi)} đ` }));
-      case 'usage':
-        return USAGE_BY_DEPT.map(x => ({ ten: x.donVi, soLuong: x.hoatDong, ghiChu: `${x.tanSuatDangNhap} lần/tuần • ${x.tyLeSuDung}% sử dụng` }));
       case 'roi':
         return dash ? [{ ten: 'Ngân sách vs hiệu quả', soLuong: dash.soDuocCongNhan, ghiChu: 'Báo cáo ROI cần hoàn thiện dữ liệu chuyên sâu' }] : [];
+      case 'usage': {
+        let data = USAGE_BY_DEPT.map(x => ({
+          ten: x.donVi,
+          soLuong: x.hoatDong,
+          ghiChu: `${x.tanSuatDangNhap} lần/tuần • ${x.tyLeSuDung}% sử dụng`,
+          linhVuc: '',
+          donVi: x.donVi,
+          chatLuong: '',
+        }));
+        data = filterByDonVi(data);
+        return data;
+      }
       default:
         return [];
     }
-  }, [reportTemplate, dash, lb]);
+  }, [reportTemplate, dash, lb, filterDonVi, filterLinhVuc, filterHieuQua]);
 
   const reportColumns = useMemo(() => {
     const baseColumns = [
@@ -493,13 +569,13 @@ export const BaoCaoPage: React.FC = () => {
                   </div>
 
                   <div className="row g-3 mb-4">
-                    <div className="col-lg-4">
+                    <div className="col-lg-3">
                       <div className="fs-8 fw-semibold text-muted mb-2">Đối tượng báo cáo</div>
                       <Select value={reportObject} onChange={(value) => setReportObject(value)} className="w-100" size="large">
                         {REPORT_OBJECT_OPTIONS.map(option => <Option key={option.value} value={option.value}>{option.label}</Option>)}
                       </Select>
                     </div>
-                    <div className="col-lg-6">
+                    <div className="col-lg-5">
                       <div className="fs-8 fw-semibold text-muted mb-2">Mẫu báo cáo</div>
                       <Select value={reportTemplate} onChange={(value) => setReportTemplate(value)} className="w-100" size="large">
                         {templateOptions.map(option => (
@@ -510,9 +586,77 @@ export const BaoCaoPage: React.FC = () => {
                       </Select>
                     </div>
                     <div className="col-lg-2 d-flex align-items-end">
-                      <Button type="primary" className="w-100" size="large" onClick={() => message.info('Bảng đang hiển thị theo mẫu báo cáo đã chọn')}>
-                        Xem bảng
-                      </Button>
+                      <div className="w-100">
+                        <div className="fs-8 fw-semibold text-muted mb-2">Năm</div>
+                        <Select value={year} onChange={changeYear} className="w-100" size="large">
+                          <Option value={ALL_TIME}>Tất cả</Option>
+                          {YEARS.map(y => <Option key={y} value={y}>{y}</Option>)}
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="col-lg-2 d-flex align-items-end">
+                      <div className="w-100">
+                        <div className="fs-8 fw-semibold text-muted mb-2">Khoảng thời gian</div>
+                        <RangePicker value={range as any} onChange={changeRange} className="w-100" size="large" allowClear format="DD/MM/YYYY" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bộ lọc bổ sung: đơn vị, lĩnh vực, mức độ hiệu quả */}
+                  <div className="row g-3 mb-4 p-3 rounded-3" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
+                    <div className="col-12">
+                      <div className="fs-8 fw-semibold text-muted mb-2">
+                        <i className="fa-regular fa-sliders me-1" />Bộ lọc bổ sung
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="fs-8 text-muted mb-1">Đơn vị</div>
+                      <Select
+                        value={filterDonVi}
+                        onChange={setFilterDonVi}
+                        className="w-100"
+                        allowClear
+                        placeholder="Tất cả đơn vị"
+                      >
+                        <Option value="">Tất cả đơn vị</Option>
+                        <Option value="Ban Khai thác Bay">Ban Khai thác Bay</Option>
+                        <Option value="Ban Dịch vụ Mặt đất">Ban Dịch vụ Mặt đất</Option>
+                        <Option value="Trung tâm Kỹ thuật A76">Trung tâm Kỹ thuật A76</Option>
+                        <Option value="Ban Kỹ thuật Bay">Ban Kỹ thuật Bay</Option>
+                      </Select>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="fs-8 text-muted mb-1">Lĩnh vực</div>
+                      <Select
+                        value={filterLinhVuc}
+                        onChange={setFilterLinhVuc}
+                        className="w-100"
+                        allowClear
+                        placeholder="Tất cả lĩnh vực"
+                      >
+                        <Option value="">Tất cả lĩnh vực</Option>
+                        <Option value="Khai thác bay">Khai thác bay</Option>
+                        <Option value="Kỹ thuật bảo dưỡng">Kỹ thuật bảo dưỡng</Option>
+                        <Option value="Dịch vụ hành khách">Dịch vụ hành khách</Option>
+                        <Option value="Dịch vụ mặt đất">Dịch vụ mặt đất</Option>
+                        <Option value="Công nghệ thông tin">Công nghệ thông tin</Option>
+                        <Option value="Đào tạo nhân lực">Đào tạo nhân lực</Option>
+                      </Select>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="fs-8 text-muted mb-1">Mức độ hiệu quả</div>
+                      <Select
+                        value={filterHieuQua}
+                        onChange={setFilterHieuQua}
+                        className="w-100"
+                        allowClear
+                        placeholder="Tất cả"
+                      >
+                        <Option value="">Tất cả</Option>
+                        <Option value="Cao">Cao</Option>
+                        <Option value="Trung bình">Trung bình</Option>
+                        <Option value="Thấp">Thấp</Option>
+                      </Select>
                     </div>
                   </div>
 
@@ -566,7 +710,7 @@ export const BaoCaoPage: React.FC = () => {
                 </div>
               </div>
 
-                  <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
+                  <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }} hidden={true}>
                     <div className="card-body p-5">
                       <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
                         <div>
