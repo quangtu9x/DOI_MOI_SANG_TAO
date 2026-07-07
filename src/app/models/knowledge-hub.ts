@@ -367,6 +367,8 @@ export interface IYeuCauTuVan {
   noiDung:         string;
   trangThai:       TrangThaiTuVan;
   lyDo?:           string;
+  ideaId?:         string | null;
+  tenYTuong?:      string | null;
   createdOn?:      string;
 }
 
@@ -379,6 +381,7 @@ export interface ISearchTuVanRequest extends IPageRequest {
 export interface ICreateTuVanRequest {
   chuyenGiaId: string;
   noiDung:     string;
+  ideaId?:     string | null;
 }
 
 export interface ITuChoiTuVanRequest {

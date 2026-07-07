@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, Select, DatePicker, message, Table, Tag, Spin, Empty, Tabs, Tooltip } from 'antd';
 import type { Dayjs } from 'dayjs';
 import ReactApexChart from 'react-apexcharts';
@@ -122,6 +122,46 @@ const USAGE_BY_DEPT = [
   { donVi: 'Trung tâm Kỹ thuật A76', hoatDong: 88, tanSuatDangNhap: 5.1, tyLeSuDung: 82 },
 ];
 
+type ReportObjectType = 'YTuong' | 'GiaiPhap' | 'SangKien';
+type ReportTemplateKey =
+  | 'trang-thai'
+  | 'hieu-qua'
+  | 'sla'
+  | 'dong-gop'
+  | 'leaderboard'
+  | 'tuong-tac'
+  | 'chien-dich'
+  | 'chuong-trinh'
+  | 'quy'
+  | 'chi-thuong'
+  | 'vi-giao-dich'
+  | 'qua-tang'
+  | 'usage'
+  | 'roi';
+
+const REPORT_OBJECT_OPTIONS: { value: ReportObjectType; label: string }[] = [
+  { value: 'YTuong', label: 'Ý tưởng' },
+  { value: 'GiaiPhap', label: 'Giải pháp' },
+  { value: 'SangKien', label: 'Sáng kiến' },
+];
+
+const REPORT_TEMPLATES: { value: ReportTemplateKey; label: string; group: string; desc: string }[] = [
+  { value: 'trang-thai', label: 'Thống kê theo trạng thái', group: 'Ý tưởng/Giải pháp/Sáng kiến', desc: 'Nháp, nộp, phê duyệt, triển khai, không thông qua' },
+  { value: 'hieu-qua', label: 'Hiệu quả ĐMST', group: 'Ý tưởng/Giải pháp/Sáng kiến', desc: 'Tiết kiệm chi phí, tăng doanh thu, chất lượng, nhân rộng' },
+  { value: 'sla', label: 'Quy trình xử lý & SLA', group: 'Ý tưởng/Giải pháp/Sáng kiến', desc: 'Thời gian xử lý, đúng hạn/quá hạn, tồn đọng' },
+  { value: 'dong-gop', label: 'Đóng góp cá nhân/đơn vị', group: 'Ý tưởng/Giải pháp/Sáng kiến', desc: 'Số nộp, phê duyệt, điểm thưởng, huy hiệu' },
+  { value: 'leaderboard', label: 'Bảng xếp hạng', group: 'Ý tưởng/Giải pháp/Sáng kiến', desc: 'Xếp hạng theo tháng/quý/năm' },
+  { value: 'tuong-tac', label: 'Báo cáo tương tác hệ thống', group: 'Cộng đồng/Kho tri thức', desc: 'Lượt xem, thích, bình luận, mức độ sử dụng' },
+  { value: 'chien-dich', label: 'Báo cáo chiến dịch ĐMST', group: 'Chương trình/chiến dịch', desc: 'Người tham gia, số nộp, tỷ lệ hoàn thành, thưởng, huy hiệu' },
+  { value: 'chuong-trinh', label: 'Chương trình/dự án CĐS/R&D/Sandbox', group: 'Chương trình/chiến dịch', desc: 'Tiến độ, trạng thái, milestone, ngân sách, hiệu quả' },
+  { value: 'quy', label: 'Quỹ phát triển KHCN', group: 'Tài chính', desc: 'Ngân sách đầu, đã chi, còn lại theo loại quỹ' },
+  { value: 'chi-thuong', label: 'Chi thưởng', group: 'Tài chính', desc: 'Chi tiền thưởng và điểm thưởng theo đối tượng' },
+  { value: 'vi-giao-dich', label: 'Ví và giao dịch', group: 'Tài chính', desc: 'Lịch sử giao dịch, số dư, đối soát' },
+  { value: 'qua-tang', label: 'Quy đổi quà tặng', group: 'Tài chính', desc: 'Số quy đổi, loại quà, tồn kho, chi phí' },
+  { value: 'usage', label: 'Người dùng & sử dụng hệ thống', group: 'Vận hành', desc: 'Người dùng hoạt động, tần suất, tỷ lệ sử dụng' },
+  { value: 'roi', label: 'Ngân sách & ROI', group: 'Phân tích nâng cao', desc: 'So sánh chi phí và giá trị mang lại' },
+];
+
 export const BaoCaoPage: React.FC = () => {
   // Mặc định "Tất cả" (không lọc theo năm) — tránh trường hợp năm hiện tại chưa có ý tưởng nào
   // mà hiển thị nhầm thành "chưa có dữ liệu" khi mở trang lần đầu.
@@ -182,6 +222,139 @@ export const BaoCaoPage: React.FC = () => {
   };
 
   const [exportingFormat, setExportingFormat] = useState<'csv' | 'excel' | 'pdf' | 'word' | null>(null);
+  const [reportObject, setReportObject] = useState<ReportObjectType>('YTuong');
+  const [reportTemplate, setReportTemplate] = useState<ReportTemplateKey>('trang-thai');
+
+  const templateOptions = useMemo(() => {
+    const allowedGroups: Record<ReportObjectType, string[]> = {
+      YTuong: ['Ý tưởng/Giải pháp/Sáng kiến', 'Phân tích nâng cao'],
+      GiaiPhap: ['Ý tưởng/Giải pháp/Sáng kiến', 'Cộng đồng/Kho tri thức', 'Tài chính', 'Vận hành', 'Phân tích nâng cao'],
+      SangKien: ['Ý tưởng/Giải pháp/Sáng kiến', 'Chương trình/chiến dịch', 'Tài chính', 'Vận hành', 'Phân tích nâng cao'],
+    };
+    return REPORT_TEMPLATES.filter(t => allowedGroups[reportObject].includes(t.group));
+  }, [reportObject]);
+
+  const selectedTemplate = useMemo(
+    () => templateOptions.find(t => t.value === reportTemplate) ?? templateOptions[0] ?? REPORT_TEMPLATES[0],
+    [templateOptions, reportTemplate]
+  );
+
+  useEffect(() => {
+    if (!templateOptions.some(t => t.value === reportTemplate) && templateOptions[0]) {
+      setReportTemplate(templateOptions[0].value);
+    }
+  }, [templateOptions, reportTemplate]);
+
+  const reportRows = useMemo(() => {
+    switch (reportTemplate) {
+      case 'trang-thai':
+        return dash ? [
+          { ten: 'Bản nháp', soLuong: dash.soBanNhap, ghiChu: 'Chưa nộp' },
+          { ten: 'Đã nộp', soLuong: dash.soDaNop, ghiChu: 'Chờ xử lý' },
+          { ten: 'Đã tiếp nhận', soLuong: dash.soDaTiepNhan, ghiChu: 'Đã duyệt' },
+          { ten: 'Đã trả lại', soLuong: dash.soTraLai, ghiChu: 'Cần bổ sung' },
+          { ten: 'Được công nhận', soLuong: dash.soDuocCongNhan, ghiChu: 'Hoàn tất' },
+        ] : [];
+      case 'hieu-qua':
+        return HIEU_QUA_DATA.map(x => ({ ten: x.ten, soLuong: x.tietKiem, ghiChu: `${fmtNum(x.nhanRong)} lần nhân rộng` }));
+      case 'sla':
+        return dash ? [
+          { ten: 'Thời gian xử lý trung bình', soLuong: dash.gioXuLyTrungBinh ?? 0, ghiChu: `SLA ${dash.slaGio}h` },
+          { ten: 'Tỷ lệ đúng hạn', soLuong: dash.tyLeDungHan ?? 0, ghiChu: 'Phần trăm' },
+          { ten: 'Hồ sơ đang chờ xử lý', soLuong: dash.soChoXuLy, ghiChu: 'Đang mở' },
+          { ten: 'Tồn đọng quá hạn', soLuong: dash.soTonDong, ghiChu: 'Cảnh báo' },
+        ] : [];
+      case 'dong-gop':
+        return lb?.caNhan ?? [];
+      case 'leaderboard':
+        return [...(lb?.caNhan ?? []), ...(lb?.donVi ?? [])];
+      case 'tuong-tac':
+        return USAGE_BY_DEPT.map(x => ({ ten: x.donVi, soLuong: x.hoatDong, ghiChu: `${x.tanSuatDangNhap} lần/tuần` }));
+      case 'chien-dich':
+        return CAMPAIGNS;
+      case 'chuong-trinh':
+        return CDS_PROGRAMS;
+      case 'quy':
+        return QUY_KHCN;
+      case 'chi-thuong':
+        return CHI_THUONG.map(x => ({ ten: x.doiTuong, soLuong: x.tienThuong, ghiChu: `${x.donVi} • ${x.kyThuong}` }));
+      case 'vi-giao-dich':
+        return VI_GIAO_DICH;
+      case 'qua-tang':
+        return QUA_TANG.map(x => ({ ten: x.ten, soLuong: x.daQuyDoi, ghiChu: `${x.tonKho} quà còn lại • ${fmtNum(x.chiPhi)} đ` }));
+      case 'usage':
+        return USAGE_BY_DEPT.map(x => ({ ten: x.donVi, soLuong: x.hoatDong, ghiChu: `${x.tanSuatDangNhap} lần/tuần • ${x.tyLeSuDung}% sử dụng` }));
+      case 'roi':
+        return dash ? [{ ten: 'Ngân sách vs hiệu quả', soLuong: dash.soDuocCongNhan, ghiChu: 'Báo cáo ROI cần hoàn thiện dữ liệu chuyên sâu' }] : [];
+      default:
+        return [];
+    }
+  }, [reportTemplate, dash, lb]);
+
+  const reportColumns = useMemo(() => {
+    const baseColumns = [
+      { title: 'Chỉ tiêu', dataIndex: 'ten', key: 'ten', render: (value: string) => <span className="fw-semibold">{value}</span> },
+      { title: 'Giá trị', dataIndex: 'soLuong', key: 'soLuong', width: 130, align: 'right' as const, render: (value: any) => typeof value === 'number' ? fmtNum(value) : (value ?? '—') },
+      { title: 'Ghi chú', dataIndex: 'ghiChu', key: 'ghiChu', render: (value: string) => value || <span className="text-muted">—</span> },
+    ];
+
+    if (reportTemplate === 'leaderboard') {
+      return [
+        { title: 'Xếp hạng', dataIndex: 'xepHang', key: 'xepHang', width: 100, align: 'center' as const },
+        { title: 'Tên', dataIndex: 'ten', key: 'ten', render: (value: string) => <span className="fw-semibold">{value}</span> },
+        { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', render: (value: string) => value || <span className="text-muted">—</span> },
+        { title: 'Điểm', dataIndex: 'diem', key: 'diem', width: 120, align: 'right' as const, render: (value: any) => fmtNum(value) },
+      ];
+    }
+
+    if (reportTemplate === 'dong-gop') {
+      return [
+        { title: 'Xếp hạng', dataIndex: 'xepHang', key: 'xepHang', width: 100, align: 'center' as const },
+        { title: 'Tên', dataIndex: 'ten', key: 'ten', render: (value: string) => <span className="fw-semibold">{value}</span> },
+        { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', render: (value: string) => value || <span className="text-muted">—</span> },
+        { title: 'Điểm', dataIndex: 'diem', key: 'diem', width: 120, align: 'right' as const, render: (value: any) => fmtNum(value) },
+      ];
+    }
+
+    if (reportTemplate === 'chien-dich') {
+      return [
+        { title: 'Chiến dịch', dataIndex: 'ten', key: 'ten', render: (value: string) => <span className="fw-semibold">{value}</span> },
+        { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', render: (value: string) => <Tag color={value === 'Đang diễn ra' ? 'blue' : 'green'}>{value}</Tag> },
+        { title: 'Tham gia', dataIndex: 'ngUoiThamGia', key: 'ngUoiThamGia', width: 110, align: 'right' as const },
+        { title: 'Hoàn thành', dataIndex: 'tyLeHoanThanh', key: 'tyLeHoanThanh', width: 110, align: 'right' as const, render: (value: number) => `${value}%` },
+      ];
+    }
+
+    if (reportTemplate === 'chuong-trinh') {
+      return [
+        { title: 'Chương trình', dataIndex: 'ten', key: 'ten', render: (value: string) => <span className="fw-semibold">{value}</span> },
+        { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', render: (value: string) => <span style={{ color: CDS_STATUS_COLOR[value], fontWeight: 600 }}>{value}</span> },
+        { title: 'Tiến độ', dataIndex: 'tienDo', key: 'tienDo', width: 110, align: 'right' as const, render: (value: number) => `${value}%` },
+        { title: 'Ngân sách', dataIndex: 'nganSach', key: 'nganSach', width: 110, align: 'right' as const, render: (value: number) => `${value}%` },
+      ];
+    }
+
+    if (reportTemplate === 'quy') {
+      return [
+        { title: 'Loại quỹ', dataIndex: 'loaiQuy', key: 'loaiQuy', render: (value: string) => <span className="fw-semibold">{value}</span> },
+        { title: 'Ngân sách đầu', dataIndex: 'nganSachDau', key: 'nganSachDau', width: 140, align: 'right' as const, render: (value: number) => fmtNum(value) },
+        { title: 'Đã chi', dataIndex: 'daChi', key: 'daChi', width: 140, align: 'right' as const, render: (value: number) => fmtNum(value) },
+        { title: 'Còn lại', key: 'conLai', width: 140, align: 'right' as const, render: (_: unknown, row: any) => fmtNum(row.nganSachDau - row.daChi) },
+      ];
+    }
+
+    if (reportTemplate === 'vi-giao-dich') {
+      return [
+        { title: 'Thời gian', dataIndex: 'thoiGian', key: 'thoiGian', width: 160 },
+        { title: 'Loại', dataIndex: 'loai', key: 'loai' },
+        { title: 'Ví', dataIndex: 'vi', key: 'vi' },
+        { title: 'Số tiền', dataIndex: 'soTien', key: 'soTien', width: 110, align: 'right' as const, render: (value: string) => <span className={value.startsWith('+') ? 'text-success' : 'text-danger'}>{value}</span> },
+        { title: 'Số dư', dataIndex: 'soDu', key: 'soDu', width: 110, align: 'right' as const, render: (value: number) => fmtNum(value) },
+      ];
+    }
+
+    return baseColumns;
+  }, [reportTemplate]);
 
   const EXPORT_CONFIG = {
     csv:   { fn: exportIdeaReport,      ext: 'csv',  label: 'CSV — mở bằng Excel' },
@@ -278,357 +451,101 @@ export const BaoCaoPage: React.FC = () => {
     <>
       <PageTitle breadcrumbs={[
         { title: 'Đổi mới sáng tạo', path: '/doi-moi-sang-tao/dashboard', isActive: false, isSeparator: false },
-      ]}>Báo cáo & thống kê</PageTitle>
+      ]}>Báo cáo</PageTitle>
 
       <Content>
-        {/* Header */}
-        <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5">
-          <div>
-            <h4 className="fw-bold text-gray-900 mb-1">Báo cáo hoạt động Đổi mới sáng tạo</h4>
-            <p className="text-muted fs-7 mb-0">
-              Số liệu thời gian thực từ hồ sơ ý tưởng — trạng thái, đơn vị, lĩnh vực, SLA xử lý và xếp hạng đóng góp
-            </p>
-          </div>
-          <div className="d-flex gap-2 align-items-center">
-            <Tooltip title={range ? 'Đang lọc theo khoảng thời gian tùy chọn — bỏ chọn khoảng ngày để quay lại lọc theo năm' : ''}>
-              <Select value={year} onChange={changeYear} style={{ width: 110 }} disabled={!!range}>
-                <Option value={ALL_TIME}>Tất cả</Option>
-                {YEARS.map(y => <Option key={y} value={y}>{y}</Option>)}
-              </Select>
-            </Tooltip>
-            <RangePicker
-              value={range as any}
-              onChange={changeRange}
-              format="DD/MM/YYYY"
-              placeholder={['Từ ngày', 'Đến ngày']}
-              allowClear
-              style={{ width: 240 }}
-            />
-            <Tooltip title="Làm mới">
-              <Button icon={<i className="fa-regular fa-refresh" />} onClick={() => { loadDash(); loadLb(); }} />
-            </Tooltip>
-            <Tooltip title="Xuất CSV (mở bằng Excel)">
-              <Button loading={exporting && exportingFormat === 'csv'} onClick={() => handleExport('csv')}
-                icon={<i className="fa-regular fa-file-csv" />} />
-            </Tooltip>
-            <Tooltip title="Xuất Word">
-              <Button loading={exporting && exportingFormat === 'word'} onClick={() => handleExport('word')}
-                icon={<i className="fa-regular fa-file-word" />} />
-            </Tooltip>
-            <Tooltip title="Xuất Excel">
-              <Button type="primary" loading={exporting && exportingFormat === 'excel'} onClick={() => handleExport('excel')}
-                icon={<i className="fa-regular fa-file-excel me-1" />}>
-                Excel
-              </Button>
-            </Tooltip>
-            <Tooltip title="Xuất PDF">
-              <Button danger loading={exporting && exportingFormat === 'pdf'} onClick={() => handleExport('pdf')}
-                icon={<i className="fa-regular fa-file-pdf me-1" />}>
-                PDF
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
-
         <Spin spinning={loading}>
-          {!dash && !loading ? (
-            <Empty description="Chưa có dữ liệu" className="py-10" />
-          ) : dash && (
-            <>
-              {/* KPI hàng 1 — trạng thái */}
-              <div className="row g-4 mb-4">
-                <div className="col-6 col-xl-2"><KpiCard title="Tổng ý tưởng" value={fmtNum(dash.tongYTuong)} icon="fa-lightbulb" color="primary" /></div>
-                <div className="col-6 col-xl-2"><KpiCard title="Đã nộp/Chờ xét duyệt" value={fmtNum(dash.soDaNop)} icon="fa-clock" color="warning" /></div>
-                <div className="col-6 col-xl-2"><KpiCard title="Đã tiếp nhận" value={fmtNum(dash.soDaTiepNhan)} icon="fa-circle-check" color="info" /></div>
-                <div className="col-6 col-xl-2"><KpiCard title="Được công nhận" value={fmtNum(dash.soDuocCongNhan)} icon="fa-medal" color="success" /></div>
-                <div className="col-6 col-xl-2"><KpiCard title="Người tham gia" value={fmtNum(dash.soNguoiThamGia)} icon="fa-users" color="primary" /></div>
-                <div className="col-6 col-xl-2"><KpiCard title="Đơn vị tham gia" value={fmtNum(dash.soDonViThamGia)} icon="fa-building" color="info" /></div>
-              </div>
-
-              {/* KPI hàng 2 — SLA */}
-              <div className="row g-4 mb-4">
-                <div className="col-6 col-xl-3">
-                  <KpiCard title="Thời gian xử lý trung bình" icon="fa-stopwatch" color="primary"
-                    value={dash.gioXuLyTrungBinh != null ? `${dash.gioXuLyTrungBinh} giờ` : '—'} />
-                </div>
-                <div className="col-6 col-xl-3">
-                  <KpiCard title={`Tỷ lệ đúng hạn (SLA ${dash.slaGio}h)`} icon="fa-gauge-high" color="success"
-                    value={dash.tyLeDungHan != null ? `${dash.tyLeDungHan}%` : '—'} />
-                </div>
-                <div className="col-6 col-xl-3">
-                  <KpiCard title="Hồ sơ đang chờ xử lý" icon="fa-inbox" color="warning" value={fmtNum(dash.soChoXuLy)} />
-                </div>
-                <div className="col-6 col-xl-3">
-                  <KpiCard title="Tồn đọng quá hạn" icon="fa-triangle-exclamation" color="danger"
-                    value={fmtNum(dash.soTonDong)}
-                    sub={dash.soTonDong > 0 ? 'Cần xử lý ngay' : 'Không có tồn đọng'} />
-                </div>
-              </div>
-
-              {/* KPI hàng 3 — Quá hạn theo cấu hình xử lý hồ sơ (số ngày) */}
-              <div className="row g-4 mb-4">
-                <div className="col-6 col-xl-3">
-                  <KpiCard title={`Quá hạn tiếp nhận (>${dash.thoiHanTiepNhanNgay} ngày)`} icon="fa-hourglass-end" color="danger"
-                    value={fmtNum(dash.soQuaHanTiepNhan)}
-                    sub={dash.soQuaHanTiepNhan > 0 ? 'Chưa tiếp nhận' : 'Không có hồ sơ quá hạn'} />
-                </div>
-                <div className="col-6 col-xl-3">
-                  <KpiCard title={`Quá hạn kiểm duyệt (>${dash.thoiHanKiemDuyetCongNhanNgay} ngày)`} icon="fa-hourglass-end" color="danger"
-                    value={fmtNum(dash.soQuaHanKiemDuyet)}
-                    sub={dash.soQuaHanKiemDuyet > 0 ? 'Chưa có kết quả' : 'Không có hồ sơ quá hạn'} />
-                </div>
-              </div>
-
-              {/* Charts */}
-              <div className="row g-4 mb-4">
-                <div className="col-xl-8">
-                  <div className="card border-0 shadow-sm h-100" style={{ borderRadius: 12 }}>
-                    <div className="card-body p-5">
-                      <div className="fw-bold text-gray-800 mb-3">
-                        <i className="fa-regular fa-chart-column text-primary me-2" />
-                        Ý tưởng nộp theo tháng — {dash.nam}{year === ALL_TIME && !range ? ' (năm hiện tại)' : ''}
-                      </div>
-                      <ReactApexChart type="bar" height={260}
-                        series={[{ name: 'Số nộp', data: dash.nopTheoThang }]}
-                        options={monthlyOptions} />
-                    </div>
-                  </div>
-                </div>
-                <div className="col-xl-4">
-                  <div className="card border-0 shadow-sm h-100" style={{ borderRadius: 12 }}>
-                    <div className="card-body p-5">
-                      <div className="fw-bold text-gray-800 mb-3">
-                        <i className="fa-regular fa-chart-pie text-primary me-2" />
-                        Phân bố theo trạng thái
-                      </div>
-                      {statusSeries.every(v => v === 0)
-                        ? <Empty description="Chưa có dữ liệu" style={{ padding: 24 }} />
-                        : <ReactApexChart type="donut" height={260} series={statusSeries} options={statusOptions} />}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Theo lĩnh vực / đơn vị */}
-              <div className="row g-4 mb-4">
-                <div className="col-xl-6">
-                  <div className="card border-0 shadow-sm h-100" style={{ borderRadius: 12 }}>
-                    <div className="card-body p-5">
-                      <div className="fw-bold text-gray-800 mb-3">
-                        <i className="fa-regular fa-tags text-primary me-2" />Theo lĩnh vực
-                      </div>
-                      <Table columns={groupColumns('Lĩnh vực')} dataSource={dash.theoLinhVuc}
-                        rowKey="ten" size="small" pagination={false}
-                        locale={{ emptyText: <Empty description="Chưa có dữ liệu" /> }} />
-                    </div>
-                  </div>
-                </div>
-                <div className="col-xl-6">
-                  <div className="card border-0 shadow-sm h-100" style={{ borderRadius: 12 }}>
-                    <div className="card-body p-5">
-                      <div className="fw-bold text-gray-800 mb-3">
-                        <i className="fa-regular fa-building text-primary me-2" />Theo đơn vị
-                      </div>
-                      <Table columns={groupColumns('Đơn vị')} dataSource={dash.theoDonVi}
-                        rowKey="ten" size="small" pagination={false}
-                        locale={{ emptyText: <Empty description="Chưa có dữ liệu" /> }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Leaderboard */}
               <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
                 <div className="card-body p-5">
-                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                  <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div>
+                      <div className="fw-bold text-gray-800 fs-4 mb-1">
+                        <i className="fa-regular fa-chart-line text-warning me-2" />Báo cáo
+                      </div>
+                      <div className="text-muted fs-7">
+                        Chọn đối tượng báo cáo, sau đó chọn mẫu để xem bảng kết quả trước khi xuất file.
+                      </div>
+                    </div>
+                    <div className="d-flex gap-2 flex-wrap">
+                      <Tag color="blue">Dashboard = số liệu tổng quan</Tag>
+                      <Tag color="gold">Báo cáo = chọn đối tượng + mẫu + bảng</Tag>
+                    </div>
+                  </div>
+
+                  <div className="row g-3 mb-4">
+                    <div className="col-lg-4">
+                      <div className="fs-8 fw-semibold text-muted mb-2">Đối tượng báo cáo</div>
+                      <Select value={reportObject} onChange={(value) => setReportObject(value)} className="w-100" size="large">
+                        {REPORT_OBJECT_OPTIONS.map(option => <Option key={option.value} value={option.value}>{option.label}</Option>)}
+                      </Select>
+                    </div>
+                    <div className="col-lg-6">
+                      <div className="fs-8 fw-semibold text-muted mb-2">Mẫu báo cáo</div>
+                      <Select value={reportTemplate} onChange={(value) => setReportTemplate(value)} className="w-100" size="large">
+                        {templateOptions.map(option => (
+                          <Option key={option.value} value={option.value}>
+                            {option.label} - {option.desc}
+                          </Option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div className="col-lg-2 d-flex align-items-end">
+                      <Button type="primary" className="w-100" size="large" onClick={() => message.info('Bảng đang hiển thị theo mẫu báo cáo đã chọn')}>
+                        Xem bảng
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="row g-3 mb-4">
+                    <div className="col-md-4">
+                      <div className="p-3 rounded-3 bg-light-primary h-100">
+                        <div className="text-primary fw-semibold fs-8 mb-1">Đối tượng</div>
+                        <div className="fs-5 fw-bold">{REPORT_OBJECT_OPTIONS.find(x => x.value === reportObject)?.label}</div>
+                      </div>
+                    </div>
+                    <div className="col-md-5">
+                      <div className="p-3 rounded-3 bg-light-warning h-100">
+                        <div className="text-warning fw-semibold fs-8 mb-1">Mẫu hiện tại</div>
+                        <div className="fs-6 fw-bold">{selectedTemplate.label}</div>
+                        <div className="text-muted fs-8">{selectedTemplate.desc}</div>
+                      </div>
+                    </div>
+                    <div className="col-md-3">
+                      <div className="p-3 rounded-3 bg-light-success h-100">
+                        <div className="text-success fw-semibold fs-8 mb-1">Số dòng xem trước</div>
+                        <div className="fs-4 fw-bold">{reportRows.length}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                     <div className="fw-bold text-gray-800">
-                      <i className="fa-regular fa-ranking-star text-primary me-2" />
-                      Bảng xếp hạng đóng góp {lb?.ky ? `— ${lb.ky}` : ''}
+                      <i className="fa-regular fa-table me-2 text-primary" />Bảng kết quả
                     </div>
-                    <div className="d-flex gap-2">
-                      {range ? (
-                        <Tag color="blue" className="d-flex align-items-center">Đang lọc theo khoảng ngày đã chọn</Tag>
-                      ) : year === ALL_TIME ? (
-                        <Tag color="blue" className="d-flex align-items-center">Toàn thời gian</Tag>
-                      ) : (
-                        <>
-                          <Select value={lbPeriod} style={{ width: 110 }}
-                            onChange={(p: 'nam' | 'quy' | 'thang') => { setLbPeriod(p); setLbValue(1); loadLb(year, p, 1); }}>
-                            <Option value="nam">Năm</Option>
-                            <Option value="quy">Quý</Option>
-                            <Option value="thang">Tháng</Option>
-                          </Select>
-                          {lbPeriod !== 'nam' && (
-                            <Select value={lbValue} style={{ width: 110 }}
-                              onChange={(v: number) => { setLbValue(v); loadLb(year, lbPeriod, v); }}>
-                              {(lbPeriod === 'quy' ? [1, 2, 3, 4] : Array.from({ length: 12 }, (_, i) => i + 1)).map(v => (
-                                <Option key={v} value={v}>{lbPeriod === 'quy' ? `Quý ${v}` : `Tháng ${v}`}</Option>
-                              ))}
-                            </Select>
-                          )}
-                        </>
-                      )}
+                    <div className="d-flex gap-2 flex-wrap">
+                      <Tag color="geekblue">{selectedTemplate.group}</Tag>
+                      <Tag color="cyan">{reportObject === 'YTuong' ? 'Ý tưởng' : reportObject === 'GiaiPhap' ? 'Giải pháp' : 'Sáng kiến'}</Tag>
                     </div>
                   </div>
 
-                  <Spin spinning={lbLoading}>
-                    <Tabs
-                      items={[
-                        {
-                          key: 'ca-nhan',
-                          label: <span><i className="fa-regular fa-user me-1" />Cá nhân</span>,
-                          children: (
-                            <Table columns={lbColumns(false)} dataSource={lb?.caNhan ?? []}
-                              rowKey="ten" size="small" pagination={false}
-                              locale={{ emptyText: <Empty description="Chưa có dữ liệu trong kỳ" /> }} />
-                          ),
-                        },
-                        {
-                          key: 'don-vi',
-                          label: <span><i className="fa-regular fa-building me-1" />Đơn vị</span>,
-                          children: (
-                            <Table columns={lbColumns(true)} dataSource={lb?.donVi ?? []}
-                              rowKey="ten" size="small" pagination={false}
-                              locale={{ emptyText: <Empty description="Chưa có dữ liệu trong kỳ" /> }} />
-                          ),
-                        },
-                      ]}
-                    />
-                  </Spin>
-                </div>
-              </div>
-              {/* Mock data sections — Các báo cáo minh họa chưa xây dựng */}
-              <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
-                <div className="card-body p-5">
-                  <div className="fw-bold text-gray-800 mb-4">
-                    <i className="fa-regular fa-chart-line text-warning me-2" />
-                    Phân tích & báo cáo khác
-                    {/* Các báo cáo minh họa (dữ liệu chưa xây dựng) */}
-                  </div>
-                  <Tabs
-                    items={[
-                      // {
-                      //   key: 'role-views',
-                      //   label: <span><i className="fa-regular fa-user-tie me-1" />Dashboard theo vai trò</span>,
-                      //   children: (
-                      //     <div className="row g-3">
-                      //       {ROLE_VIEWS.map((role, idx) => (
-                      //         <div key={idx} className="col-sm-6 col-xl-3">
-                      //           <div className={`card bg-light-${role.color}`}>
-                      //             <div className="card-body text-center py-4">
-                      //               <i className={`fa-regular ${role.icon} fs-2 text-${role.color} mb-2 d-block`} />
-                      //               <h5 className="fw-bold">{role.role}</h5>
-                      //               {role.kpis.map((kpi, i) => (
-                      //                 <div key={i} className="text-muted fs-8">{kpi}</div>
-                      //               ))}
-                      //             </div>
-                      //           </div>
-                      //         </div>
-                      //       ))}
-                      //     </div>
-                      //   ),
-                      // },
-                      {
-                        key: 'campaigns',
-                        label: <span><i className="fa-regular fa-megaphone me-1" />Chiến dịch</span>,
-                        children: (
-                          <Table columns={[
-                            { title: 'Tên chiến dịch', dataIndex: 'ten', key: 'ten' },
-                            { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', render: (v: string) => <Tag color={v === 'Đang diễn ra' ? 'blue' : 'green'}>{v}</Tag> },
-                            { title: 'Người tham gia', dataIndex: 'ngUoiThamGia', key: 'ngUoiThamGia', align: 'center' as const },
-                            { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', align: 'center' as const },
-                            { title: '% hoàn thành', dataIndex: 'tyLeHoanThanh', key: 'tyLeHoanThanh', align: 'center' as const, render: (v: number) => `${v}%` },
-                          ]}
-                          dataSource={CAMPAIGNS} rowKey="ten" size="small" pagination={false} />
-                        ),
-                      },
-                      {
-                        key: 'cds-programs',
-                        label: <span><i className="fa-regular fa-flask me-1" />Chương trình CĐS/R&D</span>,
-                        children: (
-                          <Table columns={[
-                            { title: 'Chương trình', dataIndex: 'ten', key: 'ten' },
-                            { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', render: (v: string) => <span style={{ color: CDS_STATUS_COLOR[v], fontWeight: 'bold' }}>{v}</span> },
-                            { title: 'Tiến độ', dataIndex: 'tienDo', key: 'tienDo', align: 'center' as const, render: (v: number) => `${v}%` },
-                            { title: 'Ngân sách', dataIndex: 'nganSach', key: 'nganSach', align: 'center' as const, render: (v: number) => `${v}%` },
-                            { title: 'Mốc/Hoàn thành', dataIndex: 'mocTong', key: 'mocTong', align: 'center' as const, render: (_: any, r: any) => `${r.mocHoanThanh}/${r.mocTong}` },
-                          ]}
-                          dataSource={CDS_PROGRAMS} rowKey="ten" size="small" pagination={false} />
-                        ),
-                      },
-                      {
-                        key: 'quy-khcn',
-                        label: <span><i className="fa-regular fa-wallet me-1" />Quỹ KHCN</span>,
-                        children: (
-                          <Table columns={[
-                            { title: 'Loại quỹ', dataIndex: 'loaiQuy', key: 'loaiQuy' },
-                            { title: 'Ngân sách đầu', dataIndex: 'nganSachDau', key: 'nganSachDau', align: 'right' as const, render: (v: number) => fmtNum(v) },
-                            { title: 'Đã chi', dataIndex: 'daChi', key: 'daChi', align: 'right' as const, render: (v: number) => fmtNum(v) },
-                            { title: 'Còn lại', key: 'conLai', align: 'right' as const, render: (_: any, r: any) => fmtNum(r.nganSachDau - r.daChi) },
-                          ]}
-                          dataSource={QUY_KHCN} rowKey="loaiQuy" size="small" pagination={false} />
-                        ),
-                      },
-                      {
-                        key: 'chi-thuong',
-                        label: <span><i className="fa-regular fa-gift me-1" />Chi thưởng</span>,
-                        children: (
-                          <Table columns={[
-                            { title: 'Đối tượng', dataIndex: 'doiTuong', key: 'doiTuong' },
-                            { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi' },
-                            { title: 'Tiền thưởng', dataIndex: 'tienThuong', key: 'tienThuong', align: 'right' as const, render: (v: number) => fmtNum(v) + ' đ' },
-                            { title: 'Điểm', dataIndex: 'diemThuong', key: 'diemThuong', align: 'center' as const },
-                            { title: 'Kỳ', dataIndex: 'kyThuong', key: 'kyThuong' },
-                          ]}
-                          dataSource={CHI_THUONG} rowKey="doiTuong" size="small" pagination={false} />
-                        ),
-                      },
-                      {
-                        key: 'vi-giao-dich',
-                        label: <span><i className="fa-regular fa-coins me-1" />Ví & giao dịch</span>,
-                        children: (
-                          <Table columns={[
-                            { title: 'Thời gian', dataIndex: 'thoiGian', key: 'thoiGian', width: 150 },
-                            { title: 'Loại', dataIndex: 'loai', key: 'loai' },
-                            { title: 'Ví', dataIndex: 'vi', key: 'vi' },
-                            { title: 'Số tiền', dataIndex: 'soTien', key: 'soTien', align: 'right' as const, render: (v: string) => <span className={v.startsWith('+') ? 'text-success' : 'text-danger'}><strong>{v}</strong></span> },
-                            { title: 'Số dư', dataIndex: 'soDu', key: 'soDu', align: 'right' as const, render: (v: number) => fmtNum(v) },
-                          ]}
-                          dataSource={VI_GIAO_DICH} rowKey="thoiGian" size="small" pagination={false} />
-                        ),
-                      },
-                      {
-                        key: 'qua-tang',
-                        label: <span><i className="fa-regular fa-box-gift me-1" />Quà tặng</span>,
-                        children: (
-                          <Table columns={[
-                            { title: 'Quà tặng', dataIndex: 'ten', key: 'ten' },
-                            { title: 'Đã quy đổi', dataIndex: 'daQuyDoi', key: 'daQuyDoi', align: 'center' as const },
-                            { title: 'Tồn kho', dataIndex: 'tonKho', key: 'tonKho', align: 'center' as const },
-                            { title: 'Chi phí (đ)', dataIndex: 'chiPhi', key: 'chiPhi', align: 'right' as const, render: (v: number) => fmtNum(v) },
-                          ]}
-                          dataSource={QUA_TANG} rowKey="ten" size="small" pagination={false} />
-                        ),
-                      },
-                      {
-                        key: 'usage',
-                        label: <span><i className="fa-regular fa-chart-bar me-1" />Sử dụng hệ thống</span>,
-                        children: (
-                          <Table columns={[
-                            { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi' },
-                            { title: 'Hoạt động', dataIndex: 'hoatDong', key: 'hoatDong', align: 'center' as const },
-                            { title: 'Tần suất đăng nhập', dataIndex: 'tanSuatDangNhap', key: 'tanSuatDangNhap', align: 'center' as const, render: (v: number) => `${v} lần/tuần` },
-                            { title: '% sử dụng', dataIndex: 'tyLeSuDung', key: 'tyLeSuDung', align: 'center' as const, render: (v: number) => `${v}%` },
-                          ]}
-                          dataSource={USAGE_BY_DEPT} rowKey="donVi" size="small" pagination={false} />
-                        ),
-                      },
-                    ]}
+                  <Table
+                    columns={reportColumns as any}
+                    dataSource={reportRows as any}
+                    rowKey={(record: any, index?: number) => record.ten || record.thoiGian || record.loaiQuy || record.doiTuong || index}
+                    size="small"
+                    pagination={false}
+                    locale={{ emptyText: <Empty description="Chưa có dữ liệu cho mẫu báo cáo này" /> }}
                   />
+
+                  <div className="d-flex justify-content-end gap-2 mt-4 flex-wrap">
+                    <Button onClick={() => handleExport('csv')} loading={exporting && exportingFormat === 'csv'}>Xuất CSV</Button>
+                    <Button onClick={() => handleExport('excel')} loading={exporting && exportingFormat === 'excel'}>Xuất Excel</Button>
+                    <Button onClick={() => handleExport('pdf')} loading={exporting && exportingFormat === 'pdf'}>Xuất PDF</Button>
+                    <Button onClick={() => handleExport('word')} loading={exporting && exportingFormat === 'word'}>Xuất Word</Button>
+                  </div>
                 </div>
               </div>
-            </>
-          )}
+          {(!dash && !loading) && <Empty description="Chưa có dữ liệu" className="py-10" />}
         </Spin>
       </Content>
     </>

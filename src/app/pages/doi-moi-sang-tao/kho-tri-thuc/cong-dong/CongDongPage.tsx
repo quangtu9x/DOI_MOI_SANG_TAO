@@ -72,6 +72,8 @@ const relativeTime = (date?: string) => {
   return new Date(date).toLocaleDateString('vi-VN');
 };
 
+const COMMENT_PAGE_SIZE = 20;
+
 export const CongDongPage: React.FC = () => {
   const { isAdmin } = useDMSTRole();
   const { currentUser } = useAuth();
@@ -96,6 +98,10 @@ export const CongDongPage: React.FC = () => {
   const [postDetailOpen, setPostDetailOpen] = useState(false);
   const [comments, setComments]       = useState<IBinhLuan[]>([]);
   const [commLoading, setCommLoading] = useState(false);
+  const [commentPage, setCommentPage] = useState(1);
+  const [commentHasMore, setCommentHasMore] = useState(false);
+  const [commentTotal, setCommentTotal] = useState(0);
+  const [commentLoadingMore, setCommentLoadingMore] = useState(false);
   const [likedIds, setLikedIds]       = useState<Set<string>>(new Set());
   const [cmtText, setCmtText]         = useState('');
   const [editingCmt, setEditingCmt]   = useState<IBinhLuan | null>(null);
@@ -200,14 +206,55 @@ export const CongDongPage: React.FC = () => {
 
   // ── Open post detail
   const openPost = async (id: string) => {
-    setPostDetailOpen(true); setCommLoading(true);
+    setPostDetailOpen(true);
+    setCommLoading(true);
+    setComments([]);
+    setCommentPage(1);
+    setCommentHasMore(false);
+    setCommentTotal(0);
     try {
       const bvRes = await getBaiViet(id);
       setPostDetail(safeItem<IBaiViet>(bvRes));
-      const cmtRes = await searchBinhLuans({ loaiDoiTuong: LoaiDoiTuong.BaiViet, doiTuongId: id, pageNumber: 1, pageSize: 50 });
-      setComments(safeList<IBinhLuan>(cmtRes));
+      const cmtRes = await searchBinhLuans({
+        loaiDoiTuong: LoaiDoiTuong.BaiViet,
+        doiTuongId: id,
+        binhLuanChaId: null,
+        pageNumber: 1,
+        pageSize: COMMENT_PAGE_SIZE,
+      });
+      const list = safeList<IBinhLuan>(cmtRes);
+      const totalComments = safeTotal(cmtRes);
+      setComments(list);
+      setCommentTotal(totalComments);
+      setCommentPage(1);
+      setCommentHasMore(list.length < totalComments);
     } catch { message.error('Không tải được bài viết'); }
     finally { setCommLoading(false); }
+  };
+
+  const loadMoreComments = async () => {
+    if (!postDetail || commentLoadingMore || !commentHasMore) return;
+    const nextPage = commentPage + 1;
+    setCommentLoadingMore(true);
+    try {
+      const res = await searchBinhLuans({
+        loaiDoiTuong: LoaiDoiTuong.BaiViet,
+        doiTuongId: postDetail.id,
+        binhLuanChaId: null,
+        pageNumber: nextPage,
+        pageSize: COMMENT_PAGE_SIZE,
+      });
+      const list = safeList<IBinhLuan>(res);
+      const totalComments = safeTotal(res) || commentTotal;
+      setComments(prev => [...prev, ...list]);
+      setCommentTotal(totalComments);
+      setCommentPage(nextPage);
+      setCommentHasMore((comments.length + list.length) < totalComments);
+    } catch {
+      message.error('Không tải thêm được bình luận');
+    } finally {
+      setCommentLoadingMore(false);
+    }
   };
 
   // deep-link: ?postId=xxx → mở thẳng chi tiết bài viết (vd. từ Bảng tin)
@@ -788,7 +835,7 @@ export const CongDongPage: React.FC = () => {
               </div>
 
               <Divider orientation="left" style={{ fontSize: 13 }}>
-                Bình luận ({comments.length})
+                Bình luận ({commentTotal || comments.length})
               </Divider>
 
               {/* Comments */}
@@ -851,6 +898,13 @@ export const CongDongPage: React.FC = () => {
                     </div>
                   ))
                 }
+                {commentHasMore && (
+                  <div className="text-center pt-2">
+                    <Button onClick={loadMoreComments} loading={commentLoadingMore}>
+                      Xem thêm bình luận{commentTotal ? ` (${Math.max(commentTotal - comments.length, 0)} còn lại)` : ''}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Comment input */}

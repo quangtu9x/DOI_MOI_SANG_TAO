@@ -7,12 +7,21 @@ const SidebarDoiMoiSangTaoMenu = () => {
 
   return (
     <>
-      {/* ── Tổng quan (all roles) ── */}
+      {/* ── Dashboard (all roles) ── */}
       <SidebarMenuItem
         to='/doi-moi-sang-tao/dashboard'
-        title='Tổng quan'
+        title='Dashboard'
         fontIcon='fa-regular fa-gauge-high'
       />
+
+      {/* ── Báo cáo (reviewer + admin only) ── */}
+      {isReviewer && (
+        <SidebarMenuItem
+          to='/doi-moi-sang-tao/bao-cao'
+          title='Báo cáo'
+          fontIcon='fa-regular fa-file-chart-column'
+        />
+      )}
 
       {/* ── Quản lý ý tưởng ── */}
       <SidebarMenuItemWithSub
@@ -87,24 +96,13 @@ const SidebarDoiMoiSangTaoMenu = () => {
         fontIcon='fa-regular fa-books'
       />
 
-      {/* ── Báo cáo & Thống kê (reviewer + admin only) ── */}
+      {/* ── Báo cáo tổng hợp đầy đủ (demo) ── */}
       {isReviewer && (
-        <SidebarMenuItemWithSub
-          to='/doi-moi-sang-tao/bao-cao'
-          title='Báo cáo & thống kê'
-          fontIcon='fa-regular fa-file-chart-column'
-        >
-          <SidebarMenuItem
-            to='/doi-moi-sang-tao/bao-cao'
-            title='Báo cáo Ý tưởng ĐMST'
-            hasBullet={true}
-          />
-          <SidebarMenuItem
-            to='/doi-moi-sang-tao/bao-cao-day-du'
-            title='Báo cáo tổng hợp đầy đủ (Demo)'
-            hasBullet={true}
-          />
-        </SidebarMenuItemWithSub>
+        <SidebarMenuItem
+          to='/doi-moi-sang-tao/bao-cao-day-du'
+          title='Báo cáo tổng hợp đầy đủ (Demo)'
+          fontIcon='fa-regular fa-chart-mixed'
+        />
       )}
 
       {/* ── Quản lý người dùng (admin only) ── */}

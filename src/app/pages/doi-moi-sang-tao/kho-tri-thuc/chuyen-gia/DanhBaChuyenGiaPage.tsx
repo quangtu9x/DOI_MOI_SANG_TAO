@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Input, Button, Tag, Modal, Form, Spin, Empty, Rate,
   Avatar, Tabs, message, Tooltip, Divider, Card, Switch, Popconfirm, Select,
 } from 'antd';
+import debounce from 'lodash/debounce';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import {
@@ -21,6 +23,7 @@ import {
   updateChuyenGia,
   deleteChuyenGia,
 } from '@/app/services/khoTriThucApi';
+import { searchIdeas } from '@/app/services/ideaPortalApi';
 import type {
   IChuyenGia,
   ITaiLieu,
@@ -31,6 +34,7 @@ import type {
 } from '@/app/models/knowledge-hub';
 import { TrangThaiTuVan, LoaiTaiLieu } from '@/app/models/knowledge-hub';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
+import { useAuth } from '@/app/modules/auth';
 
 const { TextArea } = Input;
 
@@ -81,6 +85,7 @@ const LINH_VUC_OPTIONS = [
 
 export const DanhBaChuyenGiaPage: React.FC = () => {
   const { isReviewer, isAdmin } = useDMSTRole();
+  const { currentUser } = useAuth();
 
   // ── List
   const [loading, setLoading]     = useState(false);
@@ -97,6 +102,30 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
   const [profReviews, setProfReviews] = useState<INhanXetChuyenGia[]>([]);
   const [tuVans, setTuVans]       = useState<IYeuCauTuVan[]>([]);
 
+  // ── Yêu cầu tư vấn đang chờ chính mình (chuyên gia đang đăng nhập) xử lý
+  const [myPending, setMyPending]         = useState<IYeuCauTuVan[]>([]);
+  const [myPendingLoading, setMyPendingLoading] = useState(false);
+
+  const loadMyPending = useCallback(async () => {
+    if (!currentUser?.chuyenGiaId) { setMyPending([]); return; }
+    setMyPendingLoading(true);
+    try {
+      const res = await searchTuVans({
+        chuyenGiaId: currentUser.chuyenGiaId,
+        trangThai: TrangThaiTuVan.ChoXacNhan,
+        pageNumber: 1,
+        pageSize: 50,
+      });
+      setMyPending(safeList<IYeuCauTuVan>(res));
+    } catch (err) {
+      console.error('[DanhBaChuyenGia] loadMyPending error:', err);
+    } finally {
+      setMyPendingLoading(false);
+    }
+  }, [currentUser?.chuyenGiaId]);
+
+  useEffect(() => { loadMyPending(); }, [loadMyPending]);
+
   // ── CRUD form (Admin)
   const [crudOpen, setCrudOpen]       = useState(false);
   const [crudMode, setCrudMode]       = useState<'create' | 'edit'>('create');
@@ -108,6 +137,26 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
   const [tuVanTarget, setTuVanTarget] = useState<IChuyenGia | null>(null);
   const [tuVanLoading, setTuVanLoading] = useState(false);
   const [tuVanForm] = Form.useForm();
+
+  // trường "Ý tưởng cần xin tư vấn" — tìm kiếm bất đồng bộ, không bắt buộc
+  const [ideaOptions, setIdeaOptions]     = useState<{ value: string; label: string }[]>([]);
+  const [ideaSearching, setIdeaSearching] = useState(false);
+  const searchIdeaOptions = useMemo(
+    () => debounce((keyword: string) => {
+      setIdeaSearching(true);
+      searchIdeas({ pageNumber: 1, pageSize: 20, keyword })
+        .then(res => {
+          const list = (res?.data as any)?.data ?? [];
+          setIdeaOptions(list.map((it: any) => ({
+            value: it.id,
+            label: it.code ? `${it.code} - ${it.title}` : it.title,
+          })));
+        })
+        .catch(() => {})
+        .finally(() => setIdeaSearching(false));
+    }, 500),
+    []
+  );
 
   // ── Nhận xét form
   const [nxOpen, setNxOpen]       = useState(false);
@@ -219,9 +268,9 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
   // ── Tư vấn
   const submitTuVan = async () => {
     try {
-      const { noiDung } = await tuVanForm.validateFields();
+      const { noiDung, ideaId } = await tuVanForm.validateFields();
       setTuVanLoading(true);
-      await createTuVan({ chuyenGiaId: tuVanTarget!.id, noiDung });
+      await createTuVan({ chuyenGiaId: tuVanTarget!.id, noiDung, ideaId });
       message.success('Đã gửi yêu cầu tư vấn');
       setTuVanOpen(false);
       if (profile?.id === tuVanTarget?.id) openProfile(profile!.id);
@@ -230,8 +279,12 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
   };
 
   const handleXacNhan = async (id: string) => {
-    try { await xacNhanTuVan(id); message.success('Đã xác nhận'); openProfile(profile!.id); }
-    catch { message.error('Lỗi'); }
+    try {
+      await xacNhanTuVan(id);
+      message.success('Đã xác nhận');
+      if (profile) openProfile(profile.id);
+      loadMyPending();
+    } catch { message.error('Lỗi'); }
   };
   const handleTuChoiTV = (id: string) => {
     setTuChoiTargetId(id);
@@ -245,7 +298,8 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
       await tuChoiTuVan({ id: tuChoiTargetId!, lyDo });
       message.success('Đã từ chối yêu cầu tư vấn');
       setTuChoiModalOpen(false);
-      openProfile(profile!.id);
+      if (profile) openProfile(profile.id);
+      loadMyPending();
     } catch (e: any) {
       if (!e?.errorFields) message.error('Lỗi khi từ chối');
     } finally {
@@ -253,8 +307,12 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
     }
   };
   const handleHoanTat = async (id: string) => {
-    try { await hoanTatTuVan(id); message.success('Đã hoàn tất'); openProfile(profile!.id); }
-    catch { message.error('Lỗi'); }
+    try {
+      await hoanTatTuVan(id);
+      message.success('Đã hoàn tất');
+      if (profile) openProfile(profile.id);
+      loadMyPending();
+    } catch { message.error('Lỗi'); }
   };
 
   // ── Nhận xét
@@ -376,6 +434,55 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
       ]}>Danh bạ chuyên gia</PageTitle>
 
       <Content>
+        {/* Yêu cầu tư vấn đang chờ chính chuyên gia đang đăng nhập xử lý */}
+        {currentUser?.chuyenGiaId && (myPendingLoading || myPending.length > 0) && (
+          <Card
+            size="small"
+            className="mb-5 border-0 shadow-sm"
+            style={{ borderLeft: '4px solid #ffc700' }}
+            title={
+              <span>
+                <i className="fa-regular fa-bell me-2 text-warning" />
+                Yêu cầu tư vấn đang chờ bạn xử lý
+                {myPending.length > 0 && <Tag color="warning" className="ms-2">{myPending.length}</Tag>}
+              </span>
+            }
+          >
+            <Spin spinning={myPendingLoading}>
+              {myPending.length === 0 ? (
+                <Empty description="Không có yêu cầu nào đang chờ" />
+              ) : (
+                <div className="d-flex flex-column gap-3">
+                  {myPending.map(tv => (
+                    <div key={tv.id} className="border rounded p-3">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <Tag color={TU_VAN_COLOR[tv.trangThai] as any}>{TU_VAN_LABEL[tv.trangThai]}</Tag>
+                        <span className="text-muted fs-8">
+                          {tv.createdOn ? new Date(tv.createdOn).toLocaleDateString('vi-VN') : ''}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 fs-7 mb-2">{tv.noiDung}</p>
+                      {tv.ideaId && (
+                        <div className="mb-2">
+                          <Link to={`/doi-moi-sang-tao/quan-ly-y-tuong/chi-tiet/${tv.ideaId}`} className="fs-7">
+                            <i className="fa-regular fa-link me-1" />
+                            {tv.tenYTuong || 'Xem ý tưởng liên quan'}
+                          </Link>
+                        </div>
+                      )}
+                      <div className="d-flex gap-2">
+                        <Button size="small" type="primary" onClick={() => handleXacNhan(tv.id)}>Xác nhận</Button>
+                        <Button size="small" danger onClick={() => handleTuChoiTV(tv.id)}>Từ chối</Button>
+                        <Button size="small" onClick={() => openProfile(tv.chuyenGiaId)}>Xem hồ sơ của tôi</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Spin>
+          </Card>
+        )}
+
         {/* Toolbar */}
         <div className="d-flex justify-content-between align-items-center mb-5 gap-3 flex-wrap">
           <div className="d-flex gap-2 flex-wrap align-items-center">
@@ -500,7 +607,7 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
                       </div>
                       <div className="d-flex gap-2">
                         <Button type="primary" icon={<i className="fa-regular fa-comments me-1" />}
-                          onClick={() => { setTuVanTarget(profile); tuVanForm.resetFields(); setTuVanOpen(true); }}>
+                          onClick={() => { setTuVanTarget(profile); tuVanForm.resetFields(); setIdeaOptions([]); setTuVanOpen(true); }}>
                           Gửi yêu cầu tư vấn
                         </Button>
                         <Button icon={<i className="fa-regular fa-star me-1" />}
@@ -579,6 +686,14 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
                               </span>
                             </div>
                             <p className="text-gray-600 fs-7 mb-2">{tv.noiDung}</p>
+                            {tv.ideaId && (
+                              <div className="mb-2">
+                                <Link to={`/doi-moi-sang-tao/quan-ly-y-tuong/chi-tiet/${tv.ideaId}`} className="fs-7">
+                                  <i className="fa-regular fa-link me-1" />
+                                  {tv.tenYTuong || 'Xem ý tưởng liên quan'}
+                                </Link>
+                              </div>
+                            )}
                             {tv.trangThai === TrangThaiTuVan.ChoXacNhan && isReviewer && (
                               <div className="d-flex gap-2">
                                 <Button size="small" type="primary" onClick={() => handleXacNhan(tv.id)}>Xác nhận</Button>
@@ -694,7 +809,18 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
         <Form form={tuVanForm} layout="vertical">
           <Form.Item name="noiDung" label="Nội dung yêu cầu"
             rules={[{ required: true, message: 'Nhập nội dung yêu cầu' }]}>
-            <TextArea rows={5} placeholder="Mô tả vấn đề cần tư vấn..." maxLength={4000} showCount />
+            <TextArea autoSize={{ minRows: 5, maxRows: 15 }} placeholder="Mô tả vấn đề cần tư vấn..." maxLength={4000} showCount />
+          </Form.Item>
+          <Form.Item name="ideaId" label="Ý tưởng cần xin tư vấn">
+            <Select
+              showSearch
+              allowClear
+              filterOption={false}
+              placeholder="Tìm và gắn ý tưởng liên quan (bỏ trống nếu không có)"
+              notFoundContent={ideaSearching ? <Spin size="small" /> : null}
+              onSearch={searchIdeaOptions}
+              options={ideaOptions}
+            />
           </Form.Item>
         </Form>
       </Modal>

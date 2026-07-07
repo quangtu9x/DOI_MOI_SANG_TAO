@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { Tag, message } from 'antd';
+import { Empty, Tag, message } from 'antd';
+import ReactApexChart from 'react-apexcharts';
+import type { ApexOptions } from 'apexcharts';
 import { getIdeaDashboard, searchIdeas } from '@/app/services/ideaPortalApi';
 import type { IIdea, IIdeaDashboard } from '@/models/idea-portal';
 
@@ -419,6 +421,28 @@ export const DashboardDoiMoiPage: React.FC = () => {
     color: LV_COLORS[i % LV_COLORS.length],
   }));
 
+  const monthlyOptions: ApexOptions = {
+    chart: { toolbar: { show: false }, fontFamily: 'inherit' },
+    colors: [VNA_BLUE],
+    plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
+    dataLabels: { enabled: false },
+    xaxis: { categories: Array.from({ length: 12 }, (_, i) => `T${i + 1}`) },
+    yaxis: { labels: { formatter: (v: number) => `${Math.round(v)}` } },
+    grid: { strokeDashArray: 4 },
+  };
+
+  const chartMonthlySeries = dash?.nopTheoThang ?? Array(12).fill(0);
+  const statusSeries = dash
+    ? [dash.soBanNhap, dash.soDaNop, dash.soDaTiepNhan, dash.soTraLai, dash.soDuocCongNhan]
+    : [];
+  const statusOptions: ApexOptions = {
+    labels: ['Bản nháp', 'Đã nộp/Chờ xét duyệt', 'Đã tiếp nhận', 'Đã trả lại', 'Được công nhận'],
+    colors: ['#94a3b8', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'],
+    legend: { position: 'bottom', fontSize: '12px' },
+    dataLabels: { enabled: false },
+    stroke: { width: 0 },
+  };
+
   const handleLike = (id: string) => {
     const wasLiked = likes[id] ?? false;
     setLikes(prev => ({ ...prev, [id]: !wasLiked }));
@@ -459,6 +483,123 @@ export const DashboardDoiMoiPage: React.FC = () => {
             </div>
           ))}
         </div>
+
+        {/* Missing KPI rows restored */}
+        {dash && (
+          <>
+            <div className='row g-5 mb-6'>
+              <div className='col-6 col-xl-3'>
+                <div className='card card-flush border-start border-4 border-primary h-100'>
+                  <div className='card-body py-5 px-6'>
+                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Thời gian xử lý trung bình</div>
+                    <div className='fs-2 fw-bold text-primary'>{dash.gioXuLyTrungBinh != null ? `${dash.gioXuLyTrungBinh} giờ` : '—'}</div>
+                    <div className='fs-8 text-muted mt-1'>SLA {dash.slaGio} giờ</div>
+                  </div>
+                </div>
+              </div>
+              <div className='col-6 col-xl-3'>
+                <div className='card card-flush border-start border-4 border-success h-100'>
+                  <div className='card-body py-5 px-6'>
+                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Tỷ lệ đúng hạn</div>
+                    <div className='fs-2 fw-bold text-success'>{dash.tyLeDungHan != null ? `${dash.tyLeDungHan}%` : '—'}</div>
+                    <div className='fs-8 text-muted mt-1'>Tỷ lệ đạt SLA xử lý</div>
+                  </div>
+                </div>
+              </div>
+              <div className='col-6 col-xl-3'>
+                <div className='card card-flush border-start border-4 border-warning h-100'>
+                  <div className='card-body py-5 px-6'>
+                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Hồ sơ đang chờ xử lý</div>
+                    <div className='fs-2 fw-bold text-warning'>{dash.soChoXuLy ?? 0}</div>
+                    <div className='fs-8 text-muted mt-1'>Chưa chuyển sang bước tiếp theo</div>
+                  </div>
+                </div>
+              </div>
+              <div className='col-6 col-xl-3'>
+                <div className='card card-flush border-start border-4 border-danger h-100'>
+                  <div className='card-body py-5 px-6'>
+                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Tồn đọng quá hạn</div>
+                    <div className='fs-2 fw-bold text-danger'>{dash.soTonDong ?? 0}</div>
+                    <div className='fs-8 text-muted mt-1'>{dash.soTonDong > 0 ? 'Cần xử lý ngay' : 'Không có tồn đọng'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className='row g-5 mb-6'>
+              <div className='col-6 col-xl-3'>
+                <div className='card card-flush border-start border-4 border-danger h-100'>
+                  <div className='card-body py-5 px-6'>
+                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Quá hạn tiếp nhận</div>
+                    <div className='fs-2 fw-bold text-danger'>{dash.soQuaHanTiepNhan ?? 0}</div>
+                    <div className='fs-8 text-muted mt-1'>{dash.soQuaHanTiepNhan > 0 ? `>${dash.thoiHanTiepNhanNgay} ngày` : 'Không có hồ sơ quá hạn'}</div>
+                  </div>
+                </div>
+              </div>
+              <div className='col-6 col-xl-3'>
+                <div className='card card-flush border-start border-4 border-danger h-100'>
+                  <div className='card-body py-5 px-6'>
+                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Quá hạn kiểm duyệt</div>
+                    <div className='fs-2 fw-bold text-danger'>{dash.soQuaHanKiemDuyet ?? 0}</div>
+                    <div className='fs-8 text-muted mt-1'>{dash.soQuaHanKiemDuyet > 0 ? `>${dash.thoiHanKiemDuyetCongNhanNgay} ngày` : 'Không có hồ sơ quá hạn'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className='row g-5 mb-6'>
+              <div className='col-12'>
+                <div className='card card-flush h-100'>
+                  <div className='card-header border-0 pt-5 pb-0'>
+                    <div className='card-title fw-bold text-primary'>
+                      <i className='fa-regular fa-chart-column me-2' />Ý tưởng theo tháng ({dash.nam})
+                    </div>
+                  </div>
+                  <div className='card-body pt-2'>
+                    <ReactApexChart
+                      type='bar'
+                      height={240}
+                      series={[{ name: 'Số nộp', data: chartMonthlySeries }]}
+                      options={monthlyOptions}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className='row g-5 mb-6'>
+              <div className='col-12'>
+                <div className='card card-flush h-100'>
+                  <div className='card-header border-0 pt-5 pb-0'>
+                    <div className='card-title fw-bold text-primary'>
+                      <i className='fa-regular fa-chart-pie me-2' />Phân bổ theo lĩnh vực
+                    </div>
+                  </div>
+                  <div className='card-body pt-2'>
+                    {(dash.theoLinhVuc ?? []).length === 0 ? (
+                      <Empty description='Chưa có dữ liệu' />
+                    ) : (
+                      (dash.theoLinhVuc ?? []).map((lv, i) => {
+                        const pct = totalLv > 0 ? Math.round((lv.soLuong / totalLv) * 100) : 0;
+                        return (
+                          <div key={i} className='mb-3'>
+                            <div className='d-flex justify-content-between mb-1'>
+                              <span className='fw-semibold text-gray-700'>{lv.ten}</span>
+                              <span className='text-muted'>{lv.soLuong}</span>
+                            </div>
+                            <div className='bg-light rounded' style={{ height: 6 }}>
+                              <div className='rounded bg-primary' style={{ width: `${pct}%`, height: 6 }} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Main two-column layout */}
         <div className='row g-5'>
@@ -588,6 +729,20 @@ export const DashboardDoiMoiPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Status breakdown */}
+            <div className='card mb-4'>
+              <div className='card-header border-0 pt-4 pb-2'>
+                <h4 className='card-title fw-semibold text-gray-700 fs-7'>
+                  <i className='fa-regular fa-chart-pie me-2' />Phân bố theo trạng thái
+                </h4>
+              </div>
+              <div className='card-body pt-2 pb-4'>
+                {statusSeries.every(v => v === 0)
+                  ? <Empty description='Chưa có dữ liệu' style={{ padding: 24 }} />
+                  : <ReactApexChart type='donut' height={220} series={statusSeries} options={statusOptions} />}
               </div>
             </div>
 
