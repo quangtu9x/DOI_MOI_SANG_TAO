@@ -55,7 +55,7 @@ export const CauHinhXuLyYTuongModal = ({ visible, onClose, onSaved }: Props) => 
             pageNumber: 1,
             pageSize: 1000,
             keyword: null,
-          }),
+          }, 'neutral'),
         ]);
 
         const config = (cfgRes as any)?.data?.data as ICauHinhXuLyYTuong | undefined;

@@ -199,7 +199,7 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
                     )}
                   </div>
                   <p className={`text-sm text-center font-semibold mt-1
-                    ${s.done ? 'text-[#003087]' : s.active ? 'text-gray-800' : 'text-gray-400'}`}>
+                    ${s.done ? 'text-white' : s.active ? 'text-gray-800' : 'text-gray-400'}`}>
                     {s.label}
                   </p>
                   <p className={`text-xs text-center font-medium ${s.done ? 'text-gray-600' : 'text-gray-400'}`}>

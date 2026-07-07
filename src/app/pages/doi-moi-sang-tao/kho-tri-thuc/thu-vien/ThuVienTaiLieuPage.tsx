@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Input, Select, Button, Tag, Modal, Form, Upload, Spin, Empty,
   Tabs, Tooltip, Popconfirm, message, Badge, Divider, Progress, InputNumber,
-  Tree, TreeSelect, DatePicker, Checkbox,
+  Tree, TreeSelect, Checkbox,
 } from 'antd';
 import dayjs from 'dayjs';
+import debounce from 'lodash/debounce';
 import type { DataNode } from 'antd/es/tree';
 import type { UploadFile, RcFile } from 'antd/es/upload/interface';
+import { searchIdeas } from '@/app/services/ideaPortalApi';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import { useAuth } from '@/app/modules/auth';
@@ -208,6 +210,26 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [formMode, setFormMode]         = useState<'create' | 'edit'>('create');
   const [formLoading, setFormLoading]   = useState(false);
   const [form] = Form.useForm();
+
+  // trường "Thuộc ý tưởng nào" — tìm kiếm bất đồng bộ, không bắt buộc
+  const [ideaOptions, setIdeaOptions]   = useState<{ value: string; label: string }[]>([]);
+  const [ideaSearching, setIdeaSearching] = useState(false);
+  const searchIdeaOptions = useMemo(
+    () => debounce((keyword: string) => {
+      setIdeaSearching(true);
+      searchIdeas({ pageNumber: 1, pageSize: 20, keyword })
+        .then(res => {
+          const list = (res?.data as any)?.data ?? [];
+          setIdeaOptions(list.map((it: any) => ({
+            value: it.id,
+            label: it.code ? `${it.code} - ${it.title}` : it.title,
+          })));
+        })
+        .catch(() => {})
+        .finally(() => setIdeaSearching(false));
+    }, 500),
+    []
+  );
 
   // file upload
   const [uploadFile, setUploadFile]     = useState<RcFile | null>(null);
@@ -564,12 +586,14 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const openCreate = () => {
     setFormMode('create'); form.resetFields();
     setUploadFile(null); setUploadProgress(0); setExtraFiles([]);
+    setIdeaOptions([]);
     form.setFieldsValue({ loaiTaiLieu: LoaiTaiLieu.HuongDan });
     setFormOpen(true);
   };
   const openEdit = (item: ITaiLieu) => {
     setFormMode('edit'); form.resetFields();
     setUploadFile(null); setUploadProgress(0); setExtraFiles([]);
+    setIdeaOptions(item.ideaId ? [{ value: item.ideaId, label: item.tenYTuong || item.ideaId }] : []);
     form.setFieldsValue({
       ...item,
       tags: item.tags?.join(', '),
@@ -618,6 +642,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         tenNguonThamChieu: values.loaiNguonThamChieu ? (values.tenNguonThamChieu || null) : null,
         nguonThamChieuId: values.loaiNguonThamChieu ? (values.nguonThamChieuId || null) : null,
         thuMucId: values.thuMucId ?? null,
+        ideaId: values.ideaId ?? null,
         tags,
         duongDanLuuTru: duongDanLuuTru || null,
         tenGoc: tenGoc || null,
@@ -632,7 +657,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         message.success('Tạo tài liệu thành công');
       } else {
         const editId = form.getFieldValue('id');
-        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true, capNhatThuMuc: true });
+        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true, capNhatThuMuc: true, capNhatIdea: true });
         taiLieuId = editId;
         message.success('Cập nhật thành công');
       }
@@ -670,20 +695,15 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     const defaultReviewerId = workflowConfig.nguoiKiemDuyetMacDinhUserIds.length === 1
       ? workflowConfig.nguoiKiemDuyetMacDinhUserIds[0]
       : undefined;
-    const defaultHanXuLy = workflowConfig.macDinhHanXuLyGio && workflowConfig.macDinhHanXuLyGio > 0
-      ? dayjs().add(workflowConfig.macDinhHanXuLyGio, 'hour')
-      : undefined;
     nopForm.setFieldsValue({
       nguoiKiemDuyetId: defaultReviewerId,
-      hanXuLy: defaultHanXuLy,
     });
     setNopOpen(true);
   };
   const handleNop = async () => {
     try {
-      const { nguoiKiemDuyetId, hanXuLy } = await nopForm.validateFields();
-      const hanXuLyGio = hanXuLy ? Math.max(1, Math.ceil(dayjs(hanXuLy).diff(dayjs(), 'hour', true))) : undefined;
-      const res = await nopKiemDuyetTaiLieu(nopId, nguoiKiemDuyetId, hanXuLyGio);
+      const { nguoiKiemDuyetId } = await nopForm.validateFields();
+      const res = await nopKiemDuyetTaiLieu(nopId, nguoiKiemDuyetId, undefined);
       const err = getApiError(res);
       if (err) { message.error(err); return; }
       message.success('Đã nộp kiểm duyệt'); setNopOpen(false);
@@ -1410,7 +1430,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         confirmLoading={formLoading || uploading}
         width={680}
       >
-        <Form form={form} layout="vertical" requiredMark="optional">
+        <Form form={form} layout="vertical">
           <Form.Item name="id" hidden><Input /></Form.Item>
           <Form.Item name="duongDanLuuTru" hidden><Input /></Form.Item>
           <Form.Item name="tenGoc" hidden><Input /></Form.Item>
@@ -1449,6 +1469,18 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
           <Form.Item name="moTa" label="Mô tả">
             <TextArea rows={3} placeholder="Mô tả nội dung tài liệu..." />
+          </Form.Item>
+
+          <Form.Item name="ideaId" label="Thuộc ý tưởng nào">
+            <Select
+              showSearch
+              allowClear
+              filterOption={false}
+              placeholder="Tìm và chọn ý tưởng liên quan (bỏ trống nếu không có)"
+              notFoundContent={ideaSearching ? <Spin size="small" /> : null}
+              onSearch={searchIdeaOptions}
+              options={ideaOptions}
+            />
           </Form.Item>
 
           <Divider orientation="left" style={{ fontSize: 13, color: '#888' }}>
@@ -1679,13 +1711,13 @@ export const ThuVienTaiLieuPage: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item name="batBuocChiDinhNguoiKiemDuyet" valuePropName="checked">
+            {/* <Form.Item name="batBuocChiDinhNguoiKiemDuyet" valuePropName="checked">
               <Checkbox>Bắt buộc chỉ định người kiểm duyệt khi nộp tài liệu</Checkbox>
-            </Form.Item>
+            </Form.Item> */}
 
-            <Form.Item name="batBuocHanXuLy" valuePropName="checked">
+            {/* <Form.Item name="batBuocHanXuLy" valuePropName="checked">
               <Checkbox>Bắt buộc thiết lập hạn xử lý trước khi nộp</Checkbox>
-            </Form.Item>
+            </Form.Item> */}
 
             <Form.Item
               name="macDinhHanXuLyGio"
@@ -1717,34 +1749,18 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       >
         <div className="alert alert-info py-2 px-3 mb-3 fs-8">
           <i className="fa-regular fa-circle-info me-1" />
-          Quy trình hiện tại: {workflowConfig.batBuocChiDinhNguoiKiemDuyet ? 'Bắt buộc chỉ định người kiểm duyệt' : 'Cho phép không chỉ định người kiểm duyệt'};
-          {' '}
-          {workflowConfig.batBuocHanXuLy ? 'Bắt buộc đặt hạn xử lý' : 'Cho phép không đặt hạn xử lý'}.
-          {workflowConfig.macDinhHanXuLyGio ? ` Hạn xử lý mặc định: ${workflowConfig.macDinhHanXuLyGio} giờ.` : ''}
+          Bắt buộc chỉ định người kiểm duyệt trước khi nộp.
         </div>
         <Form form={nopForm} layout="vertical">
           <Form.Item
             name="nguoiKiemDuyetId"
-            label={`Người kiểm duyệt${workflowConfig.batBuocChiDinhNguoiKiemDuyet ? '' : ' (tùy chọn)'}`}
-            rules={workflowConfig.batBuocChiDinhNguoiKiemDuyet ? [{ required: true, message: 'Vui lòng chỉ định người kiểm duyệt.' }] : undefined}
+            label="Người kiểm duyệt"
+            rules={[{ required: true, message: 'Vui lòng chỉ định người kiểm duyệt.' }]}
           >
             <UserSelect
-              placeholder="Chỉ định trước người kiểm duyệt (bỏ trống nếu chưa xác định)"
+              placeholder="Chỉ định người kiểm duyệt"
               allowClear
               onChange={(val: any) => nopForm.setFieldValue('nguoiKiemDuyetId', val?.value ?? val)}
-            />
-          </Form.Item>
-          <Form.Item
-            name="hanXuLy"
-            label={`Hạn xử lý${workflowConfig.batBuocHanXuLy ? '' : ' (tùy chọn)'}`}
-            rules={workflowConfig.batBuocHanXuLy ? [{ required: true, message: 'Vui lòng chọn hạn xử lý.' }] : undefined}
-          >
-            <DatePicker
-              showTime
-              format="DD/MM/YYYY HH:mm"
-              style={{ width: '100%' }}
-              placeholder="Chọn thời hạn xử lý"
-              disabledDate={d => d && d.isBefore(dayjs(), 'day')}
             />
           </Form.Item>
         </Form>

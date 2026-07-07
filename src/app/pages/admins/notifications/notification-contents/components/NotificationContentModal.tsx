@@ -185,7 +185,7 @@ export const NotificationContentModal = () => {
                   <Form.Item label="Mô tả" name="description">
                     <TextArea 
                       rows={3} 
-                      placeholder="Nhập mô tả (tùy chọn)" 
+                      placeholder="Nhập mô tả" 
                       disabled={readOnly}
                     />
                   </Form.Item>

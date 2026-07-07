@@ -119,6 +119,8 @@ export interface ITaiLieu {
   nguonThamChieuId?:   string | null;
   tenNguonThamChieu?:  string | null;
   thuMucId?:        string | null;
+  ideaId?:          string | null;
+  tenYTuong?:       string | null;
   urlNgoai?:        string;
   duongDanLuuTru?:  string;
   tenGoc?:          string;
@@ -154,6 +156,7 @@ export interface ISearchTaiLieuRequest extends IPageRequest {
   loaiNguonThamChieu?: LoaiNguonThamChieu | null;
   nguonThamChieuId?:   string | null;
   thuMucId?:      string | null;
+  ideaId?:        string | null;
   chuaPhanLoai?:  boolean | null;
   tagIds?:        string[];
   nguoiKiemDuyetId?: string | null;
@@ -175,6 +178,7 @@ export interface ICreateTaiLieuRequest {
   nguonThamChieuId?:   string | null;
   tenNguonThamChieu?:  string | null;
   thuMucId?:       string | null;
+  ideaId?:         string | null;
   tags?:           string[];
 }
 
@@ -184,6 +188,8 @@ export interface IUpdateTaiLieuRequest extends ICreateTaiLieuRequest {
   capNhatNguonThamChieu?: boolean;
   /** true → BE cập nhật lại thư mục theo thuMucId (đưa về gốc bằng null) */
   capNhatThuMuc?: boolean;
+  /** true → BE cập nhật lại ý tưởng liên quan theo ideaId (cho phép bỏ liên kết bằng null) */
+  capNhatIdea?: boolean;
 }
 
 export interface ITuChoiRequest {

@@ -1,11 +1,13 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "@/app/modules/auth"
+import { useDMSTRole } from "@/app/hooks/useDMSTRole"
 import { P, R } from "@/data"
 import { hasAll } from "@/utils/utils"
 
 export const PortalNavbar = () => {
   const { currentUser } = useAuth();
+  const { isAdmin, isReviewer } = useDMSTRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState<{ [key: string]: boolean }>({});
 
@@ -53,16 +55,17 @@ export const PortalNavbar = () => {
     {
       title: "Quản lý ĐMST",
       key: "quan-ly-dmst",
+      // Khớp đúng quyền truy cập từng route trong DoiMoiSangTaoRoutes.tsx (ReviewerRoute/AdminRoute)
       items: [
-        { label: "Tổng quan", to: "/doi-moi-sang-tao/dashboard" },
-        { label: "Danh sách ý tưởng", to: "/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach" },
-        { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi" },
-        { label: "Quy trình phê duyệt", to: "/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet" },
-        { label: "Sơ đồ quy trình", to: "/doi-moi-sang-tao/quy-trinh-duyet/so-do" },
-        { label: "Thông báo hệ thống", to: "/doi-moi-sang-tao/thong-bao" },
-        { label: "Báo cáo & thống kê", to: "/doi-moi-sang-tao/bao-cao" },
-        { label: "Quản lý người dùng", to: "/doi-moi-sang-tao/quan-ly-nguoi-dung" },
-      ]
+        { label: "Tổng quan", to: "/doi-moi-sang-tao/dashboard", show: true },
+        { label: "Danh sách ý tưởng", to: "/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach", show: isReviewer },
+        { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi", show: true },
+        { label: "Quy trình phê duyệt", to: "/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet", show: isReviewer },
+        { label: "Sơ đồ quy trình", to: "/doi-moi-sang-tao/quy-trinh-duyet/so-do", show: true },
+        { label: "Thông báo hệ thống", to: "/doi-moi-sang-tao/thong-bao", show: true },
+        { label: "Báo cáo & thống kê", to: "/doi-moi-sang-tao/bao-cao", show: isReviewer },
+        { label: "Quản lý người dùng", to: "/doi-moi-sang-tao/quan-ly-nguoi-dung", show: isAdmin },
+      ].filter(item => item.show),
     },
     // Menu Quản trị hệ thống — chỉ hiện khi có quyền
     ...(adminItems.length > 0 ? [{
@@ -70,7 +73,7 @@ export const PortalNavbar = () => {
       key: "quan-tri",
       items: adminItems.map(({ label, to }) => ({ label, to })),
     }] : []),
-  ];
+  ].filter(group => group.items.length > 0);
 
   return (
     <div className="w-full sticky top-0 z-[999] bg-portal-primary shadow-lg border-t border-white/10">
