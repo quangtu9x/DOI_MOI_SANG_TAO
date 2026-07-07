@@ -41,6 +41,13 @@ const SidebarDoiMoiSangTaoMenu = () => {
         />
       </SidebarMenuItemWithSub>
 
+      {/* ── Sơ đồ quy trình (thông tin, tất cả roles) ── */}
+      <SidebarMenuItem
+        to='/doi-moi-sang-tao/quy-trinh-duyet/so-do'
+        title='Sơ đồ quy trình'
+        fontIcon='fa-regular fa-diagram-project'
+      />
+
       {/* ── Quy trình phê duyệt (reviewer + admin only) ── */}
       {isReviewer && (
         <SidebarMenuItemWithSub

@@ -37,6 +37,20 @@ export const searchIdeas = (data: IIdeaSearchRequest) =>
 export const getIdeaHistories = (ideaId: string) =>
   requestGET<IResult<IIdeaHistory[]>>(`IdeaHistories/by-idea/${ideaId}`);
 
+/**
+ * URL tải xuống tài liệu đính kèm ý tưởng — file lưu trên MinIO, `filePath` có dạng "bucket/key".
+ * Dùng chung endpoint tải file công khai (Catalog/Attachments), giống cách khoTriThucApi.ts
+ * dựng URL tải tài liệu tri thức.
+ */
+export const getIdeaAttachmentDownloadUrl = (filePath?: string | null): string => {
+  if (!filePath) return '';
+  const idx = filePath.indexOf('/');
+  if (idx < 0) return '';
+  const bucket = filePath.slice(0, idx);
+  const key = filePath.slice(idx + 1);
+  return `${(window as any).__BASE_API__ ?? '/api'}/api/v1/attachments/${bucket}/${key}`;
+};
+
 // ── Báo cáo / Dashboard ĐMST ─────────────────────────────────────────────────
 
 /** Khoảng thời gian tùy chọn (ưu tiên hơn `nam` nếu có) — định dạng yyyy-MM-dd */

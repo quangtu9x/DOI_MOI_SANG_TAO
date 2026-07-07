@@ -6,7 +6,7 @@ import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import {
   getIdeaDetail, getIdeaHistories, receiveIdea, returnIdea, recognizeIdea,
-  uploadIdeaFiles, addIdeaAttachments,
+  uploadIdeaFiles, addIdeaAttachments, getIdeaAttachmentDownloadUrl,
 } from '@/app/services/ideaPortalApi';
 import type { IIdea, IIdeaHistory, IIdeaAttachment } from '@/models/idea-portal';
 import { TuongTacSection } from '@/app/components/tuong-tac/TuongTacSection';
@@ -312,13 +312,16 @@ export const ChiTietYTuongPage: React.FC = () => {
                         {kqcnAttachments.length > 0 && (
                           <div className="d-flex flex-column gap-2 mt-2">
                             {kqcnAttachments.map((f, i) => (
-                              <div key={i}
-                                className="d-flex align-items-center gap-2 p-2 rounded bg-white"
+                              <a key={i}
+                                href={getIdeaAttachmentDownloadUrl(f.filePath)}
+                                target="_blank" rel="noopener noreferrer"
+                                className="d-flex align-items-center gap-2 p-2 rounded bg-white text-decoration-none"
                                 style={{ border: '1px solid #ddd6fe' }}>
                                 <i className="fa-regular fa-file-check" style={{ color: '#722ed1' }} />
                                 <span className="fs-7 text-gray-800 fw-semibold">{stripKqcnTag(f.originalName)}</span>
                                 <span className="text-muted fs-8">{f.fileExt?.toUpperCase()} · {fmtBytes(f.fileSize)}</span>
-                              </div>
+                                <i className="fa-regular fa-download ms-auto text-muted" />
+                              </a>
                             ))}
                           </div>
                         )}
@@ -361,17 +364,21 @@ export const ChiTietYTuongPage: React.FC = () => {
                         {idea.attachments.map((f, i) => {
                           const isKqcn = isKqcnAttachment(f.originalName);
                           return (
-                            <div key={i} className="d-flex align-items-center gap-3 p-3 rounded bg-light">
+                            <a key={i}
+                              href={getIdeaAttachmentDownloadUrl(f.filePath)}
+                              target="_blank" rel="noopener noreferrer"
+                              className="d-flex align-items-center gap-3 p-3 rounded bg-light text-decoration-none">
                               <i className={`fa-regular ${isKqcn ? 'fa-file-check' : 'fa-file'} fs-4`}
                                 style={{ color: isKqcn ? '#722ed1' : undefined }} />
                               <div className="flex-grow-1 min-w-0">
-                                <div className="fw-semibold fs-7 text-truncate">
+                                <div className="fw-semibold fs-7 text-truncate text-gray-800">
                                   {stripKqcnTag(f.originalName) ?? f.fileName}
                                   {isKqcn && <Tag color="purple" className="ms-2">Kết quả công nhận</Tag>}
                                 </div>
                                 <div className="text-muted fs-8">{f.fileExt?.toUpperCase()} · {fmtBytes(f.fileSize)}</div>
                               </div>
-                            </div>
+                              <i className="fa-regular fa-download text-muted" />
+                            </a>
                           );
                         })}
                       </div>

@@ -58,6 +58,7 @@ export const PortalNavbar = () => {
         { label: "Danh sách ý tưởng", to: "/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach" },
         { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi" },
         { label: "Quy trình phê duyệt", to: "/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet" },
+        { label: "Sơ đồ quy trình", to: "/doi-moi-sang-tao/quy-trinh-duyet/so-do" },
         { label: "Thông báo hệ thống", to: "/doi-moi-sang-tao/thong-bao" },
         { label: "Báo cáo & thống kê", to: "/doi-moi-sang-tao/bao-cao" },
         { label: "Quản lý người dùng", to: "/doi-moi-sang-tao/quan-ly-nguoi-dung" },

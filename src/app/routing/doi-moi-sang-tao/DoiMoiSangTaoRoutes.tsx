@@ -6,6 +6,7 @@ const DashboardDoiMoiPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/dash
 const QuanLyYTuongDMSTPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/QuanLyYTuongDMSTPage').then(m => ({ default: m.QuanLyYTuongDMSTPage })));
 const ChiTietYTuongPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/ChiTietYTuongPage').then(m => ({ default: m.ChiTietYTuongPage })));
 const QuyTrinhDuyetPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/quy-trinh-duyet/QuyTrinhDuyetPage').then(m => ({ default: m.QuyTrinhDuyetPage })));
+const SoDoQuyTrinhPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/quy-trinh-duyet/SoDoQuyTrinhPage').then(m => ({ default: m.SoDoQuyTrinhPage })));
 const ThongBaoDMSTPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/thong-bao/ThongBaoDMSTPage').then(m => ({ default: m.ThongBaoDMSTPage })));
 const KhoTriThucPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/KhoTriThucPage').then(m => ({ default: m.KhoTriThucPage })));
 const ThuVienTaiLieuPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/thu-vien/ThuVienTaiLieuPage').then(m => ({ default: m.ThuVienTaiLieuPage })));
@@ -54,6 +55,9 @@ export const DoiMoiSangTaoRoutes: FC = () => {
       <Route path="quan-ly-y-tuong/chi-tiet/:id"  element={<ChiTietYTuongPage />} />
       <Route path="quan-ly-y-tuong/chinh-sua/:id" element={<RedirectToPortalEdit />} />
       <Route path="quan-ly-y-tuong" element={<Navigate to="quan-ly-y-tuong/danh-sach" replace />} />
+
+      {/* Sơ đồ quy trình — thông tin, tất cả roles đều xem được */}
+      <Route path="quy-trinh-duyet/so-do" element={<SoDoQuyTrinhPage />} />
 
       {/* Quy trình duyệt — reviewer + admin only */}
       <Route path="quy-trinh-duyet/cho-duyet" element={<ReviewerRoute element={<QuyTrinhDuyetPage mode="cho-duyet" />} />} />
