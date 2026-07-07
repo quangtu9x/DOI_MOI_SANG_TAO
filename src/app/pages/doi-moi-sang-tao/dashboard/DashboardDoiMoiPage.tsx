@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { Empty, Tag, message } from 'antd';
+import { Button, Checkbox, Empty, Modal, Tag, message } from 'antd';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { getIdeaDashboard, searchIdeas } from '@/app/services/ideaPortalApi';
@@ -16,25 +16,71 @@ const VNA_GOLD = '#C5A028';
 const LV_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16'];
 
 const STATUS_COLORS: Record<string, string> = {
-  'Bản nháp':       'default',
-  'Đã nộp':         'processing',
-  'Đã tiếp nhận':   'success',
-  'Đã trả lại':     'error',
-  'Đã hủy':         'default',
+  'Bản nháp': 'default',
+  'Đã nộp': 'processing',
+  'Đã tiếp nhận': 'success',
+  'Đã trả lại': 'error',
+  'Đã hủy': 'default',
   'Được công nhận': 'purple',
 };
 
+type DashboardWidgetKey = 'feed' | 'kpi' | 'sla' | 'monthly' | 'status' | 'field';
+
+const DASHBOARD_LAYOUT_STORAGE_KEY = 'dmst.dashboard.layout.v1';
+const DEFAULT_DASHBOARD_WIDGET_ORDER: DashboardWidgetKey[] = ['feed', 'kpi', 'sla', 'monthly', 'status', 'field'];
+
+const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetKey, string> = {
+  feed: 'Hoạt động mới nhất',
+  kpi: 'KPI tổng quan',
+  sla: 'SLA / quá hạn',
+  monthly: 'Biểu đồ theo tháng',
+  status: 'Phân bố theo trạng thái',
+  field: 'Phân bổ theo lĩnh vực',
+};
+
+const readDashboardLayout = () => {
+  if (typeof window === 'undefined') {
+    return { order: DEFAULT_DASHBOARD_WIDGET_ORDER, visible: Object.fromEntries(DEFAULT_DASHBOARD_WIDGET_ORDER.map(k => [k, true])) as Record<DashboardWidgetKey, boolean> };
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DASHBOARD_LAYOUT_STORAGE_KEY);
+    if (!raw) {
+      return { order: DEFAULT_DASHBOARD_WIDGET_ORDER, visible: Object.fromEntries(DEFAULT_DASHBOARD_WIDGET_ORDER.map(k => [k, true])) as Record<DashboardWidgetKey, boolean> };
+    }
+
+    const parsed = JSON.parse(raw) as {
+      order?: DashboardWidgetKey[];
+      visible?: Partial<Record<DashboardWidgetKey, boolean>>;
+    };
+
+    const order = DEFAULT_DASHBOARD_WIDGET_ORDER.filter(key => parsed.order?.includes(key)).concat(
+      DEFAULT_DASHBOARD_WIDGET_ORDER.filter(key => !parsed.order?.includes(key))
+    );
+
+    return {
+      order,
+      visible: DEFAULT_DASHBOARD_WIDGET_ORDER.reduce((acc, key) => {
+        acc[key] = parsed.visible?.[key] ?? true;
+        return acc;
+      }, {} as Record<DashboardWidgetKey, boolean>),
+    };
+  } catch {
+    return { order: DEFAULT_DASHBOARD_WIDGET_ORDER, visible: Object.fromEntries(DEFAULT_DASHBOARD_WIDGET_ORDER.map(k => [k, true])) as Record<DashboardWidgetKey, boolean> };
+  }
+};
+
 interface IFeedPost {
-  id:          string;
-  ma:          string;
-  ten:         string;
-  moTa:        string;
-  nguoiGui:    string;
-  donVi:       string;
-  ngay:        string;
-  trangThai:   string;
-  linhVuc:     string;
-  initLikes:   number;
+  id: string;
+  ma: string;
+  ten: string;
+  moTa: string;
+  nguoiGui: string;
+  donVi: string;
+  ngay: string;
+  trangThai: string;
+  linhVuc: string;
+  initLikes: number;
   initComments: number;
 }
 
@@ -73,11 +119,11 @@ const extractIdeas = (res: any): IIdea[] => {
 // ── sub: PostCard ────────────────────────────────────────────────────────────
 
 interface PostCardProps {
-  post:          IFeedPost;
-  liked:         boolean;
-  likeCount:     number;
-  onLike:        () => void;
-  commentOpen:   boolean;
+  post: IFeedPost;
+  liked: boolean;
+  likeCount: number;
+  onLike: () => void;
+  commentOpen: boolean;
   onToggleComment: () => void;
 }
 
@@ -85,7 +131,7 @@ const PostCard: React.FC<PostCardProps> = ({
   post, liked, likeCount, onLike, commentOpen, onToggleComment,
 }) => {
   const navigate = useNavigate();
-  const [cmtText, setCmtText]   = useState('');
+  const [cmtText, setCmtText] = useState('');
   const [comments, setComments] = useState<{ text: string; time: string }[]>([]);
   const cmtRef = useRef<HTMLTextAreaElement>(null);
 
@@ -341,6 +387,9 @@ export const DashboardDoiMoiPage: React.FC = () => {
   const [likes, setLikes] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
+  const [dashboardLayout, setDashboardLayout] = useState(readDashboardLayout);
+  const [layoutModalOpen, setLayoutModalOpen] = useState(false);
+  const [draggingWidget, setDraggingWidget] = useState<DashboardWidgetKey | null>(null);
 
   // ── Số liệu thật từ API báo cáo ──────────────────────────────────────────
   const [dash, setDash] = useState<IIdeaDashboard | null>(null);
@@ -353,6 +402,54 @@ export const DashboardDoiMoiPage: React.FC = () => {
       })
       .catch(() => { /* giữ giá trị 0 */ });
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(DASHBOARD_LAYOUT_STORAGE_KEY, JSON.stringify(dashboardLayout));
+    } catch {
+      // ignore localStorage failures
+    }
+  }, [dashboardLayout]);
+
+  const reorderWidgetLayout = (fromWidget: DashboardWidgetKey, toWidget: DashboardWidgetKey) => {
+    if (fromWidget === toWidget) return;
+
+    setDashboardLayout(prev => {
+      const nextOrder = [...prev.order];
+      const fromIndex = nextOrder.indexOf(fromWidget);
+      const toIndex = nextOrder.indexOf(toWidget);
+      if (fromIndex < 0 || toIndex < 0) return prev;
+
+      nextOrder.splice(fromIndex, 1);
+      nextOrder.splice(toIndex, 0, fromWidget);
+      return { ...prev, order: nextOrder };
+    });
+  };
+
+  const toggleWidgetVisibility = (widget: DashboardWidgetKey, visible: boolean) => {
+    setDashboardLayout(prev => ({
+      ...prev,
+      visible: { ...prev.visible, [widget]: visible },
+    }));
+  };
+
+  const handleWidgetDragEnd = () => {
+    setDraggingWidget(null);
+  };
+
+  const handleVisibleChange = (checkedWidgets: DashboardWidgetKey[]) => {
+    if (checkedWidgets.length === 0) {
+      return;
+    }
+
+    setDashboardLayout(prev => ({
+      ...prev,
+      visible: DEFAULT_DASHBOARD_WIDGET_ORDER.reduce((acc, widget) => {
+        acc[widget] = checkedWidgets.includes(widget);
+        return acc;
+      }, {} as Record<DashboardWidgetKey, boolean>),
+    }));
+  };
 
   useEffect(() => {
     let active = true;
@@ -397,16 +494,28 @@ export const DashboardDoiMoiPage: React.FC = () => {
   }, []);
 
   const STATS = [
-    { label: 'Tổng ý tưởng', value: dash?.tongYTuong ?? 0, icon: 'fa-lightbulb', color: 'primary',
-      sub: `${dash?.soNguoiThamGia ?? 0} người tham gia` },
-    { label: 'Đã nộp/Chờ xét duyệt', value: dash?.soDaNop ?? 0, icon: 'fa-clock', color: 'warning',
-      sub: dash?.soTonDong ? `${dash.soTonDong} quá hạn xử lý` : 'Không có tồn đọng' },
-    { label: 'Đã tiếp nhận', value: dash?.soDaTiepNhan ?? 0, icon: 'fa-circle-check', color: 'success',
+    {
+      label: 'Tổng ý tưởng', value: dash?.tongYTuong ?? 0, icon: 'fa-lightbulb', color: VNA_BLUE,
+      sub: `${dash?.soNguoiThamGia ?? 0} người tham gia`,
+      to: '/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach',
+    },
+    {
+      label: 'Đã nộp/Chờ xét duyệt', value: dash?.soDaNop ?? 0, icon: 'fa-clock', color: '#F59F00',
+      sub: dash?.soTonDong ? `${dash.soTonDong} quá hạn xử lý` : 'Không có tồn đọng',
+      to: '/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet',
+    },
+    {
+      label: 'Đã tiếp nhận', value: dash?.soDaTiepNhan ?? 0, icon: 'fa-circle-check', color: '#17C653',
       sub: dash && dash.tongYTuong > 0
         ? `${Math.round(((dash.soDaTiepNhan + dash.soDuocCongNhan) / dash.tongYTuong) * 100)}% tỷ lệ duyệt`
-        : '—' },
-    { label: 'Được công nhận', value: dash?.soDuocCongNhan ?? 0, icon: 'fa-medal', color: 'info',
-      sub: `${dash?.soDonViThamGia ?? 0} đơn vị tham gia` },
+        : '—',
+      to: '/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach',
+    },
+    {
+      label: 'Được công nhận', value: dash?.soDuocCongNhan ?? 0, icon: 'fa-medal', color: '#7239EA',
+      sub: `${dash?.soDonViThamGia ?? 0} đơn vị tham gia`,
+      to: `/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach?status=${encodeURIComponent('Được công nhận')}`,
+    },
   ];
 
   const MONTHLY = (dash?.nopTheoThang ?? Array(12).fill(0))
@@ -457,29 +566,125 @@ export const DashboardDoiMoiPage: React.FC = () => {
     });
   };
 
+  const visibleSidebarWidgets = dashboardLayout.order.filter(widget =>
+    ['monthly', 'status', 'field'].includes(widget) && dashboardLayout.visible[widget]
+  ) as DashboardWidgetKey[];
+
+  const feedVisible = dashboardLayout.visible.feed !== false;
+
+  const renderSidebarWidget = (widget: DashboardWidgetKey) => {
+    switch (widget) {
+      case 'monthly':
+        return (
+          <div className='card mb-4'>
+            <div className='card-header border-0 pt-4 pb-2'>
+              <h4 className='card-title fw-semibold text-gray-700 fs-7'>
+                <i className='fa-regular fa-chart-bar me-2' />Ý tưởng theo tháng{dash?.nam ? ` (${dash.nam})` : ''}
+              </h4>
+            </div>
+            <div className='card-body pt-2 pb-4'>
+              <div className='d-flex align-items-end gap-2' style={{ height: 100 }}>
+                {MONTHLY.map((m, i) => (
+                  <div key={i} className='d-flex flex-column align-items-center flex-1'>
+                    <div className='fw-bold text-gray-600 mb-1' style={{ fontSize: 10 }}>{m.count}</div>
+                    <div
+                      className='rounded-top w-100'
+                      style={{
+                        height: `${(m.count / maxMonthly) * 72}px`,
+                        background: `linear-gradient(180deg, ${VNA_BLUE} 0%, #60A5FA 100%)`,
+                        minHeight: 4,
+                      }}
+                    />
+                    <div className='text-muted mt-1' style={{ fontSize: 10 }}>{m.thang}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'status':
+        return (
+          <div className='card mb-4'>
+            <div className='card-header border-0 pt-4 pb-2'>
+              <h4 className='card-title fw-semibold text-gray-700 fs-7'>
+                <i className='fa-regular fa-chart-pie me-2' />Phân bố theo trạng thái
+              </h4>
+            </div>
+            <div className='card-body pt-2 pb-4'>
+              {statusSeries.every(v => v === 0)
+                ? <Empty description='Chưa có dữ liệu' style={{ padding: 24 }} />
+                : <ReactApexChart type='donut' height={220} series={statusSeries} options={statusOptions} />}
+            </div>
+          </div>
+        );
+
+      case 'field':
+        return (
+          <div className='card'>
+            <div className='card-header border-0 pt-4 pb-2'>
+              <h4 className='card-title fw-semibold text-gray-700 fs-7'>
+                <i className='fa-regular fa-chart-pie me-2' />Phân bổ theo lĩnh vực
+              </h4>
+            </div>
+            <div className='card-body pt-2 pb-3'>
+              {LINH_VUC_DATA.map((lv, i) => (
+                <div key={i} className='d-flex align-items-center mb-3'>
+                  <div
+                    className='rounded-circle me-3 flex-shrink-0'
+                    style={{ width: 8, height: 8, background: lv.color }}
+                  />
+                  <div className='flex-grow-1'>
+                    <div className='d-flex justify-content-between mb-1'>
+                      <span className='fs-8 fw-semibold text-gray-700'>{lv.name}</span>
+                      <span className='fs-8 text-muted'>{lv.count}</span>
+                    </div>
+                    <div className='bg-light rounded' style={{ height: 5 }}>
+                      <div
+                        className='rounded'
+                        style={{ height: 5, width: `${lv.pct}%`, background: lv.color, transition: 'width 0.6s ease' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <PageTitle breadcrumbs={[]}>Tổng quan Đổi mới sáng tạo</PageTitle>
       <Content>
-
         {/* Stats row */}
-        <div className='row g-5 mb-6'>
+        <div className='row g-2 mb-6'>
           {STATS.map((s, i) => (
             <div key={i} className='col-sm-6 col-xl-3'>
-              <div className={`card card-flush border-${s.color} border-start border-4 h-100`}>
-                <div className='card-body d-flex align-items-center py-5 px-6'>
-                  <div className='symbol symbol-50px me-4'>
-                    <div className={`symbol-label bg-light-${s.color}`}>
-                      <i className={`fa-regular ${s.icon} fs-2x text-${s.color}`} />
+              <Link
+                to={s.to}
+                className='card card-flush h-100 text-decoration-none'
+                style={{ borderLeft: `3px solid ${s.color}`, transition: 'box-shadow 0.15s, transform 0.15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = 'none'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none'; }}
+              >
+                <div className='card-body d-flex align-items-center py-2 px-3'>
+                  <div className='symbol symbol-30px me-2' style={{ flexShrink: 0 }}>
+                    <div className='symbol-label' style={{ background: `${s.color}1a` }}>
+                      <i className={`fa-regular ${s.icon} fs-5`} style={{ color: s.color }} />
                     </div>
                   </div>
-                  <div>
-                    <div className={`fs-2 fw-bold text-${s.color}`}>{s.value}</div>
-                    <div className='fs-6 fw-semibold text-gray-700'>{s.label}</div>
-                    <div className='fs-8 text-muted mt-1'>{s.sub}</div>
+                  <div className='min-w-0'>
+                    <div className='fs-4 fw-bold' style={{ color: s.color }}>{s.value}</div>
+                    <div className='fs-8 fw-semibold text-gray-700 text-truncate'>{s.label}</div>
+                    <div className='fs-9 text-muted text-truncate'>{s.sub}</div>
                   </div>
                 </div>
-              </div>
+              </Link>
             </div>
           ))}
         </div>
@@ -487,183 +692,58 @@ export const DashboardDoiMoiPage: React.FC = () => {
         {/* Missing KPI rows restored */}
         {dash && (
           <>
-            <div className='row g-5 mb-6'>
-              <div className='col-6 col-xl-3'>
-                <div className='card card-flush border-start border-4 border-primary h-100'>
-                  <div className='card-body py-5 px-6'>
-                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Thời gian xử lý trung bình</div>
-                    <div className='fs-2 fw-bold text-primary'>{dash.gioXuLyTrungBinh != null ? `${dash.gioXuLyTrungBinh} giờ` : '—'}</div>
-                    <div className='fs-8 text-muted mt-1'>SLA {dash.slaGio} giờ</div>
-                  </div>
-                </div>
-              </div>
-              <div className='col-6 col-xl-3'>
-                <div className='card card-flush border-start border-4 border-success h-100'>
-                  <div className='card-body py-5 px-6'>
-                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Tỷ lệ đúng hạn</div>
-                    <div className='fs-2 fw-bold text-success'>{dash.tyLeDungHan != null ? `${dash.tyLeDungHan}%` : '—'}</div>
-                    <div className='fs-8 text-muted mt-1'>Tỷ lệ đạt SLA xử lý</div>
-                  </div>
-                </div>
-              </div>
-              <div className='col-6 col-xl-3'>
-                <div className='card card-flush border-start border-4 border-warning h-100'>
-                  <div className='card-body py-5 px-6'>
-                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Hồ sơ đang chờ xử lý</div>
-                    <div className='fs-2 fw-bold text-warning'>{dash.soChoXuLy ?? 0}</div>
-                    <div className='fs-8 text-muted mt-1'>Chưa chuyển sang bước tiếp theo</div>
-                  </div>
-                </div>
-              </div>
-              <div className='col-6 col-xl-3'>
-                <div className='card card-flush border-start border-4 border-danger h-100'>
-                  <div className='card-body py-5 px-6'>
-                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Tồn đọng quá hạn</div>
-                    <div className='fs-2 fw-bold text-danger'>{dash.soTonDong ?? 0}</div>
-                    <div className='fs-8 text-muted mt-1'>{dash.soTonDong > 0 ? 'Cần xử lý ngay' : 'Không có tồn đọng'}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className='row g-5 mb-6'>
-              <div className='col-6 col-xl-3'>
-                <div className='card card-flush border-start border-4 border-danger h-100'>
-                  <div className='card-body py-5 px-6'>
-                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Quá hạn tiếp nhận</div>
-                    <div className='fs-2 fw-bold text-danger'>{dash.soQuaHanTiepNhan ?? 0}</div>
-                    <div className='fs-8 text-muted mt-1'>{dash.soQuaHanTiepNhan > 0 ? `>${dash.thoiHanTiepNhanNgay} ngày` : 'Không có hồ sơ quá hạn'}</div>
-                  </div>
-                </div>
-              </div>
-              <div className='col-6 col-xl-3'>
-                <div className='card card-flush border-start border-4 border-danger h-100'>
-                  <div className='card-body py-5 px-6'>
-                    <div className='fs-7 fw-semibold text-gray-600 mb-1'>Quá hạn kiểm duyệt</div>
-                    <div className='fs-2 fw-bold text-danger'>{dash.soQuaHanKiemDuyet ?? 0}</div>
-                    <div className='fs-8 text-muted mt-1'>{dash.soQuaHanKiemDuyet > 0 ? `>${dash.thoiHanKiemDuyetCongNhanNgay} ngày` : 'Không có hồ sơ quá hạn'}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className='row g-5 mb-6'>
-              <div className='col-12'>
-                <div className='card card-flush h-100'>
-                  <div className='card-header border-0 pt-5 pb-0'>
-                    <div className='card-title fw-bold text-primary'>
-                      <i className='fa-regular fa-chart-column me-2' />Ý tưởng theo tháng ({dash.nam})
+            <div className='row g-2 mb-6'>
+              {[
+                { label: 'Thời gian xử lý trung bình', color: VNA_BLUE, value: dash.gioXuLyTrungBinh != null ? `${dash.gioXuLyTrungBinh} giờ` : '—', sub: `SLA ${dash.slaGio} giờ`, to: '/doi-moi-sang-tao/bao-cao' },
+                { label: 'Tỷ lệ đúng hạn', color: '#17C653', value: dash.tyLeDungHan != null ? `${dash.tyLeDungHan}%` : '—', sub: 'Tỷ lệ đạt SLA xử lý', to: '/doi-moi-sang-tao/bao-cao' },
+                { label: 'Hồ sơ đang chờ xử lý', color: '#F59F00', value: dash.soChoXuLy ?? 0, sub: 'Chưa chuyển sang bước tiếp theo', to: '/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet' },
+                { label: 'Tồn đọng quá hạn', color: '#F1416C', value: dash.soTonDong ?? 0, sub: dash.soTonDong > 0 ? 'Cần xử lý ngay' : 'Không có tồn đọng', to: `/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet?quaHan=1&slaGio=${dash.slaGio}` },
+              ].map((k, i) => (
+                <div key={i} className='col-6 col-xl-3'>
+                  <Link
+                    to={k.to}
+                    className='card card-flush h-100 text-decoration-none'
+                    style={{ borderLeft: `3px solid ${k.color}`, transition: 'box-shadow 0.15s, transform 0.15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = 'none'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none'; }}
+                  >
+                    <div className='card-body py-2 px-3'>
+                      <div className='fs-9 fw-semibold text-gray-600 mb-1 text-truncate'>{k.label}</div>
+                      <div className='fs-4 fw-bold' style={{ color: k.color }}>{k.value}</div>
+                      <div className='fs-9 text-muted text-truncate'>{k.sub}</div>
                     </div>
-                  </div>
-                  <div className='card-body pt-2'>
-                    <ReactApexChart
-                      type='bar'
-                      height={240}
-                      series={[{ name: 'Số nộp', data: chartMonthlySeries }]}
-                      options={monthlyOptions}
-                    />
-                  </div>
+                  </Link>
                 </div>
-              </div>
+              ))}
             </div>
 
-            <div className='row g-5 mb-6'>
-              <div className='col-12'>
-                <div className='card card-flush h-100'>
-                  <div className='card-header border-0 pt-5 pb-0'>
-                    <div className='card-title fw-bold text-primary'>
-                      <i className='fa-regular fa-chart-pie me-2' />Phân bổ theo lĩnh vực
+            <div className='row g-2 mb-6'>
+              {[
+                { label: 'Quá hạn tiếp nhận', color: '#F1416C', value: dash.soQuaHanTiepNhan ?? 0, sub: dash.soQuaHanTiepNhan > 0 ? `>${dash.thoiHanTiepNhanNgay} ngày` : 'Không có hồ sơ quá hạn', to: `/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet?quaHan=1&nguongNgay=${dash.thoiHanTiepNhanNgay}` },
+                { label: 'Quá hạn kiểm duyệt', color: '#B5179E', value: dash.soQuaHanKiemDuyet ?? 0, sub: dash.soQuaHanKiemDuyet > 0 ? `>${dash.thoiHanKiemDuyetCongNhanNgay} ngày` : 'Không có hồ sơ quá hạn', to: `/doi-moi-sang-tao/quy-trinh-duyet/da-duyet?quaHan=1&nguongNgay=${dash.thoiHanKiemDuyetCongNhanNgay}` },
+              ].map((k, i) => (
+                <div key={i} className='col-6 col-xl-3'>
+                  <Link
+                    to={k.to}
+                    className='card card-flush h-100 text-decoration-none'
+                    style={{ borderLeft: `3px solid ${k.color}`, transition: 'box-shadow 0.15s, transform 0.15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = 'none'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none'; }}
+                  >
+                    <div className='card-body py-2 px-3'>
+                      <div className='fs-9 fw-semibold text-gray-600 mb-1 text-truncate'>{k.label}</div>
+                      <div className='fs-4 fw-bold' style={{ color: k.color }}>{k.value}</div>
+                      <div className='fs-9 text-muted text-truncate'>{k.sub}</div>
                     </div>
-                  </div>
-                  <div className='card-body pt-2'>
-                    {(dash.theoLinhVuc ?? []).length === 0 ? (
-                      <Empty description='Chưa có dữ liệu' />
-                    ) : (
-                      (dash.theoLinhVuc ?? []).map((lv, i) => {
-                        const pct = totalLv > 0 ? Math.round((lv.soLuong / totalLv) * 100) : 0;
-                        return (
-                          <div key={i} className='mb-3'>
-                            <div className='d-flex justify-content-between mb-1'>
-                              <span className='fw-semibold text-gray-700'>{lv.ten}</span>
-                              <span className='text-muted'>{lv.soLuong}</span>
-                            </div>
-                            <div className='bg-light rounded' style={{ height: 6 }}>
-                              <div className='rounded bg-primary' style={{ width: `${pct}%`, height: 6 }} />
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                  </Link>
                 </div>
-              </div>
+              ))}
             </div>
           </>
         )}
 
         {/* Main two-column layout */}
         <div className='row g-5'>
-
-          {/* ── Left: Social Feed ── */}
-          <div className='col-xl-8'>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#333' }}>
-                <i className='fa-regular fa-rectangle-history me-2' style={{ color: VNA_BLUE }} />
-                Hoạt động mới nhất
-              </h3>
-              <Link
-                to='/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach'
-                style={{
-                  fontSize: '0.82rem', color: VNA_BLUE, textDecoration: 'none',
-                  display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600,
-                }}
-              >
-                Xem tất cả <i className='fa-regular fa-arrow-right' />
-              </Link>
-            </div>
-
-            {/* Post cards */}
-            {feedLoading && (
-              <div className='card border-0 shadow-sm mb-4'>
-                <div className='card-body py-10 text-center text-muted'>Đang tải hoạt động mới nhất...</div>
-              </div>
-            )}
-
-            {!feedLoading && feedPosts.length === 0 && (
-              <div className='card border-0 shadow-sm mb-4'>
-                <div className='card-body py-10 text-center text-muted'>Chưa có hoạt động nào để hiển thị.</div>
-              </div>
-            )}
-
-            {feedPosts.map(post => (
-              <PostCard
-                key={post.id}
-                post={post}
-                liked={likes[post.id] ?? false}
-                likeCount={likeCounts[post.id] ?? post.initLikes}
-                onLike={() => handleLike(post.id)}
-                commentOpen={openComments.has(post.id)}
-                onToggleComment={() => toggleComment(post.id)}
-              />
-            ))}
-
-            {/* Load more */}
-            <div style={{ textAlign: 'center', paddingTop: 8, paddingBottom: 8 }}>
-              <Link
-                to='/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach'
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '9px 28px', borderRadius: 20,
-                  border: `1px solid ${VNA_BLUE}30`, color: VNA_BLUE,
-                  fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none',
-                  background: '#f5f8ff', transition: 'background 0.15s',
-                }}
-              >
-                <i className='fa-regular fa-ellipsis' />
-                Xem thêm ý tưởng
-              </Link>
-            </div>
-          </div>
 
           {/* ── Right: Sidebar ── */}
           <div className='col-xl-4'>
@@ -702,83 +782,142 @@ export const DashboardDoiMoiPage: React.FC = () => {
                     <i className='fa-regular fa-chevron-right' style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.6 }} />
                   </Link>
                 ))}
+                <Button
+                  onClick={() => setLayoutModalOpen(true)}
+                  style={{
+                    marginTop: 4,
+                    borderRadius: 8,
+                    border: '1px solid rgba(255,255,255,0.20)',
+                    background: 'rgba(255,255,255,0.12)',
+                    color: '#fff',
+                    textAlign: 'left',
+                    height: 42,
+                  }}
+                  icon={<i className='fa-regular fa-sliders' />}
+                >
+                  Tùy biến giao diện
+                </Button>
               </div>
             </div>
 
             {/* Monthly mini chart */}
-            <div className='card mb-4'>
-              <div className='card-header border-0 pt-4 pb-2'>
-                <h4 className='card-title fw-semibold text-gray-700 fs-7'>
-                  <i className='fa-regular fa-chart-bar me-2' />Ý tưởng theo tháng{dash?.nam ? ` (${dash.nam})` : ''}
-                </h4>
+            {visibleSidebarWidgets.map(widget => (
+              <div
+                key={widget}
+                draggable
+                onDragStart={() => setDraggingWidget(widget)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={() => {
+                  if (draggingWidget) {
+                    reorderWidgetLayout(draggingWidget, widget);
+                  }
+                  handleWidgetDragEnd();
+                }}
+                onDragEnd={handleWidgetDragEnd}
+                style={{ cursor: 'move' }}
+              >
+                {renderSidebarWidget(widget)}
               </div>
-              <div className='card-body pt-2 pb-4'>
-                <div className='d-flex align-items-end gap-2' style={{ height: 100 }}>
-                  {MONTHLY.map((m, i) => (
-                    <div key={i} className='d-flex flex-column align-items-center flex-1'>
-                      <div className='fw-bold text-gray-600 mb-1' style={{ fontSize: 10 }}>{m.count}</div>
-                      <div
-                        className='rounded-top w-100'
-                        style={{
-                          height: `${(m.count / maxMonthly) * 72}px`,
-                          background: `linear-gradient(180deg, ${VNA_BLUE} 0%, #60A5FA 100%)`,
-                          minHeight: 4,
-                        }}
-                      />
-                      <div className='text-muted mt-1' style={{ fontSize: 10 }}>{m.thang}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Status breakdown */}
-            <div className='card mb-4'>
-              <div className='card-header border-0 pt-4 pb-2'>
-                <h4 className='card-title fw-semibold text-gray-700 fs-7'>
-                  <i className='fa-regular fa-chart-pie me-2' />Phân bố theo trạng thái
-                </h4>
-              </div>
-              <div className='card-body pt-2 pb-4'>
-                {statusSeries.every(v => v === 0)
-                  ? <Empty description='Chưa có dữ liệu' style={{ padding: 24 }} />
-                  : <ReactApexChart type='donut' height={220} series={statusSeries} options={statusOptions} />}
-              </div>
-            </div>
-
-            {/* Lĩnh vực breakdown */}
-            <div className='card'>
-              <div className='card-header border-0 pt-4 pb-2'>
-                <h4 className='card-title fw-semibold text-gray-700 fs-7'>
-                  <i className='fa-regular fa-chart-pie me-2' />Phân bổ theo lĩnh vực
-                </h4>
-              </div>
-              <div className='card-body pt-2 pb-3'>
-                {LINH_VUC_DATA.map((lv, i) => (
-                  <div key={i} className='d-flex align-items-center mb-3'>
-                    <div
-                      className='rounded-circle me-3 flex-shrink-0'
-                      style={{ width: 8, height: 8, background: lv.color }}
-                    />
-                    <div className='flex-grow-1'>
-                      <div className='d-flex justify-content-between mb-1'>
-                        <span className='fs-8 fw-semibold text-gray-700'>{lv.name}</span>
-                        <span className='fs-8 text-muted'>{lv.count}</span>
-                      </div>
-                      <div className='bg-light rounded' style={{ height: 5 }}>
-                        <div
-                          className='rounded'
-                          style={{ height: 5, width: `${lv.pct}%`, background: lv.color, transition: 'width 0.6s ease' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
 
           </div>
+
+          {/* ── Left: Social Feed ── */}
+          {feedVisible && (
+            <div className='col-xl-8'>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#333' }}>
+                  <i className='fa-regular fa-rectangle-history me-2' style={{ color: VNA_BLUE }} />
+                  Hoạt động mới nhất
+                </h3>
+                <Link
+                  to='/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach'
+                  style={{
+                    fontSize: '0.82rem', color: VNA_BLUE, textDecoration: 'none',
+                    display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600,
+                  }}
+                >
+                  Xem tất cả <i className='fa-regular fa-arrow-right' />
+                </Link>
+              </div>
+
+              {/* Post cards */}
+              {feedLoading && (
+                <div className='card border-0 shadow-sm mb-4'>
+                  <div className='card-body py-10 text-center text-muted'>Đang tải hoạt động mới nhất...</div>
+                </div>
+              )}
+
+              {!feedLoading && feedPosts.length === 0 && (
+                <div className='card border-0 shadow-sm mb-4'>
+                  <div className='card-body py-10 text-center text-muted'>Chưa có hoạt động nào để hiển thị.</div>
+                </div>
+              )}
+
+              {feedPosts.map(post => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  liked={likes[post.id] ?? false}
+                  likeCount={likeCounts[post.id] ?? post.initLikes}
+                  onLike={() => handleLike(post.id)}
+                  commentOpen={openComments.has(post.id)}
+                  onToggleComment={() => toggleComment(post.id)}
+                />
+              ))}
+
+              {/* Load more */}
+              <div style={{ textAlign: 'center', paddingTop: 8, paddingBottom: 8 }}>
+                <Link
+                  to='/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach'
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '9px 28px', borderRadius: 20,
+                    border: `1px solid ${VNA_BLUE}30`, color: VNA_BLUE,
+                    fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none',
+                    background: '#f5f8ff', transition: 'background 0.15s',
+                  }}
+                >
+                  <i className='fa-regular fa-ellipsis' />
+                  Xem thêm ý tưởng
+                </Link>
+              </div>
+            </div>
+          )}
+
+
         </div>
+
+        <Modal
+          title={(
+            <span>
+              <i className='fa-regular fa-sliders me-2 text-primary' />Tùy biến giao diện
+            </span>
+          )}
+          open={layoutModalOpen}
+          onCancel={() => setLayoutModalOpen(false)}
+          footer={null}
+          width={760}
+          destroyOnClose={false}
+        >
+          <div className='d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4'>
+            <div className='text-muted fs-7'>Chọn các ô cần hiển thị. Bạn có thể kéo thả trực tiếp các card trên dashboard để đổi vị trí.</div>
+            <Button size='small' onClick={() => setDashboardLayout(readDashboardLayout())}>
+              Khôi phục mặc định
+            </Button>
+          </div>
+          <Checkbox.Group
+            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+            value={DEFAULT_DASHBOARD_WIDGET_ORDER.filter(widget => dashboardLayout.visible[widget])}
+            onChange={values => handleVisibleChange(values as DashboardWidgetKey[])}
+          >
+            {DEFAULT_DASHBOARD_WIDGET_ORDER.map(widget => (
+              <Checkbox key={widget} value={widget}>
+                {DASHBOARD_WIDGET_LABELS[widget]}
+              </Checkbox>
+            ))}
+          </Checkbox.Group>
+        </Modal>
 
       </Content>
     </>

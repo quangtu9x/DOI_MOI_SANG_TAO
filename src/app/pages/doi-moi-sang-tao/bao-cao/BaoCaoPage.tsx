@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Select, DatePicker, message, Table, Tag, Spin, Empty, Tabs, Tooltip } from 'antd';
+import { Button, Select, DatePicker, message, Table, Tag, Spin, Empty, Tabs, Tooltip, Row, Col, Statistic } from 'antd';
 import type { Dayjs } from 'dayjs';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
@@ -121,6 +121,26 @@ const USAGE_BY_DEPT = [
   { donVi: 'Ban Dịch vụ Mặt đất', hoatDong: 145, tanSuatDangNhap: 3.6, tyLeSuDung: 65 },
   { donVi: 'Trung tâm Kỹ thuật A76', hoatDong: 88, tanSuatDangNhap: 5.1, tyLeSuDung: 82 },
 ];
+
+const REPORT_DATA = [
+  { stt: 1, linhVuc: 'Khai thác bay', tongSo: 52, choDuyet: 7, daDuyet: 34, tuChoi: 6, congNhan: 5 },
+  { stt: 2, linhVuc: 'Kỹ thuật bảo dưỡng', tongSo: 45, choDuyet: 8, daDuyet: 28, tuChoi: 5, congNhan: 4 },
+  { stt: 3, linhVuc: 'Dịch vụ hành khách', tongSo: 38, choDuyet: 6, daDuyet: 24, tuChoi: 5, congNhan: 3 },
+  { stt: 4, linhVuc: 'Dịch vụ mặt đất', tongSo: 32, choDuyet: 5, daDuyet: 20, tuChoi: 4, congNhan: 3 },
+  { stt: 5, linhVuc: 'Công nghệ thông tin', tongSo: 27, choDuyet: 3, daDuyet: 17, tuChoi: 4, congNhan: 3 },
+  { stt: 6, linhVuc: 'Đào tạo nhân lực', tongSo: 20, choDuyet: 2, daDuyet: 12, tuChoi: 3, congNhan: 3 },
+];
+
+const TOTALS = REPORT_DATA.reduce(
+  (acc, row) => ({
+    tongSo: acc.tongSo + row.tongSo,
+    choDuyet: acc.choDuyet + row.choDuyet,
+    daDuyet: acc.daDuyet + row.daDuyet,
+    tuChoi: acc.tuChoi + row.tuChoi,
+    congNhan: acc.congNhan + row.congNhan,
+  }),
+  { tongSo: 0, choDuyet: 0, daDuyet: 0, tuChoi: 0, congNhan: 0 }
+);
 
 type ReportObjectType = 'YTuong' | 'GiaiPhap' | 'SangKien';
 type ReportTemplateKey =
@@ -545,7 +565,317 @@ export const BaoCaoPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-          {(!dash && !loading) && <Empty description="Chưa có dữ liệu" className="py-10" />}
+
+                  <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
+                    <div className="card-body p-5">
+                      <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                        <div>
+                          <div className="fw-bold text-gray-800 fs-4 mb-1">
+                            <i className="fa-regular fa-layer-group text-primary me-2" />Báo cáo cũ - số liệu đầy đủ
+                          </div>
+                          <div className="text-muted fs-7">
+                            Khôi phục các nhóm số liệu tổng hợp theo mẫu cũ: lĩnh vực, trạng thái, vai trò, hiệu quả, chiến dịch, quỹ, thưởng, ví và sử dụng hệ thống.
+                          </div>
+                        </div>
+                      </div>
+
+                      <Tabs
+                        items={[
+                          {
+                            key: 'tong-quan',
+                            label: 'Tổng quan',
+                            children: (
+                              <>
+                                {dash && (
+                                  <>
+                                    <div className="row g-4 mb-4">
+                                      <div className="col-6 col-xl-2"><KpiCard title="Tổng ý tưởng" value={fmtNum(dash.tongYTuong)} icon="fa-lightbulb" color="primary" /></div>
+                                      <div className="col-6 col-xl-2"><KpiCard title="Đã nộp/Chờ xét duyệt" value={fmtNum(dash.soDaNop)} icon="fa-clock" color="warning" /></div>
+                                      <div className="col-6 col-xl-2"><KpiCard title="Đã tiếp nhận" value={fmtNum(dash.soDaTiepNhan)} icon="fa-circle-check" color="info" /></div>
+                                      <div className="col-6 col-xl-2"><KpiCard title="Được công nhận" value={fmtNum(dash.soDuocCongNhan)} icon="fa-medal" color="success" /></div>
+                                      <div className="col-6 col-xl-2"><KpiCard title="Người tham gia" value={fmtNum(dash.soNguoiThamGia)} icon="fa-users" color="primary" /></div>
+                                      <div className="col-6 col-xl-2"><KpiCard title="Đơn vị tham gia" value={fmtNum(dash.soDonViThamGia)} icon="fa-building" color="info" /></div>
+                                    </div>
+
+                                    <div className="row g-4 mb-4">
+                                      <div className="col-6 col-xl-3">
+                                        <KpiCard title="Thời gian xử lý trung bình" icon="fa-stopwatch" color="primary"
+                                          value={dash.gioXuLyTrungBinh != null ? `${dash.gioXuLyTrungBinh} giờ` : '—'} />
+                                      </div>
+                                      <div className="col-6 col-xl-3">
+                                        <KpiCard title={`Tỷ lệ đúng hạn (SLA ${dash.slaGio}h)`} icon="fa-gauge-high" color="success"
+                                          value={dash.tyLeDungHan != null ? `${dash.tyLeDungHan}%` : '—'} />
+                                      </div>
+                                      <div className="col-6 col-xl-3">
+                                        <KpiCard title="Hồ sơ đang chờ xử lý" icon="fa-inbox" color="warning" value={fmtNum(dash.soChoXuLy)} />
+                                      </div>
+                                      <div className="col-6 col-xl-3">
+                                        <KpiCard title="Tồn đọng quá hạn" icon="fa-triangle-exclamation" color="danger"
+                                          value={fmtNum(dash.soTonDong)}
+                                          sub={dash.soTonDong > 0 ? 'Cần xử lý ngay' : 'Không có tồn đọng'} />
+                                      </div>
+                                    </div>
+
+                                    <div className="row g-4 mb-4">
+                                      <div className="col-6 col-xl-3">
+                                        <KpiCard title={`Quá hạn tiếp nhận (>${dash.thoiHanTiepNhanNgay} ngày)`} icon="fa-hourglass-end" color="danger"
+                                          value={fmtNum(dash.soQuaHanTiepNhan)}
+                                          sub={dash.soQuaHanTiepNhan > 0 ? 'Chưa tiếp nhận' : 'Không có hồ sơ quá hạn'} />
+                                      </div>
+                                      <div className="col-6 col-xl-3">
+                                        <KpiCard title={`Quá hạn kiểm duyệt (>${dash.thoiHanKiemDuyetCongNhanNgay} ngày)`} icon="fa-hourglass-end" color="danger"
+                                          value={fmtNum(dash.soQuaHanKiemDuyet)}
+                                          sub={dash.soQuaHanKiemDuyet > 0 ? 'Chưa có kết quả' : 'Không có hồ sơ quá hạn'} />
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                              </>
+                            ),
+                          },
+                          {
+                            key: 'linh-vuc',
+                            label: 'Theo lĩnh vực',
+                            children: (
+                              <Table
+                                size="small"
+                                pagination={false}
+                                dataSource={REPORT_DATA}
+                                rowKey="stt"
+                                columns={[
+                                  { title: 'STT', dataIndex: 'stt', key: 'stt', width: 60, align: 'center' as const },
+                                  { title: 'Lĩnh vực', dataIndex: 'linhVuc', key: 'linhVuc', render: (v: string) => <span className="fw-semibold">{v}</span> },
+                                  { title: 'Tổng số', dataIndex: 'tongSo', key: 'tongSo', width: 90, align: 'center' as const },
+                                  { title: 'Chờ duyệt', dataIndex: 'choDuyet', key: 'choDuyet', width: 100, align: 'center' as const, render: (v: number) => <Tag color="processing">{v}</Tag> },
+                                  { title: 'Đã duyệt', dataIndex: 'daDuyet', key: 'daDuyet', width: 90, align: 'center' as const, render: (v: number) => <Tag color="success">{v}</Tag> },
+                                  { title: 'Từ chối', dataIndex: 'tuChoi', key: 'tuChoi', width: 90, align: 'center' as const, render: (v: number) => <Tag color="error">{v}</Tag> },
+                                  { title: 'Công nhận', dataIndex: 'congNhan', key: 'congNhan', width: 100, align: 'center' as const, render: (v: number) => <Tag color="purple">{v}</Tag> },
+                                ]}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'trang-thai',
+                            label: 'Theo trạng thái',
+                            children: (
+                              <Table
+                                size="small"
+                                pagination={false}
+                                dataSource={REPORT_DATA.map(r => ({
+                                  key: r.linhVuc,
+                                  linhVuc: r.linhVuc,
+                                  banNhap: Math.max(0, r.tongSo - r.choDuyet - r.daDuyet - r.tuChoi - r.congNhan),
+                                  choDuyet: r.choDuyet,
+                                  daDuyet: r.daDuyet,
+                                  tuChoi: r.tuChoi,
+                                  congNhan: r.congNhan,
+                                }))}
+                                rowKey="key"
+                                columns={[
+                                  { title: 'Lĩnh vực', dataIndex: 'linhVuc', key: 'linhVuc' },
+                                  { title: 'Bản nháp', dataIndex: 'banNhap', key: 'banNhap', width: 90, align: 'center' as const },
+                                  { title: 'Chờ duyệt', dataIndex: 'choDuyet', key: 'choDuyet', width: 90, align: 'center' as const },
+                                  { title: 'Đã duyệt', dataIndex: 'daDuyet', key: 'daDuyet', width: 90, align: 'center' as const },
+                                  { title: 'Từ chối', dataIndex: 'tuChoi', key: 'tuChoi', width: 90, align: 'center' as const },
+                                  { title: 'Công nhận', dataIndex: 'congNhan', key: 'congNhan', width: 100, align: 'center' as const },
+                                ]}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'vai-tro',
+                            label: 'Theo vai trò',
+                            children: (
+                              <div className="row g-3">
+                                {ROLE_VIEWS.map((role, idx) => (
+                                  <div key={idx} className="col-sm-6 col-xl-3">
+                                    <div className={`card bg-light-${role.color} h-100`}>
+                                      <div className="card-body text-center py-4">
+                                        <i className={`fa-regular ${role.icon} fs-2 text-${role.color} mb-2 d-block`} />
+                                        <h5 className="fw-bold">{role.role}</h5>
+                                        {role.kpis.map((kpi, i) => (
+                                          <div key={i} className="text-muted fs-8">{kpi}</div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ),
+                          },
+                          {
+                            key: 'hieu-qua',
+                            label: 'Hiệu quả ĐMST',
+                            children: (
+                              <Table
+                                size="small"
+                                pagination={false}
+                                dataSource={HIEU_QUA_DATA}
+                                rowKey="ten"
+                                columns={[
+                                  { title: 'Sáng kiến / Ý tưởng', dataIndex: 'ten' },
+                                  { title: 'Tiết kiệm chi phí', dataIndex: 'tietKiem', width: 150, render: fmtNum },
+                                  { title: 'Tăng doanh thu', dataIndex: 'doanhThu', width: 150, render: fmtNum },
+                                  { title: 'Nhân rộng', dataIndex: 'nhanRong', width: 100 },
+                                  { title: 'Chất lượng', dataIndex: 'chatLuong', width: 120, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : 'gold'}>{v}</Tag> },
+                                ]}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'chien-dich',
+                            label: 'Chiến dịch',
+                            children: (
+                              <Table
+                                size="small"
+                                pagination={false}
+                                dataSource={CAMPAIGNS}
+                                rowKey="ten"
+                                columns={[
+                                  { title: 'Chiến dịch', dataIndex: 'ten' },
+                                  { title: 'Trạng thái', dataIndex: 'trangThai', width: 130, render: (v: string) => <Tag color={v === 'Đang diễn ra' ? 'processing' : 'default'}>{v}</Tag> },
+                                  { title: 'Người tham gia', dataIndex: 'ngUoiThamGia', width: 120 },
+                                  { title: 'Số nộp', dataIndex: 'soNop', width: 90 },
+                                  { title: 'Hoàn thành', dataIndex: 'tyLeHoanThanh', width: 110, render: (v: number) => `${v}%` },
+                                  { title: 'Tổng thưởng', dataIndex: 'tongThuong', width: 140, render: fmtNum },
+                                  { title: 'Huy hiệu', dataIndex: 'huyHieu', width: 100 },
+                                ]}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'chuong-trinh',
+                            label: 'CĐS / R&D / Sandbox',
+                            children: (
+                              <Table
+                                size="small"
+                                pagination={false}
+                                dataSource={CDS_PROGRAMS}
+                                rowKey="ten"
+                                columns={[
+                                  { title: 'Chương trình / Dự án', dataIndex: 'ten' },
+                                  { title: 'Trạng thái', dataIndex: 'trangThai', width: 120, render: (v: string) => <Tag color={v === 'Đúng hạn' ? 'green' : v === 'Rủi ro' ? 'gold' : 'red'}>{v}</Tag> },
+                                  { title: 'Tiến độ', dataIndex: 'tienDo', width: 120, render: (v: number) => `${v}%` },
+                                  { title: 'Ngân sách', dataIndex: 'nganSach', width: 120, render: (v: number) => `${v}%` },
+                                  { title: 'Milestone', key: 'moc', width: 110, render: (_: unknown, r: typeof CDS_PROGRAMS[number]) => `${r.mocHoanThanh}/${r.mocTong}` },
+                                ]}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'quy',
+                            label: 'Quỹ / Chi thưởng',
+                            children: (
+                              <Tabs
+                                items={[
+                                  {
+                                    key: 'quy-khcn',
+                                    label: 'Quỹ phát triển KHCN',
+                                    children: (
+                                      <Table
+                                        size="small"
+                                        pagination={false}
+                                        dataSource={QUY_KHCN}
+                                        rowKey="loaiQuy"
+                                        columns={[
+                                          { title: 'Loại quỹ', dataIndex: 'loaiQuy' },
+                                          { title: 'Ngân sách đầu', dataIndex: 'nganSachDau', width: 160, render: fmtNum },
+                                          { title: 'Đã chi', dataIndex: 'daChi', width: 160, render: fmtNum },
+                                          { title: 'Còn lại', key: 'conLai', width: 160, render: (_: unknown, r: typeof QUY_KHCN[number]) => fmtNum(r.nganSachDau - r.daChi) },
+                                        ]}
+                                      />
+                                    ),
+                                  },
+                                  {
+                                    key: 'chi-thuong',
+                                    label: 'Chi thưởng',
+                                    children: (
+                                      <Table
+                                        size="small"
+                                        pagination={false}
+                                        dataSource={CHI_THUONG}
+                                        rowKey="doiTuong"
+                                        columns={[
+                                          { title: 'Đối tượng', dataIndex: 'doiTuong' },
+                                          { title: 'Đơn vị', dataIndex: 'donVi', width: 180 },
+                                          { title: 'Tiền thưởng', dataIndex: 'tienThuong', width: 150, render: fmtNum },
+                                          { title: 'Điểm thưởng', dataIndex: 'diemThuong', width: 120 },
+                                          { title: 'Kỳ thưởng', dataIndex: 'kyThuong', width: 120 },
+                                        ]}
+                                      />
+                                    ),
+                                  },
+                                ]}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'vi-giao-dich',
+                            label: 'Ví & Giao dịch',
+                            children: (
+                              <>
+                                <Row gutter={[16, 16]} className="mb-3">
+                                  <Col xs={12} md={6}><Statistic title="Số dư ví Cánh sen" value={2150} /></Col>
+                                  <Col xs={12} md={6}><Statistic title="Số dư ví Bông sen" value={3400} /></Col>
+                                </Row>
+                                <Table
+                                  size="small"
+                                  pagination={false}
+                                  dataSource={VI_GIAO_DICH}
+                                  rowKey="thoiGian"
+                                  columns={[
+                                    { title: 'Thời gian', dataIndex: 'thoiGian', width: 160 },
+                                    { title: 'Loại giao dịch', dataIndex: 'loai' },
+                                    { title: 'Ví', dataIndex: 'vi', width: 110 },
+                                    { title: 'Số tiền', dataIndex: 'soTien', width: 100, render: (v: string) => <span style={{ color: v.startsWith('+') ? '#16a34a' : '#dc2626' }}>{v}</span> },
+                                    { title: 'Số dư sau GD', dataIndex: 'soDu', width: 120 },
+                                  ]}
+                                />
+                              </>
+                            ),
+                          },
+                          {
+                            key: 'qua-tang',
+                            label: 'Quy đổi quà tặng',
+                            children: (
+                              <Table
+                                size="small"
+                                pagination={false}
+                                dataSource={QUA_TANG}
+                                rowKey="ten"
+                                columns={[
+                                  { title: 'Quà tặng', dataIndex: 'ten' },
+                                  { title: 'Đã quy đổi', dataIndex: 'daQuyDoi', width: 120 },
+                                  { title: 'Tồn kho', dataIndex: 'tonKho', width: 100 },
+                                  { title: 'Chi phí (điểm)', dataIndex: 'chiPhi', width: 140 },
+                                ]}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'nguoi-dung',
+                            label: 'Người dùng & sử dụng',
+                            children: (
+                              <Table
+                                size="small"
+                                pagination={false}
+                                dataSource={USAGE_BY_DEPT}
+                                rowKey="donVi"
+                                columns={[
+                                  { title: 'Đơn vị', dataIndex: 'donVi' },
+                                  { title: 'Hoạt động', dataIndex: 'hoatDong', width: 120 },
+                                  { title: 'Tần suất đăng nhập/tuần', dataIndex: 'tanSuatDangNhap', width: 180 },
+                                  { title: 'Tỷ lệ sử dụng', dataIndex: 'tyLeSuDung', width: 140, render: (v: number) => `${v}%` },
+                                ]}
+                              />
+                            ),
+                          },
+                        ]}
+                      />
+                    </div>
+                  </div>
+
+              {(!dash && !loading) && <Empty description="Chưa có dữ liệu" className="py-10" />}
         </Spin>
       </Content>
     </>
