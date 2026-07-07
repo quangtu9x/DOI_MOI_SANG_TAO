@@ -1,12 +1,14 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Input, Button, Tag, Spin, Empty, Avatar, Tabs, message, Select, Badge } from 'antd';
+import { Input, Button, Tag, Spin, Empty, Avatar, Tabs, message, Select, Badge, Switch, Tooltip } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { timKiem, searchChuyenGias, goiYTuKhoa, searchTaiLieus, searchTags, searchBaiViets } from '@/app/services/khoTriThucApi';
+import { timKiem, searchChuyenGias, goiYTuKhoa, searchTaiLieus, searchTags, searchBaiViets, searchElasticsearchAttachments } from '@/app/services/khoTriThucApi';
 import { requestPOST } from '@/utils/baseAPI';
 import type { ITaiLieuSearchResult, IChuyenGia, ITag, IBaiViet } from '@/app/models/knowledge-hub';
 import { LoaiTaiLieu, TrangThaiTaiLieu, LoaiBaiViet } from '@/app/models/knowledge-hub';
+
+const DEFAULT_ATTACHMENT_INDEX = 'data_test_attachments';
 
 const { Option } = Select;
 
@@ -103,6 +105,30 @@ const Highlight: React.FC<{ text?: string; keyword: string }> = ({ text, keyword
   );
 };
 
+const toText = (value: unknown): string => {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
+const formatAttachmentMetadata = (metadata: unknown): Array<{ key: string; value: string }> => {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return [];
+  return Object.entries(metadata as Record<string, unknown>)
+    .flatMap(([key, value]) => {
+      if (value == null || value === '') return [];
+      if (Array.isArray(value)) return [{ key, value: value.join(', ') }];
+      if (typeof value === 'object') {
+        return [{ key, value: toText(value) }];
+      }
+      return [{ key, value: String(value) }];
+    });
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const TimKiemPage: React.FC = () => {
@@ -114,6 +140,13 @@ export const TimKiemPage: React.FC = () => {
   const [loading, setLoading]         = useState(false);
   const [activeTab, setActiveTab]     = useState('tai-lieu');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  // Test toggle cho Elasticsearch attachment search
+  const [enableAttachmentSearch, setEnableAttachmentSearch] = useState(false);
+  const [attachmentIndexName, setAttachmentIndexName] = useState(DEFAULT_ATTACHMENT_INDEX);
+  const [attachmentResults, setAttachmentResults] = useState<any[]>([]);
+  const [attachmentTotal, setAttachmentTotal] = useState(0);
+  const [attachmentLoading, setAttachmentLoading] = useState(false);
 
   // Bộ lọc nâng cao (metadata)
   const [showFilters, setShowFilters] = useState(false);
@@ -213,13 +246,29 @@ export const TimKiemPage: React.FC = () => {
           })
         : timKiem(q, 1, 20);
 
-      const [tlRes, cgRes, bvRes] = await Promise.allSettled([
+      const promises: any[] = [
         tlPromise,
         q ? searchChuyenGias({ keyword: q, pageNumber: 1, pageSize: 12 })
           : Promise.resolve(null),
         q ? searchBaiViets({ keyword: q, pageNumber: 1, pageSize: 12 })
           : Promise.resolve(null),
-      ]);
+      ];
+
+      // Nếu bật attachment search thì thêm vào
+      if (enableAttachmentSearch && q) {
+        setAttachmentLoading(true);
+        promises.push(
+          searchElasticsearchAttachments({
+            indexName: attachmentIndexName,
+            keyword: q,
+            pageNumber: 1,
+            pageSize: 20,
+          })
+            .catch(() => ({ data: [] }))
+        );
+      }
+
+      const [tlRes, cgRes, bvRes, attachRes] = await Promise.allSettled(promises);
 
       if (tlRes.status === 'fulfilled') {
         const rawList = safeList<any>(tlRes.value);
@@ -242,12 +291,29 @@ export const TimKiemPage: React.FC = () => {
         setBaiViets([]);
         setBaiVietsTotal(0);
       }
+
+      // Xử lý attachment results nếu có
+      if (enableAttachmentSearch && attachRes && attachRes.status === 'fulfilled') {
+        const results = safeList<any>(attachRes.value);
+        setAttachmentResults(results);
+        setAttachmentTotal(safeTotal(attachRes.value));
+        setAttachmentLoading(false);
+      } else if (enableAttachmentSearch) {
+        setAttachmentResults([]);
+        setAttachmentTotal(0);
+        setAttachmentLoading(false);
+      }
     } catch {
       message.error('Tìm kiếm thất bại');
+      if (enableAttachmentSearch) {
+        setAttachmentResults([]);
+        setAttachmentTotal(0);
+        setAttachmentLoading(false);
+      }
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, enableAttachmentSearch, attachmentIndexName]);
 
   const updateFilter = (patch: Partial<ISearchFilters>) => {
     const next = { ...filters, ...patch };
@@ -260,7 +326,7 @@ export const TimKiemPage: React.FC = () => {
     if (hasSearched) handleSearch(query, EMPTY_FILTERS);
   };
 
-  const totalResults = tailieuxTotal + chuyenGiasTotal + baiVietsTotal;
+  const totalResults = tailieuxTotal + chuyenGiasTotal + baiVietsTotal + (enableAttachmentSearch ? attachmentTotal : 0);
 
   return (
     <>
@@ -277,7 +343,7 @@ export const TimKiemPage: React.FC = () => {
             <h4 className="fw-bold text-gray-900 mb-1">Tìm kiếm Kho tri thức</h4>
             <p className="text-muted fs-7">Tìm tài liệu, chuyên gia, bài viết theo từ khóa</p>
           </div>
-          <div className="d-flex gap-2" style={{ maxWidth: 600, margin: '0 auto' }}>
+          <div className="d-flex gap-2 align-items-center" style={{ maxWidth: 720, margin: '0 auto' }}>
             <Input
               ref={inputRef}
               size="large"
@@ -286,19 +352,19 @@ export const TimKiemPage: React.FC = () => {
               placeholder="Nhập từ khóa tìm kiếm..."
               prefix={<i className="fa-regular fa-search text-muted me-1" />}
               onPressEnter={() => handleSearch(query)}
-              style={{ borderRadius: 12 }}
+              style={{ borderRadius: 12, flex: 1 }}
               allowClear
             />
             <Button
               type="primary"
               size="large"
-              style={{ borderRadius: 12, minWidth: 96 }}
+              style={{ borderRadius: 12, minWidth: 96, flexShrink: 0 }}
               loading={loading}
               onClick={() => handleSearch(query)}
             >
               Tìm kiếm
             </Button>
-            <Badge count={activeFilterCount} size="small">
+            <Badge count={activeFilterCount} size="small" style={{ flexShrink: 0 }}>
               <Button
                 size="large"
                 style={{ borderRadius: 12 }}
@@ -308,6 +374,30 @@ export const TimKiemPage: React.FC = () => {
                 onClick={() => setShowFilters(v => !v)}
               />
             </Badge>
+            <Tooltip title={`Tìm trong nội dung file đính kèm (BETA) — index: ${attachmentIndexName}`}>
+              <div
+                className="d-flex align-items-center gap-1"
+                style={{
+                  flexShrink: 0,
+                  height: 40,
+                  padding: '0 10px',
+                  border: `1px solid ${enableAttachmentSearch ? '#1677ff' : '#d9d9d9'}`,
+                  borderRadius: 12,
+                  background: enableAttachmentSearch ? '#e6f4ff' : '#fff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onClick={() => setEnableAttachmentSearch(v => !v)}
+              >
+                <i className={`fa-regular fa-paperclip fs-8 ${enableAttachmentSearch ? 'text-primary' : 'text-muted'}`} />
+                <span className="fs-8 mx-1" style={{ color: enableAttachmentSearch ? '#1677ff' : '#8c8c8c', whiteSpace: 'nowrap' }}>Đính kèm</span>
+                <Switch
+                  size="small"
+                  checked={enableAttachmentSearch}
+                  onChange={setEnableAttachmentSearch}
+                />
+              </div>
+            </Tooltip>
           </div>
 
           {/* Bộ lọc nâng cao: tag + metadata (lĩnh vực, trạng thái, đơn vị, loại) */}
@@ -357,6 +447,16 @@ export const TimKiemPage: React.FC = () => {
                     onChange={v => updateFilter({ donViId: v ?? null })}>
                     {donViOptions.map(dv => <Option key={dv.id} value={dv.id}>{dv.name}</Option>)}
                   </Select>
+                </div>
+                <div>
+                  <div className="fs-8 text-muted mb-1">IndexName (đính kèm)</div>
+                  <Input
+                    value={attachmentIndexName}
+                    onChange={e => setAttachmentIndexName(e.target.value)}
+                    placeholder={DEFAULT_ATTACHMENT_INDEX}
+                    style={{ width: 240 }}
+                    allowClear
+                  />
                 </div>
                 {activeFilterCount > 0 && (
                   <Button type="link" danger onClick={clearFilters}>
@@ -616,6 +716,94 @@ export const TimKiemPage: React.FC = () => {
                   </div>
                 )}
               </TabPane>
+
+              {/* ── Tài liệu đính kèm (Elasticsearch BETA) */}
+              {enableAttachmentSearch && (
+                <TabPane
+                  tab={<span><i className="fa-regular fa-file-pdf me-2" />Đính kèm <span className="badge badge-light-info ms-1">{attachmentTotal}</span> <Tag color="orange" style={{ fontSize: 9, lineHeight: 1 }}>BETA</Tag></span>}
+                  key="dinh-kem"
+                >
+                  <Spin spinning={attachmentLoading}>
+                    {attachmentResults.length === 0 ? (
+                      <Empty description="Không tìm thấy tài liệu đính kèm" className="py-8" />
+                    ) : (
+                      <div className="d-flex flex-column gap-3">
+                        {attachmentResults.map((item: any, idx: number) => (
+                          <div key={item._id ?? idx} className="card border-0 shadow-sm"
+                            style={{ cursor: 'pointer', transition: 'box-shadow 0.2s' }}
+                            onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)')}
+                            onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.boxShadow = '')}>
+                            <div className="card-body p-4">
+                              <div className="d-flex align-items-start gap-3">
+                                <div style={{
+                                  width: 4, minHeight: 60, borderRadius: 2, flexShrink: 0,
+                                  background: '#13c2c2',
+                                }} />
+                                <div className="flex-grow-1">
+                                  <div className="d-flex align-items-center gap-2 mb-1">
+                                    <Tag color="cyan" style={{ margin: 0 }}>
+                                      Tài liệu đính kèm
+                                    </Tag>
+                                    {item.metadata?.category && (
+                                      <Tag color="geekblue" style={{ margin: 0 }}>
+                                        {toText(item.metadata.category)}
+                                      </Tag>
+                                    )}
+                                    {item.metadata?.department && (
+                                      <Tag color="purple" style={{ margin: 0 }}>
+                                        {toText(item.metadata.department)}
+                                      </Tag>
+                                    )}
+                                    {item.content && (
+                                      <span className="fs-8 text-muted">
+                                        ({toText(item.content).substring(0, 50)}...)
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h6 className="fw-bold text-gray-800 mb-1 fs-6">
+                                    <Highlight text={item.title ?? item.source?.fileName ?? item.id} keyword={activeQuery} />
+                                  </h6>
+                                  {item.content && (
+                                    <p className="text-muted fs-7 mb-2"
+                                      style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                      <Highlight text={toText(item.content)} keyword={activeQuery} />
+                                    </p>
+                                  )}
+                                  {formatAttachmentMetadata(item.metadata).length > 0 && (
+                                    <div className="d-flex flex-wrap gap-2 mb-2">
+                                      {formatAttachmentMetadata(item.metadata).map(meta => (
+                                        <Tag key={`${meta.key}:${meta.value}`} style={{ margin: 0 }}>
+                                          {meta.key}: {meta.value}
+                                        </Tag>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="d-flex gap-3 text-muted fs-8">
+                                    <span><i className="fa-regular fa-calendar me-1" />
+                                      {item.createdDate ? new Date(item.createdDate).toLocaleDateString('vi-VN') : '—'}
+                                    </span>
+                                    {item.modifiedDate && (
+                                      <span><i className="fa-regular fa-pen-to-square me-1" />
+                                        {new Date(item.modifiedDate).toLocaleDateString('vi-VN')}
+                                      </span>
+                                    )}
+                                    {item._score != null && (
+                                      <span><i className="fa-regular fa-star me-1" />Độ liên quan: {(item._score * 100).toFixed(0)}%</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button type="link" size="small" style={{ flexShrink: 0 }}>
+                                  Xem →
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Spin>
+                </TabPane>
+              )}
             </Tabs>
           )}
         </Spin>
