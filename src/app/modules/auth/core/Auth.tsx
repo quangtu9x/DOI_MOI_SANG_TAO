@@ -65,32 +65,36 @@ const AuthInit: FC<WithChildren> = ({ children }) => {
 
   // We should request user by authToken (IN OUR EXAMPLE IT'S API_TOKEN) before rendering the application
   useEffect(() => {
+    let mounted = true;
+
     const requestUser = async () => {
       try {
         if (!currentUser) {
           const { data } = await getUserByToken()
-          if (data) {
+          if (mounted && data) {
             setCurrentUser(data)
           }
         }
       } catch (error) {
         console.error(error)
-        if (currentUser) {
-          logout()
+        if (mounted) {
+          await logout()
         }
-      } finally {
-        setShowSplashScreen(false)
       }
     }
 
     if (auth && auth.token) {
-
-      // requestUser(auth.token)
+      // Khi có token, không chặn UI ở splash; tải profile nền để tránh treo lâu khi F5.
+      setShowSplashScreen(false)
       requestUser()
     } else {
       logout()
       setShowSplashScreen(false)
     }
+
+    return () => {
+      mounted = false;
+    };
     // eslint-disable-next-line
   }, [])
 

@@ -365,6 +365,20 @@ export const BaoCaoPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* KPI hàng 3 — Quá hạn theo cấu hình xử lý hồ sơ (số ngày) */}
+              <div className="row g-4 mb-4">
+                <div className="col-6 col-xl-3">
+                  <KpiCard title={`Quá hạn tiếp nhận (>${dash.thoiHanTiepNhanNgay} ngày)`} icon="fa-hourglass-end" color="danger"
+                    value={fmtNum(dash.soQuaHanTiepNhan)}
+                    sub={dash.soQuaHanTiepNhan > 0 ? 'Chưa tiếp nhận' : 'Không có hồ sơ quá hạn'} />
+                </div>
+                <div className="col-6 col-xl-3">
+                  <KpiCard title={`Quá hạn kiểm duyệt (>${dash.thoiHanKiemDuyetCongNhanNgay} ngày)`} icon="fa-hourglass-end" color="danger"
+                    value={fmtNum(dash.soQuaHanKiemDuyet)}
+                    sub={dash.soQuaHanKiemDuyet > 0 ? 'Chưa có kết quả' : 'Không có hồ sơ quá hạn'} />
+                </div>
+              </div>
+
               {/* Charts */}
               <div className="row g-4 mb-4">
                 <div className="col-xl-8">
@@ -483,7 +497,6 @@ export const BaoCaoPage: React.FC = () => {
                   </Spin>
                 </div>
               </div>
-
               {/* Mock data sections — Các báo cáo minh họa chưa xây dựng */}
               <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
                 <div className="card-body p-5">

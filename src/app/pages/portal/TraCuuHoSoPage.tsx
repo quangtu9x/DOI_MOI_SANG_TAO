@@ -54,14 +54,44 @@ const ALL_TABS: Array<{ key: TrangThai | 'all'; label: string }> = [
   { key: 'DuocCongNhan', label: 'Công nhận' },
 ];
 
+// ── Truy xuất ngày tháng — BE trả về *_On (createdOn/submittedOn/lastModifiedOn),
+//    một số nơi khác (vd: bản nháp lưu local) dùng *_At — ưu tiên field BE, dự phòng field At.
+const getCreatedOn = (idea: IIdea) => idea.createdOn ?? idea.createdAt;
+const getSubmittedOn = (idea: IIdea) => idea.submittedOn ?? idea.submittedAt;
+const getLastModifiedOn = (idea: IIdea) => idea.lastModifiedOn ?? idea.updatedAt;
+
+// ── Lấy ngày tương ứng với trạng thái hiện tại ────────────────────────────────
+const getStatusDateInfo = (idea: IIdea): { label: string; date: string } | null => {
+  const statusKey = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
+  const createdOn = getCreatedOn(idea);
+  const submittedOn = getSubmittedOn(idea);
+  const lastModifiedOn = getLastModifiedOn(idea);
+  switch (statusKey) {
+    case 'BanNhap':
+      return { label: 'Ngày tạo', date: createdOn ? dayjs(createdOn).format('DD/MM/YYYY HH:mm') : '—' };
+    case 'ChoTiepNhan':
+      return { label: 'Ngày nộp', date: submittedOn ? dayjs(submittedOn).format('DD/MM/YYYY HH:mm') : (lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—') };
+    case 'DaTiepNhan':
+      return { label: 'Ngày tiếp nhận', date: lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—' };
+    case 'TraLai':
+      return { label: 'Ngày trả lại', date: lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—' };
+    case 'Huy':
+      return { label: 'Ngày hủy', date: lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—' };
+    case 'DuocCongNhan':
+      return { label: 'Ngày công nhận', date: lastModifiedOn ? dayjs(lastModifiedOn).format('DD/MM/YYYY HH:mm') : '—' };
+    default:
+      return null;
+  }
+};
+
 // ── Timeline helper ────────────────────────────────────────────────────────────
 const buildSteps = (idea: IIdea) => {
   const st = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
   const ORDER: TrangThai[] = ['BanNhap', 'ChoTiepNhan', 'DaTiepNhan', 'DuocCongNhan'];
   const stepDefs = [
-    { key: 'BanNhap',      label: 'Khởi tạo hồ sơ',          date: idea.createdAt },
-    { key: 'ChoTiepNhan',  label: 'Đã nộp/Chờ xét duyệt',    date: idea.submittedAt ?? idea.updatedAt },
-    { key: 'DaTiepNhan',   label: 'Đã tiếp nhận',            date: idea.updatedAt },
+    { key: 'BanNhap',      label: 'Khởi tạo hồ sơ',          date: getCreatedOn(idea) },
+    { key: 'ChoTiepNhan',  label: 'Đã nộp/Chờ xét duyệt',    date: getSubmittedOn(idea) ?? getLastModifiedOn(idea) },
+    { key: 'DaTiepNhan',   label: 'Đã tiếp nhận',            date: getLastModifiedOn(idea) },
     { key: 'DuocCongNhan', label: 'Công nhận & lưu kho',     date: null },
   ];
   const idx = ORDER.indexOf(st);
@@ -88,7 +118,10 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
       .catch(() => setHistories([]));
   }, [item.id]);
 
-  const recognitionEntry = histories.find(h => h.actionType === 'Được công nhận');
+  const recognitionEntry =
+    histories.find(h => h.actionType === 'Được công nhận' && !!h.remark?.trim())
+    ?? histories.find(h => h.actionType === 'Được công nhận');
+  const recognitionRemark = recognitionEntry?.remark?.trim() ?? '';
   const kqcnAttachments = ((item as any).attachments ?? []).filter((a: any) => isKqcnAttachment(a.originalName));
 
   return (
@@ -175,8 +208,10 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-bold mb-1" style={{ color: '#5b21b6' }}>Kết quả công nhận</p>
-                  {recognitionEntry?.remark && (
-                    <p className="text-sm text-gray-700 mb-1">{recognitionEntry.remark}</p>
+                  {recognitionRemark ? (
+                    <p className="text-sm text-gray-700 mb-1 whitespace-pre-wrap">{recognitionRemark}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-1">Chưa có nội dung công nhận.</p>
                   )}
                   <p className="text-xs text-gray-500">
                     <i className="fa-regular fa-calendar me-1" />
@@ -525,6 +560,7 @@ export const TraCuuHoSoPage = () => {
               const accentColor = STATUS_ACCENT[statusKey] ?? '#9CA3AF';
               const isDraft    = statusKey === 'BanNhap';
               const isWaiting  = statusKey === 'ChoTiepNhan';
+              const isReturned = statusKey === 'TraLai';
               const isDeleting  = deletingId === h.id;
               const isRecalling = recallingId === h.id;
 
@@ -577,12 +613,18 @@ export const TraCuuHoSoPage = () => {
                             <i className="fa-regular fa-calendar" />
                             {h.createdAt ? dayjs(h.createdAt).format('DD/MM/YYYY HH:mm') : '—'}
                           </span>
-                          {h.updatedAt && h.updatedAt !== h.createdAt && (
-                            <span className="flex items-center gap-1.5">
-                              <i className="fa-regular fa-clock-rotate-left" />
-                              Cập nhật {dayjs(h.updatedAt).format('DD/MM/YYYY')}
-                            </span>
-                          )}
+                          {(() => {
+                            const statusDate = getStatusDateInfo(h);
+                            if (statusDate && statusDate.date !== '—') {
+                              return (
+                                <span className="flex items-center gap-1.5 font-semibold" style={{ color: STATUS_CFG[STATUS_MAP[h.status ?? ''] ?? 'ChoTiepNhan']?.color ?? '#6B7280' }}>
+                                  <i className="fa-regular fa-clock" />
+                                  {statusDate.label}: {statusDate.date}
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                           {Array.isArray((h as any).attachments) && (h as any).attachments.length > 0 && (
                             <span className="flex items-center gap-1.5">
                               <i className="fa-regular fa-paperclip" />
@@ -642,6 +684,26 @@ export const TraCuuHoSoPage = () => {
                           {isRecalling
                             ? <><i className="fa-solid fa-circle-notch fa-spin" /> Đang thu hồi...</>
                             : <><i className="fa-regular fa-rotate-left" /> Thu hồi</>}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Action bar — Đã trả lại */}
+                    {isReturned && (
+                      <div className="mx-6 mb-5 rounded-xl flex items-center gap-3 px-4 py-3" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+                        <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                          <i className="fa-regular fa-rotate-left text-red-500" />
+                        </div>
+                        <span className="text-sm font-semibold text-red-700 flex-1">
+                          Ý tưởng bị trả lại — vui lòng chỉnh sửa và nộp lại
+                        </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleEdit(h); }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white transition-colors hover:opacity-90"
+                          style={{ background: '#003087' }}
+                        >
+                          <i className="fa-regular fa-pen-to-square" />
+                          Hiệu chỉnh &amp; nộp lại
                         </button>
                       </div>
                     )}

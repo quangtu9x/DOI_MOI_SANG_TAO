@@ -1,23 +1,24 @@
-import { FC } from 'react';
+import { FC, lazy } from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
-import { DashboardDoiMoiPage } from '@/app/pages/doi-moi-sang-tao/dashboard/DashboardDoiMoiPage';
-import { QuanLyYTuongDMSTPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/QuanLyYTuongDMSTPage';
-import { ChiTietYTuongPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/ChiTietYTuongPage';
-import { QuyTrinhDuyetPage } from '@/app/pages/doi-moi-sang-tao/quy-trinh-duyet/QuyTrinhDuyetPage';
-import { ThongBaoDMSTPage } from '@/app/pages/doi-moi-sang-tao/thong-bao/ThongBaoDMSTPage';
-import { KhoTriThucPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/KhoTriThucPage';
-import { ThuVienTaiLieuPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/thu-vien/ThuVienTaiLieuPage';
-import { DanhBaChuyenGiaPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia/DanhBaChuyenGiaPage';
-import { CongDongPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/cong-dong/CongDongPage';
-import { NewsFeedPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed/NewsFeedPage';
-import { NewsFeedV2Page } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed-v2/NewsFeedV2Page';
-import { TimKiemPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/tim-kiem/TimKiemPage';
-import { KTAnalyticsPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/analytics/KTAnalyticsPage';
-import { KTBaoCaoPage } from '@/app/pages/doi-moi-sang-tao/kho-tri-thuc/bao-cao/KTBaoCaoPage';
-import { BaoCaoPage } from '@/app/pages/doi-moi-sang-tao/bao-cao/BaoCaoPage';
-import { BaoCaoDayDuPage } from '@/app/pages/doi-moi-sang-tao/bao-cao/BaoCaoDayDuPage';
-import { QuanLyNguoiDungPage } from '@/app/pages/doi-moi-sang-tao/quan-ly-nguoi-dung/QuanLyNguoiDungPage';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
+
+const DashboardDoiMoiPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/dashboard/DashboardDoiMoiPage').then(m => ({ default: m.DashboardDoiMoiPage })));
+const QuanLyYTuongDMSTPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/QuanLyYTuongDMSTPage').then(m => ({ default: m.QuanLyYTuongDMSTPage })));
+const ChiTietYTuongPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/quan-ly-y-tuong/ChiTietYTuongPage').then(m => ({ default: m.ChiTietYTuongPage })));
+const QuyTrinhDuyetPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/quy-trinh-duyet/QuyTrinhDuyetPage').then(m => ({ default: m.QuyTrinhDuyetPage })));
+const ThongBaoDMSTPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/thong-bao/ThongBaoDMSTPage').then(m => ({ default: m.ThongBaoDMSTPage })));
+const KhoTriThucPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/KhoTriThucPage').then(m => ({ default: m.KhoTriThucPage })));
+const ThuVienTaiLieuPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/thu-vien/ThuVienTaiLieuPage').then(m => ({ default: m.ThuVienTaiLieuPage })));
+const DanhBaChuyenGiaPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia/DanhBaChuyenGiaPage').then(m => ({ default: m.DanhBaChuyenGiaPage })));
+const CongDongPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/cong-dong/CongDongPage').then(m => ({ default: m.CongDongPage })));
+const NewsFeedPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed/NewsFeedPage').then(m => ({ default: m.NewsFeedPage })));
+const NewsFeedV2Page = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed-v2/NewsFeedV2Page').then(m => ({ default: m.NewsFeedV2Page })));
+const TimKiemPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/tim-kiem/TimKiemPage').then(m => ({ default: m.TimKiemPage })));
+const KTAnalyticsPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/analytics/KTAnalyticsPage').then(m => ({ default: m.KTAnalyticsPage })));
+const KTBaoCaoPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/bao-cao/KTBaoCaoPage').then(m => ({ default: m.KTBaoCaoPage })));
+const BaoCaoPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/bao-cao/BaoCaoPage').then(m => ({ default: m.BaoCaoPage })));
+const BaoCaoDayDuPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/bao-cao/BaoCaoDayDuPage').then(m => ({ default: m.BaoCaoDayDuPage })));
+const QuanLyNguoiDungPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/quan-ly-nguoi-dung/QuanLyNguoiDungPage').then(m => ({ default: m.QuanLyNguoiDungPage })));
 
 /** Chỉ cho reviewer/admin qua, member → redirect dashboard */
 const ReviewerRoute: FC<{ element: React.ReactElement }> = ({ element }) => {
