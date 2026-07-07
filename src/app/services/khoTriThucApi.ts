@@ -220,6 +220,23 @@ export const timKiem = (keyword: string, pageNumber = 1, pageSize = 20) =>
 export const goiYTuKhoa = (prefix: string) =>
   requestGET<string[]>(`TimKiems/goi-y?prefix=${encodeURIComponent(prefix)}`);
 
+/** Tìm kiếm tài liệu đính kèm qua Elasticsearch (attachment content) — BETA/TEST */
+export const searchElasticsearchAttachments = (req: {
+  indexName?: string;
+  keyword: string;
+  pageNumber?: number;
+  pageSize?: number;
+}) =>
+  requestPOST<any>(`ElasticsearchAttachments/search`, {
+    indexName: req.indexName ?? 'td-quan-ly-tri-thuc',
+    keyword: req.keyword,
+    pageNumber: req.pageNumber ?? 1,
+    pageSize: req.pageSize ?? 20,
+  }).catch(err => {
+    console.error('Elasticsearch attachment search error:', err);
+    return { data: [] };
+  });
+
 // ── 3. Chuyên Gia ─────────────────────────────────────────────────────────────
 
 /** Tìm kiếm chuyên gia */
