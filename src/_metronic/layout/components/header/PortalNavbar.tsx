@@ -57,7 +57,7 @@ export const PortalNavbar = () => {
       key: "quan-ly-dmst",
       // Khớp đúng quyền truy cập từng route trong DoiMoiSangTaoRoutes.tsx (ReviewerRoute/AdminRoute)
       items: [
-        { label: "Tổng quan", to: "/doi-moi-sang-tao/dashboard", show: true },
+        { label: "Dashboard", to: "/doi-moi-sang-tao/dashboard", show: true },
         { label: "Danh sách ý tưởng", to: "/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach", show: isReviewer },
         { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi", show: true },
         { label: "Quy trình phê duyệt", to: "/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet", show: isReviewer },
@@ -67,6 +67,14 @@ export const PortalNavbar = () => {
         { label: "Quản lý người dùng", to: "/doi-moi-sang-tao/quan-ly-nguoi-dung", show: isAdmin },
       ].filter(item => item.show),
     },
+    // {
+    //   title: "Báo cáo",
+    //   key: "bao-cao",
+    //   items: [
+    //     { label: "Báo cáo", to: "/doi-moi-sang-tao/bao-cao", show: isReviewer },
+    //     { label: "Báo cáo tổng hợp đầy đủ", to: "/doi-moi-sang-tao/bao-cao-day-du", show: isReviewer },
+    //   ].filter(item => item.show),
+    // },
     // Menu Quản trị hệ thống — chỉ hiện khi có quyền
     ...(adminItems.length > 0 ? [{
       title: "Quản trị",

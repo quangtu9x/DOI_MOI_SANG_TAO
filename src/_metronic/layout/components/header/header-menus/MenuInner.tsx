@@ -1,7 +1,9 @@
+import {Suspense, lazy} from 'react'
 import {useIntl} from 'react-intl'
 import {MenuItem} from './MenuItem'
 import {MenuInnerWithSub} from './MenuInnerWithSub'
-import {MegaMenu} from './MegaMenu'
+
+const MegaMenu = lazy(() => import('./MegaMenu').then(m => ({ default: m.MegaMenu })))
 
 export function MenuInner() {
   const intl = useIntl()
@@ -123,7 +125,9 @@ export function MenuInner() {
         menuPlacement='bottom-start'
         menuTrigger='click'
       >
-        <MegaMenu />
+        <Suspense fallback={null}>
+          <MegaMenu />
+        </Suspense>
       </MenuInnerWithSub>
     </>
   )

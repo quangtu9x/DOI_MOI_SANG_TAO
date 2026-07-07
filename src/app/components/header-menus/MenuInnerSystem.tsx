@@ -47,7 +47,7 @@ const menuDoiMoiSangTaoConfig = [
       },
       {
         to: '/doi-moi-sang-tao/bao-cao',
-        title: 'Báo cáo & thống kê',
+        title: 'Báo cáo',
         fontIcon: 'fa-regular fa-file-chart-column',
       },
     ],
