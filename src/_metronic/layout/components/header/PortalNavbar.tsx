@@ -48,8 +48,8 @@ export const PortalNavbar = () => {
       title: "Thư viện ĐMST",
       key: "kho-tri-thuc",
       items: [
+        { label: "Dashboard", to: "/doi-moi-sang-tao/kho-tri-thuc/analytics" },
         { label: "Kho tri thức", to: "/doi-moi/kho-tri-thuc" },
-        { label: "Thống kê", to: "/doi-moi-sang-tao/kho-tri-thuc/analytics" },
         { label: "Thư viện tài liệu", to: "/doi-moi-sang-tao/kho-tri-thuc/thu-vien" },
         { label: "Danh bạ chuyên gia", to: "/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia" },
         { label: "Cộng đồng", to: "/doi-moi-sang-tao/kho-tri-thuc/cong-dong" },
@@ -112,7 +112,7 @@ export const PortalNavbar = () => {
                 Trang chủ
               </Link>
             </li>
-{/* 
+            {/* 
             <li>
               <Link to="/doi-moi-sang-tao/dashboard" className="flex items-center h-[50px] px-5 text-white hover:bg-portal-hover transition-colors font-bold text-[14px] border-r border-white/5">
                 Dashboard
