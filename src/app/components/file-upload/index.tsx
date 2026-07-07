@@ -28,9 +28,69 @@ const FileUpload = props => {
     isUseAliyunOSS = false,
   } = props;
   const token = getAuth()?.token;
+
+  const getFileHref = (file: any) => {
+    if (file?.url) return file.url;
+    if (file?.response?.data?.filePath) return file.response.data.filePath;
+    if (file?.response?.data) return file.response.data;
+    if (file?.originFileObj) return URL.createObjectURL(file.originFileObj as Blob);
+    return '';
+  };
+
+  const renderUploadItem = (originNode: React.ReactElement, file: any) => {
+    const href = getFileHref(file);
+    const fileNameNode = React.Children.toArray(originNode.props.children).find((child: any) => child?.props?.className?.includes('ant-upload-list-item-name'));
+
+    return React.cloneElement(originNode, {
+      children: React.Children.map(originNode.props.children, child => {
+        if (!child?.props?.className?.includes('ant-upload-list-item-name')) {
+          return child;
+        }
+
+        return React.cloneElement(child, {
+          children: (
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <span className="text-truncate" style={{ maxWidth: 260 }}>
+                {fileNameNode ? file.name : truncateFileName(file.name)}
+              </span>
+              {href ? (
+                <>
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<i className="fa-regular fa-eye" />}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      window.open(href, '_blank', 'noopener,noreferrer');
+                    }}
+                    aria-label="Xem file"
+                    title="Xem file"
+                  />
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<i className="fa-regular fa-download" />}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={file.name}
+                    aria-label="Tải xuống file"
+                    title="Tải xuống file"
+                  />
+                </>
+              ) : null}
+            </div>
+          ),
+        });
+      }),
+    });
+  };
+
   const handlePreview = async file => {
-    if (file.url) {
-      window.open(file.url, '_blank');
+    const href = getFileHref(file);
+    if (href) {
+      window.open(href, '_blank', 'noopener,noreferrer');
     }
   };
   const handleBeforeUpload = (file: File) => {
@@ -69,6 +129,7 @@ const FileUpload = props => {
       disabled={disabled}
       customRequest={customRequest}
       beforeUpload={handleBeforeUpload}
+        itemRender={(originNode, file) => renderUploadItem(originNode as React.ReactElement, file)}
     >
       {disabled ? (
         <></>
@@ -97,18 +158,7 @@ const FileUpload = props => {
           customRequest={customRequest}
           beforeUpload={handleBeforeUpload}
           className="w-100"
-          itemRender={(originNode, file) => (
-            <div className="ant-upload-list-item" title={file.name}>
-              {React.cloneElement(originNode as React.ReactElement, {
-                children: React.Children.map((originNode as React.ReactElement).props.children, child => {
-                  if (child?.props?.className?.includes('ant-upload-list-item-name')) {
-                    return React.cloneElement(child, {}, truncateFileName(file.name));
-                  }
-                  return child;
-                })
-              })}
-            </div>
-          )}
+          itemRender={(originNode, file) => renderUploadItem(originNode as React.ReactElement, file)}
         >
           {disabled ? null : (
             <Button type="dashed" className="border-primary text-hover-primary border-hover-primary"

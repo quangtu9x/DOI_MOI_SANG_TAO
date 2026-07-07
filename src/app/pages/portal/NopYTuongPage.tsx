@@ -805,7 +805,40 @@ export const NopYTuongPage = () => {
                   </Descriptions.Item>
                   <Descriptions.Item label="Tập tin đính kèm">
                     {fileList.length > 0
-                      ? fileList.map(f => <div key={f.uid} className="text-blue-600">📄 {f.name}</div>)
+                      ? fileList.map(f => {
+                          const previewUrl = f.url || (f.originFileObj ? URL.createObjectURL(f.originFileObj as Blob) : '');
+                          const isPdf = (f.type ?? '').toLowerCase().includes('pdf') || (f.name ?? '').toLowerCase().endsWith('.pdf');
+
+                          return (
+                            <div key={f.uid} className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                              <span className="text-blue-600">📄 {f.name}</span>
+                              {previewUrl ? (
+                                <>
+                                  <Button
+                                    size="small"
+                                    icon={<i className="fa-regular fa-eye" />}
+                                    onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
+                                    aria-label="Xem file"
+                                    title="Xem file"
+                                  >
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    type="link"
+                                    icon={<i className="fa-regular fa-download" />}
+                                    href={previewUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    download={isPdf ? f.name : undefined}
+                                    aria-label="Tải xuống file"
+                                    title="Tải xuống file"
+                                  >
+                                  </Button>
+                                </>
+                              ) : null}
+                            </div>
+                          );
+                        })
                       : <span className="text-gray-400">Không có</span>}
                   </Descriptions.Item>
                   <Descriptions.Item label="Cán bộ tiếp nhận">

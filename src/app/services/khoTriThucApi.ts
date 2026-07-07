@@ -4,7 +4,7 @@
 // Khớp 1-1 với Postman Collection "TD.QLNVKH — Knowledge Hub API v2"
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile, requestDownloadFile } from '@/utils/baseAPI';
+import { API_URL, requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile, requestDownloadFile } from '@/utils/baseAPI';
 import type { IAttachmentUploadResult } from '@/models/idea-portal';
 import type {
   IPaginationResponse,
@@ -136,7 +136,7 @@ export const tuChoiTaiLieu = (req: ITuChoiRequest) =>
  * Trả về URL để trigger download trong browser
  */
 export const getTaiLieuDownloadUrl = (id: string): string =>
-  `${(window as any).__BASE_API__ ?? '/api'}/api/v1/TaiLieus/${id}/download`;
+  `${API_URL}/api/v1/TaiLieus/${id}/download`;
 
 /** Bảng xếp hạng tài liệu (DaXuatBan, sắp xếp LuotXem DESC) */
 export const getRankingTaiLieus = (pageNumber = 1, pageSize = 10, linhVucKHCNId?: string, donViId?: string) => {
@@ -206,7 +206,7 @@ export const deleteTaiLieuDinhKem = (id: string) =>
 
 /** URL tải xuống file đính kèm */
 export const getTaiLieuDinhKemDownloadUrl = (id: string): string =>
-  `${(window as any).__BASE_API__ ?? '/api'}/api/v1/TaiLieuDinhKems/${id}/download`;
+  `${API_URL}/api/v1/TaiLieuDinhKems/${id}/download`;
 
 // ── 2. Tìm Kiếm Full-text ─────────────────────────────────────────────────────
 

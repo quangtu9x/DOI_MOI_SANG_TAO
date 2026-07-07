@@ -230,6 +230,16 @@ export interface ICreatePhienBanRequest {
 export interface ITaiLieuDinhKem {
   id:              string;
   taiLieuId:       string;
+  fileName?:       string | null;
+  originalName?:   string | null;
+  filePath?:       string | null;
+  fileExt?:        string | null;
+  fileSize?:       number;
+  externalUrl?:    string | null;
+  description?:    string | null;
+  bucketName?:     string | null;
+  prefix?:         string | null;
+  thumbnailUrl?:   string | null;
   thongTinFile?: {
     duongDanLuuTru: string;
     tenGoc:         string;

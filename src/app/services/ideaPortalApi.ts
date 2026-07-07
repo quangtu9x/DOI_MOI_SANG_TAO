@@ -1,4 +1,4 @@
-import { requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile, requestDownloadFile } from '@/utils/baseAPI';
+import { API_URL, requestGET, requestPOST, requestPUT, requestDELETE, requestUploadFile, requestDownloadFile } from '@/utils/baseAPI';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   IIdea,
@@ -48,7 +48,7 @@ export const getIdeaAttachmentDownloadUrl = (filePath?: string | null): string =
   if (idx < 0) return '';
   const bucket = filePath.slice(0, idx);
   const key = filePath.slice(idx + 1);
-  return `${(window as any).__BASE_API__ ?? '/api'}/api/v1/attachments/${bucket}/${key}`;
+  return `${API_URL}/api/v1/attachments/${bucket}/${key}`;
 };
 
 // ── Báo cáo / Dashboard ĐMST ─────────────────────────────────────────────────

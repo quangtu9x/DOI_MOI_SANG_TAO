@@ -166,6 +166,33 @@ const normalizeTL = (item: any): ITaiLieu => ({
   ).filter(Boolean),
 });
 
+const normalizeDinhKem = (item: any): ITaiLieuDinhKem => {
+  const thongTinFile = item.thongTinFile ?? (
+    item.filePath || item.fileName || item.originalName || item.fileSize
+      ? {
+          duongDanLuuTru: item.filePath ?? item.duongDanLuuTru ?? '',
+          tenGoc: item.fileName ?? item.originalName ?? item.tenGoc ?? '',
+          kichThuocBytes: item.fileSize ?? item.kichThuocBytes ?? 0,
+          mimeType: item.mimeType ?? item.fileExt ?? 'application/octet-stream',
+        }
+      : null
+  );
+
+  return {
+    ...item,
+    fileName: item.fileName ?? item.thongTinFile?.tenGoc ?? item.tenGoc ?? null,
+    originalName: item.originalName ?? item.fileName ?? item.thongTinFile?.tenGoc ?? item.tenGoc ?? null,
+    filePath: item.filePath ?? item.thongTinFile?.duongDanLuuTru ?? item.duongDanLuuTru ?? null,
+    fileExt: item.fileExt ?? null,
+    fileSize: item.fileSize ?? item.thongTinFile?.kichThuocBytes ?? item.kichThuocBytes ?? 0,
+    externalUrl: item.externalUrl ?? item.urlNgoai ?? null,
+    description: item.description ?? item.moTa ?? null,
+    urlNgoai: item.urlNgoai ?? item.externalUrl ?? null,
+    moTa: item.moTa ?? item.description ?? null,
+    thongTinFile,
+  };
+};
+
 const DEFAULT_SEARCH: ISearchTaiLieuRequest = {
   pageNumber: 1, pageSize: 12,
   keyword: '', trangThai: null, loaiTaiLieu: null, tacGiaId: null,
@@ -566,7 +593,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       const vRes = await searchPhienBans({ taiLieuId: id, pageNumber: 1, pageSize: 20, orderBy: ['soPhienBan desc'] });
       setVersions(safeList<any>(vRes));
       const dkRes = await searchTaiLieuDinhKems({ taiLieuId: id, pageNumber: 1, pageSize: 50 });
-      setDinhKems(safeList<ITaiLieuDinhKem>(dkRes));
+      setDinhKems(safeList<any>(dkRes).map(normalizeDinhKem));
     } catch { message.error('Không tải được chi tiết tài liệu'); }
     finally { setDetailLoading(false); }
   };
@@ -577,7 +604,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       message.success('Đã xóa đính kèm');
       if (detail) {
         const dkRes = await searchTaiLieuDinhKems({ taiLieuId: detail.id, pageNumber: 1, pageSize: 50 });
-        setDinhKems(safeList<ITaiLieuDinhKem>(dkRes));
+        setDinhKems(safeList<any>(dkRes).map(normalizeDinhKem));
       }
     } catch { message.error('Không xóa được đính kèm'); }
   };
@@ -746,6 +773,43 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     const url = getTaiLieuDownloadUrl(id);
     const a = document.createElement('a'); a.href = url;
     a.download = tenGocFile ?? 'tai-lieu'; a.click();
+  };
+
+  const getSelectedFileUrl = (file: RcFile | UploadFile) => {
+    if ((file as UploadFile).url) return (file as UploadFile).url as string;
+    if ('originFileObj' in file && file.originFileObj) {
+      return window.URL.createObjectURL(file.originFileObj as Blob);
+    }
+    return '';
+  };
+
+  const renderSelectedFileActions = (file: RcFile | UploadFile) => {
+    const href = getSelectedFileUrl(file);
+    if (!href) return null;
+
+    return (
+      <div className="d-flex align-items-center gap-2 flex-wrap mt-2">
+        <Button
+          size="small"
+          type="text"
+          icon={<i className="fa-regular fa-eye" />}
+          onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
+          aria-label="Xem file"
+          title="Xem file"
+        />
+        <Button
+          size="small"
+          type="text"
+          icon={<i className="fa-regular fa-download" />}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          download={(file as UploadFile).name ?? 'tai-lieu'}
+          aria-label="Tải xuống file"
+          title="Tải xuống file"
+        />
+      </div>
+    );
   };
 
   // ── Render card
@@ -1348,9 +1412,9 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                                     <i className={`fa-regular ${getFileIcon(dk.thongTinFile.mimeType)} me-1`} />
                                     {dk.thongTinFile.tenGoc}
                                   </>
-                                ) : dk.urlNgoai ? (
-                                  <a href={dk.urlNgoai} target="_blank" rel="noopener noreferrer">
-                                    <i className="fa-regular fa-link me-1" />{dk.urlNgoai}
+                                ) : dk.externalUrl || dk.urlNgoai ? (
+                                  <a href={dk.externalUrl ?? dk.urlNgoai ?? undefined} target="_blank" rel="noopener noreferrer">
+                                    <i className="fa-regular fa-link me-1" />{dk.externalUrl ?? dk.urlNgoai}
                                   </a>
                                 ) : '—'}
                               </td>
@@ -1564,6 +1628,15 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                 <Tag color="green" style={{ fontSize: 11 }}>File hiện tại</Tag>
               </div>
             )}
+            {uploadFile && (
+              <div className="mt-2 p-2 border rounded bg-light d-flex align-items-center gap-2 flex-wrap">
+                <i className={`fa-regular ${getFileIcon(uploadFile.type)} text-primary`} />
+                <span className="fs-7 flex-grow-1">{uploadFile.name}</span>
+                <span className="text-muted fs-8">{formatBytes(uploadFile.size)}</span>
+                <Tag color="blue" style={{ fontSize: 11 }}>File đã chọn</Tag>
+                {renderSelectedFileActions(uploadFile)}
+              </div>
+            )}
 
             {/* Đính kèm bổ sung — gộp chung mục Tệp đính kèm */}
             <div className="mt-3">
@@ -1589,6 +1662,19 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                   Chọn thêm file đính kèm
                 </Button>
               </Upload>
+              {extraFiles.length > 0 && (
+                <div className="mt-3 d-flex flex-column gap-2">
+                  {extraFiles.map(file => (
+                    <div key={file.uid} className="p-2 border rounded bg-light d-flex align-items-center gap-2 flex-wrap">
+                      <i className={`fa-regular ${getFileIcon(file.type)} text-primary`} />
+                      <span className="fs-7 flex-grow-1">{file.name}</span>
+                      <span className="text-muted fs-8">{formatBytes(file.size)}</span>
+                      <Tag color="blue" style={{ fontSize: 11 }}>File đính kèm</Tag>
+                      {renderSelectedFileActions(file)}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
