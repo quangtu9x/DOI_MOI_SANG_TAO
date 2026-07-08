@@ -162,6 +162,13 @@ const formatBytes = (bytes?: number | null) => {
 const getMinioFileUrl = (duongDanLuuTru?: string | null): string =>
   duongDanLuuTru ? `${API_URL}/api/v1/attachments/${duongDanLuuTru}` : '';
 
+/** Chuẩn hóa liên kết ngoài — tự thêm https:// nếu thiếu scheme để mở tab mới không bị sai */
+const normalizeExternalUrl = (url?: string | null): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
+};
+
 /** Normalize raw API item → flat ITaiLieu expected by the UI */
 const normalizeTL = (item: any): ITaiLieu => {
   // API "search" gộp file chính vào attachments (phần tử không có id) thay vì trả thongTinFile riêng
@@ -1052,7 +1059,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                   </span>
                 )}
                 {item.urlNgoai && (
-                  <a href={item.urlNgoai} title={item.urlNgoai} target="_blank" rel="noopener noreferrer"
+                  <a href={normalizeExternalUrl(item.urlNgoai)} title={item.urlNgoai} target="_blank" rel="noopener noreferrer"
                     className="text-info fs-9 text-truncate" style={{ maxWidth: 160 }}
                     onClick={e => e.stopPropagation()}>
                     <i className="fa-regular fa-link me-1" />Liên kết ngoài
@@ -1632,7 +1639,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                         <div className="mb-4 p-3 rounded border border-dashed border-gray-300">
                           <div className="d-flex align-items-center gap-2">
                             <i className="fa-regular fa-link text-info" />
-                            <a href={detail.urlNgoai} target="_blank" rel="noopener noreferrer" className="text-truncate">
+                            <a href={normalizeExternalUrl(detail.urlNgoai)} target="_blank" rel="noopener noreferrer" className="text-truncate">
                               {detail.urlNgoai}
                             </a>
                           </div>
@@ -1715,7 +1722,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                                     {dk.thongTinFile.tenGoc}
                                   </>
                                 ) : dk.externalUrl || dk.urlNgoai ? (
-                                  <a href={dk.externalUrl ?? dk.urlNgoai ?? undefined} target="_blank" rel="noopener noreferrer">
+                                  <a href={normalizeExternalUrl(dk.externalUrl ?? dk.urlNgoai)} target="_blank" rel="noopener noreferrer">
                                     <i className="fa-regular fa-link me-1" />{dk.externalUrl ?? dk.urlNgoai}
                                   </a>
                                 ) : '—'}
