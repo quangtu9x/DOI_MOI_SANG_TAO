@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Input, Select, Button, Tag, Modal, Form, Upload, Spin, Empty,
-  Tabs, Tooltip, Popconfirm, message, Badge, Divider, Progress, InputNumber,
+  Tabs, Tooltip, Popconfirm, Popover, message, Badge, Divider, Progress, InputNumber,
   Tree, TreeSelect, Checkbox,
 } from 'antd';
 import dayjs from 'dayjs';
@@ -48,9 +48,12 @@ import type {
   ISearchTaiLieuRequest,
   ITaiLieuDinhKem,
   IThuMucTaiLieu,
+  ICreateDinhKemRequest,
+  ICreateTaiLieuAttachment,
+  ICreateTaiLieuRequest,
 } from '@/app/models/knowledge-hub';
 import { TrangThaiTaiLieu, LoaiTaiLieu, LoaiNguonThamChieu } from '@/app/models/knowledge-hub';
-import { requestPOST } from '@/utils/baseAPI';
+import { requestPOST, API_URL } from '@/utils/baseAPI';
 import { IPaginationResponse, IUserDetails } from '@/models';
 
 const { Option } = Select;
@@ -152,19 +155,30 @@ const formatBytes = (bytes?: number | null) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+/** URL file lưu trên Minio — duongDanLuuTru có dạng "bucket/prefix/.../ten-file" */
+const getMinioFileUrl = (duongDanLuuTru?: string | null): string =>
+  duongDanLuuTru ? `${API_URL}/api/v1/attachments/${duongDanLuuTru}` : '';
+
 /** Normalize raw API item → flat ITaiLieu expected by the UI */
-const normalizeTL = (item: any): ITaiLieu => ({
-  ...item,
-  // Flatten thongTinFile into top-level fields
-  duongDanLuuTru: item.thongTinFile?.duongDanLuuTru ?? item.duongDanLuuTru ?? null,
-  tenGoc:         item.thongTinFile?.tenGoc         ?? item.tenGoc         ?? null,
-  kichThuocBytes: item.thongTinFile?.kichThuocBytes  ?? item.kichThuocBytes  ?? null,
-  mimeType:       item.thongTinFile?.mimeType        ?? item.mimeType        ?? null,
-  // tags: BE gửi [{id, ten, soLanDung}] → cần string[]
-  tags: (item.tags ?? []).map((t: any) =>
-    typeof t === 'string' ? t : (t?.ten ?? '')
-  ).filter(Boolean),
-});
+const normalizeTL = (item: any): ITaiLieu => {
+  // API "search" gộp file chính vào attachments (phần tử không có id) thay vì trả thongTinFile riêng
+  const attachments = (item.attachments ?? []).map(normalizeDinhKem);
+  const mainAttachment = attachments.find((a: any) => !a.id);
+  const tf = item.thongTinFile ?? mainAttachment?.thongTinFile ?? null;
+  return {
+    ...item,
+    attachments,
+    // Flatten thongTinFile into top-level fields
+    duongDanLuuTru: tf?.duongDanLuuTru ?? item.duongDanLuuTru ?? null,
+    tenGoc:         tf?.tenGoc         ?? item.tenGoc         ?? null,
+    kichThuocBytes: tf?.kichThuocBytes  ?? item.kichThuocBytes  ?? null,
+    mimeType:       tf?.mimeType        ?? item.mimeType        ?? null,
+    // tags: BE gửi [{id, ten, soLanDung}] → cần string[]
+    tags: (item.tags ?? []).map((t: any) =>
+      typeof t === 'string' ? t : (t?.ten ?? '')
+    ).filter(Boolean),
+  };
+};
 
 const normalizeDinhKem = (item: any): ITaiLieuDinhKem => {
   const thongTinFile = item.thongTinFile ?? (
@@ -263,6 +277,33 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading]       = useState(false);
   const [extraFiles, setExtraFiles]     = useState<RcFile[]>([]);
+  const [mainFileCleared, setMainFileCleared] = useState(false);
+  const extraFilesRef = useRef<RcFile[]>([]);
+  /** Đồng bộ extraFiles state + ref để tránh stale closure */
+  const setExtraFilesSafe = useCallback((files: RcFile[] | ((prev: RcFile[]) => RcFile[])) => {
+    if (typeof files === 'function') {
+      setExtraFiles(prev => {
+        const next = files(prev);
+        extraFilesRef.current = next;
+        return next;
+      });
+    } else {
+      extraFilesRef.current = files;
+      setExtraFiles(files);
+    }
+  }, []);
+  /** Helper: thêm file vào extraFiles */
+  const addExtraFile = useCallback((file: RcFile) => {
+    setExtraFilesSafe(prev => [...prev, file]);
+  }, [setExtraFilesSafe]);
+  /** Helper: xoá file khỏi extraFiles */
+  const removeExtraFile = useCallback((file: UploadFile | RcFile) => {
+    setExtraFilesSafe(prev => prev.filter(f => f.uid !== file.uid));
+  }, [setExtraFilesSafe]);
+  /** Helper: reset extraFiles */
+  const resetExtraFiles = useCallback(() => {
+    setExtraFilesSafe([]);
+  }, [setExtraFilesSafe]);
 
   // từ chối
   const [tuChoiOpen, setTuChoiOpen]     = useState(false);
@@ -598,12 +639,13 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     finally { setDetailLoading(false); }
   };
 
-  const handleDeleteDinhKem = async (dkId: string) => {
+  const handleDeleteDinhKem = async (dkId: string, taiLieuId?: string) => {
     try {
       await deleteTaiLieuDinhKem(dkId);
       message.success('Đã xóa đính kèm');
-      if (detail) {
-        const dkRes = await searchTaiLieuDinhKems({ taiLieuId: detail.id, pageNumber: 1, pageSize: 50 });
+      const id = taiLieuId ?? detail?.id;
+      if (id) {
+        const dkRes = await searchTaiLieuDinhKems({ taiLieuId: id, pageNumber: 1, pageSize: 50 });
         setDinhKems(safeList<any>(dkRes).map(normalizeDinhKem));
       }
     } catch { message.error('Không xóa được đính kèm'); }
@@ -612,20 +654,26 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   // ── Form
   const openCreate = () => {
     setFormMode('create'); form.resetFields();
-    setUploadFile(null); setUploadProgress(0); setExtraFiles([]);
+    setUploadFile(null); setUploadProgress(0); resetExtraFiles();
+    setMainFileCleared(false);
     setIdeaOptions([]);
+    setDinhKems([]);
     form.setFieldsValue({ loaiTaiLieu: LoaiTaiLieu.HuongDan });
     setFormOpen(true);
   };
   const openEdit = (item: ITaiLieu) => {
     setFormMode('edit'); form.resetFields();
-    setUploadFile(null); setUploadProgress(0); setExtraFiles([]);
+    setUploadFile(null); setUploadProgress(0); resetExtraFiles();
+    setMainFileCleared(false);
     setIdeaOptions(item.ideaId ? [{ value: item.ideaId, label: item.tenYTuong || item.ideaId }] : []);
     form.setFieldsValue({
       ...item,
       tags: item.tags?.join(', '),
     });
     setFormOpen(true);
+    searchTaiLieuDinhKems({ taiLieuId: item.id, pageNumber: 1, pageSize: 50 })
+      .then(res => setDinhKems(safeList<any>(res).map(normalizeDinhKem)))
+      .catch(() => setDinhKems([]));
   };
 
   const handleFormSubmit = async () => {
@@ -660,7 +708,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       }
 
       const tags = (values.tags as string ?? '').split(',').map((t: string) => t.trim()).filter(Boolean);
-      const payload = {
+      const payload: ICreateTaiLieuRequest = {
         tieuDe: values.tieuDe,
         moTa: values.moTa,
         loaiTaiLieu: values.loaiTaiLieu,
@@ -677,6 +725,42 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         mimeType: mimeType || null,
       };
 
+      // Upload extra files trước. Khi tạo mới gửi kèm payload tài liệu; khi cập nhật gọi API đính kèm riêng.
+      const currentExtraFiles = extraFilesRef.current;
+      const uploadedAttachments: ICreateTaiLieuAttachment[] = [];
+      if (currentExtraFiles.length > 0) {
+        let failed = 0;
+        for (const f of currentExtraFiles) {
+          try {
+            setUploading(true);
+            const uploaded = await uploadTaiLieuFile(f);
+            if (!uploaded) { failed++; continue; }
+            uploadedAttachments.push({
+              fileName: uploaded.fileName,
+              originalName: uploaded.originalName ?? uploaded.fileName ?? f.name,
+              filePath: uploaded.filePath,
+              fileExt: uploaded.fileExt,
+              fileSize: uploaded.fileSize ?? f.size,
+              bucketName: uploaded.bucketName,
+              prefix: uploaded.prefix,
+              thumbnailUrl: uploaded.thumbnailUrl,
+              // BE TaiLieuDinhKemDto cần ThongTinFile cho MimeType khi xử lý
+              thongTinFile: {
+                duongDanLuuTru: uploaded.filePath,
+                tenGoc: uploaded.originalName ?? uploaded.fileName ?? f.name,
+                kichThuocBytes: uploaded.fileSize ?? f.size,
+                mimeType: f.type || 'application/octet-stream',
+              },
+            });
+          } catch { failed++; }
+        }
+        setUploading(false);
+        if (failed > 0) message.warning(`${failed} file đính kèm upload thất bại`);
+        if (formMode === 'create') {
+          payload.attachments = uploadedAttachments;
+        }
+      }
+
       let taiLieuId: string | null = null;
       if (formMode === 'create') {
         const res = await createTaiLieu(payload);
@@ -684,34 +768,46 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         message.success('Tạo tài liệu thành công');
       } else {
         const editId = form.getFieldValue('id');
-        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true, capNhatThuMuc: true, capNhatIdea: true });
+        await updateTaiLieu(editId, {
+          ...payload,
+          id: editId,
+          capNhatNguonThamChieu: true,
+          capNhatThuMuc: true,
+          capNhatIdea: true,
+          xoaFile: mainFileCleared && !uploadFile,
+        });
+        if (uploadedAttachments.length > 0) {
+          for (const a of uploadedAttachments) {
+            const attachmentPayload: ICreateDinhKemRequest = {
+              taiLieuId: editId,
+              fileName: a.fileName,
+              originalName: a.originalName,
+              filePath: a.filePath,
+              fileExt: a.fileExt,
+              fileSize: a.fileSize,
+              bucketName: a.bucketName,
+              prefix: a.prefix,
+              thumbnailUrl: a.thumbnailUrl,
+            };
+            const attachRes = await createTaiLieuDinhKem(attachmentPayload);
+            if (attachRes.status >= 400 || attachRes.data?.failed) {
+              throw new Error(Array.isArray(attachRes.data?.message)
+                ? attachRes.data.message.join(', ')
+                : attachRes.data?.message || 'Không lưu được tệp đính kèm mới');
+            }
+          }
+        }
         taiLieuId = editId;
         message.success('Cập nhật thành công');
       }
 
-      // Upload các file đính kèm bổ sung (IV.1.4 — nhiều định dạng cho một tài liệu)
-      if (taiLieuId && extraFiles.length > 0) {
-        let failed = 0;
-        for (const f of extraFiles) {
-          try {
-            const uploaded = await uploadTaiLieuFile(f);
-            if (!uploaded) { failed++; continue; }
-            await createTaiLieuDinhKem({
-              taiLieuId,
-              duongDanLuuTru: uploaded.filePath,
-              tenGoc: uploaded.originalName ?? uploaded.fileName ?? f.name,
-              kichThuocBytes: uploaded.fileSize ?? f.size,
-              mimeType: f.type || 'application/octet-stream',
-            });
-          } catch { failed++; }
-        }
-        if (failed > 0) message.warning(`${failed} file đính kèm upload thất bại`);
-      }
-
       setFormOpen(false); loadItems(); loadFolders();
+      if (taiLieuId && detail?.id === taiLieuId) {
+        await openDetail(taiLieuId);
+      }
     } catch (e: any) {
       if (e?.errorFields) return;
-      message.error('Có lỗi xảy ra');
+      message.error(e?.message || 'Có lỗi xảy ra');
     } finally { setFormLoading(false); setUploading(false); }
   };
 
@@ -904,7 +1000,44 @@ export const ThuVienTaiLieuPage: React.FC = () => {
           <div className="d-flex justify-content-between align-items-center border-top pt-3 mt-auto">
             <div className="text-muted fs-8 d-flex gap-3">
               <span><i className="fa-regular fa-eye me-1" />{item.luotXem ?? 0}</span>
-              {item.kichThuocBytes && <span><i className="fa-regular fa-file me-1" />{formatBytes(item.kichThuocBytes)}</span>}
+              {(item.attachments?.length ?? 0) > 0 && (
+                <Popover
+                  trigger="click"
+                  title="Tệp đính kèm"
+                  content={
+                    <div className="d-flex flex-column gap-2" style={{ maxWidth: 280 }}>
+                      {item.attachments!.map((f, idx) => {
+                        const path = f.thongTinFile?.duongDanLuuTru ?? f.filePath ?? null;
+                        return (
+                          <div key={f.id ?? idx} className="d-flex align-items-center gap-2">
+                            <i className={`fa-regular ${getFileIcon(f.thongTinFile?.mimeType)} text-primary`} />
+                            <span className="fs-8 flex-grow-1 text-truncate" style={{ maxWidth: 140 }}>
+                              {f.thongTinFile?.tenGoc ?? f.externalUrl ?? f.urlNgoai ?? '—'}
+                            </span>
+                            {path && (
+                              <>
+                                <Button size="small" type="text" icon={<i className="fa-regular fa-eye" />} title="Xem file"
+                                  onClick={() => window.open(getMinioFileUrl(path), '_blank', 'noopener,noreferrer')} />
+                                <Button size="small" type="text" icon={<i className="fa-regular fa-download" />} title="Tải xuống"
+                                  onClick={() => {
+                                    const a = document.createElement('a');
+                                    a.href = getMinioFileUrl(path);
+                                    a.download = f.thongTinFile?.tenGoc ?? 'tai-lieu';
+                                    a.click();
+                                  }} />
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  }
+                >
+                  <span className="text-primary" style={{ cursor: 'pointer' }} onClick={e => e.stopPropagation()}>
+                    <i className="fa-regular fa-paperclip me-1" />{item.attachments!.length} tệp
+                  </span>
+                </Popover>
+              )}
             </div>
             <div className="d-flex gap-1">
               <Tooltip title="Xem chi tiết">
@@ -1586,31 +1719,93 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
           <Divider orientation="left" style={{ fontSize: 13, color: '#888' }}>Tệp đính kèm</Divider>
 
-          {/* File upload */}
+          {/* File upload — 1 chức năng duy nhất, hỗ trợ chọn nhiều file (upload qua Minio) */}
           <div className="mb-4">
+            {/* File chính đã lưu (chế độ sửa) */}
+            {formMode === 'edit' && !uploadFile && !mainFileCleared && form.getFieldValue('tenGoc') && (
+              <div className="mb-2 p-2 border rounded d-flex align-items-center gap-2 bg-light flex-wrap">
+                <i className={`fa-regular ${getFileIcon(form.getFieldValue('mimeType'))} text-primary`} />
+                <span className="fs-7 flex-grow-1">{form.getFieldValue('tenGoc')}</span>
+                <span className="text-muted fs-8">{formatBytes(form.getFieldValue('kichThuocBytes'))}</span>
+                <Button size="small" type="text" icon={<i className="fa-regular fa-eye" />} title="Xem file"
+                  onClick={() => window.open(getMinioFileUrl(form.getFieldValue('duongDanLuuTru')), '_blank', 'noopener,noreferrer')} />
+                <Button size="small" type="text" icon={<i className="fa-regular fa-download" />} title="Tải xuống"
+                  onClick={() => {
+                    const a = document.createElement('a');
+                    a.href = getMinioFileUrl(form.getFieldValue('duongDanLuuTru'));
+                    a.download = form.getFieldValue('tenGoc') ?? 'tai-lieu';
+                    a.click();
+                  }} />
+                <Popconfirm title="Gỡ file chính khỏi tài liệu?" onConfirm={() => setMainFileCleared(true)}>
+                  <Button size="small" type="text" danger icon={<i className="fa-regular fa-trash" />} title="Bỏ file" />
+                </Popconfirm>
+              </div>
+            )}
+
+            {/* Đính kèm đã lưu (chế độ sửa) */}
+            {formMode === 'edit' && dinhKems.map(dk => {
+              const dkPath = dk.thongTinFile?.duongDanLuuTru ?? dk.filePath ?? null;
+              return (
+                <div key={dk.id} className="mb-2 p-2 border rounded d-flex align-items-center gap-2 bg-light flex-wrap">
+                  <i className={`fa-regular ${getFileIcon(dk.thongTinFile?.mimeType)} text-primary`} />
+                  <span className="fs-7 flex-grow-1">{dk.thongTinFile?.tenGoc ?? dk.externalUrl ?? dk.urlNgoai ?? '—'}</span>
+                  <span className="text-muted fs-8">{formatBytes(dk.thongTinFile?.kichThuocBytes)}</span>
+                  {dkPath && (
+                    <>
+                      <Button size="small" type="text" icon={<i className="fa-regular fa-eye" />} title="Xem file"
+                        onClick={() => window.open(getMinioFileUrl(dkPath), '_blank', 'noopener,noreferrer')} />
+                      <Button size="small" type="text" icon={<i className="fa-regular fa-download" />} title="Tải xuống"
+                        onClick={() => {
+                          const a = document.createElement('a');
+                          a.href = getMinioFileUrl(dkPath);
+                          a.download = dk.thongTinFile?.tenGoc ?? 'dinh-kem';
+                          a.click();
+                        }} />
+                    </>
+                  )}
+                  <Popconfirm title="Xóa đính kèm này?" onConfirm={() => handleDeleteDinhKem(dk.id, form.getFieldValue('id'))}>
+                    <Button size="small" type="text" danger icon={<i className="fa-regular fa-trash" />} title="Xóa" />
+                  </Popconfirm>
+                </div>
+              );
+            })}
+
             <Upload.Dragger
+              multiple
               beforeUpload={(file) => {
-                setUploadFile(file);
+                if (!uploadFile) setUploadFile(file);
+                else addExtraFile(file);
                 return false; // prevent auto-upload
               }}
-              onRemove={() => { setUploadFile(null); setUploadProgress(0); }}
-              maxCount={1}
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
-              fileList={uploadFile ? [{
-                uid: '-1',
-                name: uploadFile.name,
-                status: uploading ? 'uploading' : 'done',
-                percent: uploadProgress,
-                size: uploadFile.size,
-                type: uploadFile.type,
-              } as UploadFile] : []}
+              onRemove={(file) => {
+                if (uploadFile && file.uid === uploadFile.uid) { setUploadFile(null); setUploadProgress(0); }
+                else removeExtraFile(file);
+              }}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.png,.jpg,.jpeg,.gif"
+              fileList={[
+                ...(uploadFile ? [{
+                  uid: uploadFile.uid,
+                  name: uploadFile.name,
+                  status: uploading ? 'uploading' : 'done',
+                  percent: uploadProgress,
+                  size: uploadFile.size,
+                  type: uploadFile.type,
+                } as UploadFile] : []),
+                ...extraFiles.map(f => ({
+                  uid: f.uid,
+                  name: f.name,
+                  status: 'done',
+                  size: f.size,
+                  type: f.type,
+                } as UploadFile)),
+              ]}
             >
               <p className="ant-upload-drag-icon">
                 <i className="fa-regular fa-cloud-upload-alt fs-1 text-primary" />
               </p>
-              <p className="ant-upload-text">Kéo thả hoặc click để chọn file</p>
+              <p className="ant-upload-text">Kéo thả hoặc click để chọn file (có thể chọn nhiều)</p>
               <p className="ant-upload-hint text-muted fs-8">
-                Hỗ trợ PDF, Word, Excel, PowerPoint, TXT, ZIP · Tối đa 50MB
+                Hỗ trợ PDF, Word, Excel, PowerPoint, TXT, ZIP, hình ảnh · Tối đa 50MB/file
               </p>
             </Upload.Dragger>
             {uploading && (
@@ -1619,63 +1814,28 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                 <div className="text-muted fs-8 text-center mt-1">Đang upload...</div>
               </div>
             )}
-            {/* Show existing file in edit mode */}
-            {formMode === 'edit' && !uploadFile && form.getFieldValue('tenGoc') && (
-              <div className="mt-2 p-2 border rounded d-flex align-items-center gap-2 bg-light">
-                <i className={`fa-regular ${getFileIcon(form.getFieldValue('mimeType'))} text-primary`} />
-                <span className="fs-7 flex-grow-1">{form.getFieldValue('tenGoc')}</span>
-                <span className="text-muted fs-8">{formatBytes(form.getFieldValue('kichThuocBytes'))}</span>
-                <Tag color="green" style={{ fontSize: 11 }}>File hiện tại</Tag>
+            {(uploadFile || extraFiles.length > 0) && (
+              <div className="mt-2 d-flex flex-column gap-2">
+                {uploadFile && (
+                  <div className="p-2 border rounded bg-light d-flex align-items-center gap-2 flex-wrap">
+                    <i className={`fa-regular ${getFileIcon(uploadFile.type)} text-primary`} />
+                    <span className="fs-7 flex-grow-1">{uploadFile.name}</span>
+                    <span className="text-muted fs-8">{formatBytes(uploadFile.size)}</span>
+                    <Tag color="blue" style={{ fontSize: 11 }}>File chính</Tag>
+                    {renderSelectedFileActions(uploadFile)}
+                  </div>
+                )}
+                {extraFiles.map(file => (
+                  <div key={file.uid} className="p-2 border rounded bg-light d-flex align-items-center gap-2 flex-wrap">
+                    <i className={`fa-regular ${getFileIcon(file.type)} text-primary`} />
+                    <span className="fs-7 flex-grow-1">{file.name}</span>
+                    <span className="text-muted fs-8">{formatBytes(file.size)}</span>
+                    <Tag color="blue" style={{ fontSize: 11 }}>File đính kèm</Tag>
+                    {renderSelectedFileActions(file)}
+                  </div>
+                ))}
               </div>
             )}
-            {uploadFile && (
-              <div className="mt-2 p-2 border rounded bg-light d-flex align-items-center gap-2 flex-wrap">
-                <i className={`fa-regular ${getFileIcon(uploadFile.type)} text-primary`} />
-                <span className="fs-7 flex-grow-1">{uploadFile.name}</span>
-                <span className="text-muted fs-8">{formatBytes(uploadFile.size)}</span>
-                <Tag color="blue" style={{ fontSize: 11 }}>File đã chọn</Tag>
-                {renderSelectedFileActions(uploadFile)}
-              </div>
-            )}
-
-            {/* Đính kèm bổ sung — gộp chung mục Tệp đính kèm */}
-            <div className="mt-3">
-              <Upload
-                multiple
-                beforeUpload={(file) => {
-                  setExtraFiles(prev => [...prev, file]);
-                  return false; // prevent auto-upload
-                }}
-                onRemove={(file) => {
-                  setExtraFiles(prev => prev.filter(f => f.uid !== file.uid));
-                }}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.png,.jpg,.jpeg,.gif"
-                fileList={extraFiles.map(f => ({
-                  uid: f.uid,
-                  name: f.name,
-                  status: 'done',
-                  size: f.size,
-                  type: f.type,
-                } as UploadFile))}
-              >
-                <Button size="small" icon={<i className="fa-regular fa-paperclip me-1" />}>
-                  Chọn thêm file đính kèm
-                </Button>
-              </Upload>
-              {extraFiles.length > 0 && (
-                <div className="mt-3 d-flex flex-column gap-2">
-                  {extraFiles.map(file => (
-                    <div key={file.uid} className="p-2 border rounded bg-light d-flex align-items-center gap-2 flex-wrap">
-                      <i className={`fa-regular ${getFileIcon(file.type)} text-primary`} />
-                      <span className="fs-7 flex-grow-1">{file.name}</span>
-                      <span className="text-muted fs-8">{formatBytes(file.size)}</span>
-                      <Tag color="blue" style={{ fontSize: 11 }}>File đính kèm</Tag>
-                      {renderSelectedFileActions(file)}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           <Form.Item name="urlNgoai" label="Liên kết ngoài (tuỳ chọn)">

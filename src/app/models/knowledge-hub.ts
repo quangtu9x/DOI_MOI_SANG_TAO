@@ -137,6 +137,8 @@ export interface ITaiLieu {
   ngayXuatBan?:     string | null;
   createdOn?:       string;
   lastModifiedOn?:  string;
+  /** API "search" gộp cả file chính (không có id) và các đính kèm bổ sung vào chung danh sách này */
+  attachments?:     ITaiLieuDinhKem[];
 }
 
 export interface IKhoTriThucWorkflowConfig {
@@ -163,6 +165,26 @@ export interface ISearchTaiLieuRequest extends IPageRequest {
   quaHan?:        boolean | null;
 }
 
+export interface ICreateTaiLieuAttachment {
+  fileName?:      string | null;
+  originalName?:  string | null;
+  filePath:       string;
+  fileExt?:       string | null;
+  fileSize:       number;
+  bucketName?:    string | null;
+  prefix?:        string | null;
+  thumbnailUrl?:  string | null;
+  externalUrl?:   string | null;
+  description?:   string | null;
+  /** BE TaiLieuDinhKemDto cần ThongTinFile cho MimeType khi xử lý */
+  thongTinFile?: {
+    duongDanLuuTru: string;
+    tenGoc:         string;
+    kichThuocBytes: number;
+    mimeType:       string;
+  };
+}
+
 export interface ICreateTaiLieuRequest {
   tieuDe:          string;
   moTa?:           string;
@@ -180,6 +202,8 @@ export interface ICreateTaiLieuRequest {
   thuMucId?:       string | null;
   ideaId?:         string | null;
   tags?:           string[];
+  /** File đính kèm gửi kèm ngay khi tạo tài liệu — khớp với BE TaiLieuDinhKemDto */
+  attachments?:    ICreateTaiLieuAttachment[];
 }
 
 export interface IUpdateTaiLieuRequest extends ICreateTaiLieuRequest {
@@ -190,6 +214,8 @@ export interface IUpdateTaiLieuRequest extends ICreateTaiLieuRequest {
   capNhatThuMuc?: boolean;
   /** true → BE cập nhật lại ý tưởng liên quan theo ideaId (cho phép bỏ liên kết bằng null) */
   capNhatIdea?: boolean;
+  /** true → gỡ file chính khỏi tài liệu (khi không kèm duongDanLuuTru mới); file cũ được lưu lại làm đính kèm */
+  xoaFile?: boolean;
 }
 
 export interface ITuChoiRequest {
@@ -256,13 +282,17 @@ export interface ISearchDinhKemRequest extends IPageRequest {
 }
 
 export interface ICreateDinhKemRequest {
-  taiLieuId:       string;
-  duongDanLuuTru?: string | null;
-  tenGoc?:         string | null;
-  kichThuocBytes?: number | null;
-  mimeType?:       string | null;
-  urlNgoai?:       string | null;
-  moTa?:           string | null;
+  taiLieuId:      string;
+  fileName?:      string | null;
+  originalName?:  string | null;
+  filePath?:      string | null;
+  fileExt?:       string | null;
+  fileSize?:      number;
+  bucketName?:    string | null;
+  prefix?:        string | null;
+  thumbnailUrl?:  string | null;
+  externalUrl?:   string | null;
+  description?:   string | null;
 }
 
 // ── Tìm Kiếm Full-text ────────────────────────────────────────────────────────
