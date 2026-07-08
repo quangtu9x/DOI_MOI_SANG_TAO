@@ -55,6 +55,29 @@ const CDS_ALERTS = CDS_DASHBOARD.flatMap(p => {
   return alerts;
 });
 
+// ── Quỹ thưởng ĐMST (IV.13/IV.15) ────────────────────────────────────────────
+// Mock — chờ module quản lý quỹ/ví điểm thưởng; số liệu đồng bộ với trang Báo cáo.
+interface IQuyThuong {
+  loaiQuy: string;
+  nganSachDau: number; // tổng ngân sách quỹ (VND)
+  daChi: number;       // đã chi (VND)
+}
+
+const QUY_THUONG: IQuyThuong[] = [
+  { loaiQuy: 'Quỹ phát triển KHCN Tổng công ty', nganSachDau: 20000000000, daChi: 8200000000 },
+  { loaiQuy: 'Quỹ ĐMST cấp đơn vị', nganSachDau: 6000000000, daChi: 3450000000 },
+  { loaiQuy: 'Quỹ khen thưởng sáng kiến', nganSachDau: 2500000000, daChi: 1780000000 },
+];
+
+const QUY_THUONG_TONG = QUY_THUONG.reduce((s, q) => s + q.nganSachDau, 0);
+const QUY_THUONG_DA_CHI = QUY_THUONG.reduce((s, q) => s + q.daChi, 0);
+
+// Số dư ví điểm thưởng hiện tại theo loại — đồng bộ với tab "Ví và giao dịch" trang Báo cáo.
+const VI_DIEM_THUONG: { vi: 'Cánh sen' | 'Bông sen'; soDu: number; mau: string }[] = [
+  { vi: 'Cánh sen', soDu: 2150, mau: '#EC4899' },
+  { vi: 'Bông sen', soDu: 3400, mau: '#F59E0B' },
+];
+
 const STATUS_COLORS: Record<string, string> = {
   'Bản nháp': 'default',
   'Đã nộp': 'processing',
@@ -64,16 +87,17 @@ const STATUS_COLORS: Record<string, string> = {
   'Được công nhận': 'purple',
 };
 
-type DashboardWidgetKey = 'feed' | 'kpi' | 'sla' | 'cds' | 'monthly' | 'status' | 'field';
+type DashboardWidgetKey = 'feed' | 'kpi' | 'sla' | 'cds' | 'quyThuong' | 'monthly' | 'status' | 'field';
 
 const DASHBOARD_LAYOUT_STORAGE_KEY = 'dmst.dashboard.layout.v1';
-const DEFAULT_DASHBOARD_WIDGET_ORDER: DashboardWidgetKey[] = ['feed', 'kpi', 'sla', 'cds', 'monthly', 'status', 'field'];
+const DEFAULT_DASHBOARD_WIDGET_ORDER: DashboardWidgetKey[] = ['feed', 'kpi', 'sla', 'cds', 'quyThuong', 'monthly', 'status', 'field'];
 
 const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetKey, string> = {
   feed: 'Hoạt động mới nhất',
   kpi: 'KPI tổng quan',
   sla: 'SLA / quá hạn',
   cds: 'Tiến độ CĐS / R&D / Sandbox',
+  quyThuong: 'Quỹ thưởng',
   monthly: 'Biểu đồ theo tháng',
   status: 'Phân bố theo trạng thái',
   field: 'Phân bổ theo lĩnh vực',
@@ -815,6 +839,7 @@ export const DashboardDoiMoiPage: React.FC = () => {
               { label: 'Tồn đọng quá hạn', color: '#F1416C', value: dash.soTonDong ?? 0, sub: dash.soTonDong > 0 ? 'Cần xử lý ngay' : 'Không tồn đọng', to: `/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet?quaHan=1&slaGio=${dash.slaGio}` },
               { label: 'Quá hạn tiếp nhận', color: '#F1416C', value: dash.soQuaHanTiepNhan ?? 0, sub: dash.soQuaHanTiepNhan > 0 ? `>${dash.thoiHanTiepNhanNgay} ngày` : 'Không quá hạn', to: `/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet?quaHan=1&nguongNgay=${dash.thoiHanTiepNhanNgay}` },
               { label: 'Quá hạn kiểm duyệt', color: '#B5179E', value: dash.soQuaHanKiemDuyet ?? 0, sub: dash.soQuaHanKiemDuyet > 0 ? `>${dash.thoiHanKiemDuyetCongNhanNgay} ngày` : 'Không quá hạn', to: `/doi-moi-sang-tao/quy-trinh-duyet/da-duyet?quaHan=1&nguongNgay=${dash.thoiHanKiemDuyetCongNhanNgay}` },
+              { label: 'Chương trình/dự án CĐS', color: VNA_GOLD, value: CDS_DASHBOARD.length, sub: `${CDS_ALERTS.length} cảnh báo triển khai`, to: '/doi-moi-sang-tao/bao-cao?template=chuong-trinh' },
             ].map((k, i) => (
               <div key={i} className='col-6 col-md-4 col-xl-2'>
                 <Link
@@ -966,6 +991,81 @@ export const DashboardDoiMoiPage: React.FC = () => {
                     <div className='min-w-0'>
                       <div className='fs-8 fw-semibold text-gray-800 text-truncate'>{a.ten}</div>
                       <div className='fs-9 text-muted'>{a.noiDung}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* ── Quỹ thưởng ĐMST (IV.13/IV.15) ─────────────────────────────────── */}
+        {dashboardLayout.visible.quyThuong !== false && (
+        <div className='row g-2 mb-5'>
+          <div className='col-xl-8'>
+            <div className='card h-100'>
+              <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
+                <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
+                  <i className='fa-regular fa-sack-dollar me-2' />Quỹ thưởng
+                </h4>
+                <Link to='/doi-moi-sang-tao/bao-cao?template=quy' className='fs-9'>Xem chi tiết</Link>
+              </div>
+              <div className='card-body pt-0 pb-3'>
+                <div className='row g-2 mb-3'>
+                  <div className='col-4'>
+                    <div className='p-3 rounded-3 bg-light-primary h-100'>
+                      <div className='fs-9 fw-semibold text-primary mb-1'>Tổng quỹ</div>
+                      <div className='fs-5 fw-bold'>{(QUY_THUONG_TONG / 1_000_000_000).toFixed(1)} tỷ</div>
+                    </div>
+                  </div>
+                  <div className='col-4'>
+                    <div className='p-3 rounded-3 bg-light-danger h-100'>
+                      <div className='fs-9 fw-semibold text-danger mb-1'>Đã chi</div>
+                      <div className='fs-5 fw-bold'>{(QUY_THUONG_DA_CHI / 1_000_000_000).toFixed(1)} tỷ</div>
+                    </div>
+                  </div>
+                  <div className='col-4'>
+                    <div className='p-3 rounded-3 bg-light-success h-100'>
+                      <div className='fs-9 fw-semibold text-success mb-1'>Còn lại</div>
+                      <div className='fs-5 fw-bold'>{((QUY_THUONG_TONG - QUY_THUONG_DA_CHI) / 1_000_000_000).toFixed(1)} tỷ</div>
+                    </div>
+                  </div>
+                </div>
+                {QUY_THUONG.map((q, i) => (
+                  <div key={i} className='mb-2'>
+                    <div className='d-flex justify-content-between align-items-center mb-1'>
+                      <span className='fs-8 fw-semibold text-gray-700 text-truncate' style={{ maxWidth: '70%' }}>{q.loaiQuy}</span>
+                      <span className='fs-9 text-muted'>{Math.round((q.daChi / q.nganSachDau) * 100)}% đã chi</span>
+                    </div>
+                    <div className='bg-light rounded' style={{ height: 6 }}>
+                      <div className='rounded' style={{ height: 6, width: `${Math.min((q.daChi / q.nganSachDau) * 100, 100)}%`, background: VNA_BLUE }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Ví điểm thưởng theo loại: Cánh sen / Bông sen */}
+          <div className='col-xl-4'>
+            <div className='card h-100'>
+              <div className='card-header border-0 pt-4 pb-2'>
+                <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
+                  <i className='fa-regular fa-wallet me-2' />Điểm thưởng theo ví
+                </h4>
+              </div>
+              <div className='card-body pt-0 pb-3 d-flex flex-column gap-3'>
+                {VI_DIEM_THUONG.map((v, i) => (
+                  <div key={i} className='d-flex align-items-center p-3 rounded-3' style={{ background: `${v.mau}14` }}>
+                    <div className='symbol symbol-35px me-3'>
+                      <div className='symbol-label' style={{ background: `${v.mau}26` }}>
+                        <i className='fa-regular fa-seedling' style={{ color: v.mau }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className='fs-4 fw-bold' style={{ color: v.mau }}>{v.soDu.toLocaleString('vi-VN')}</div>
+                      <div className='fs-9 fw-semibold text-gray-600'>{v.vi}</div>
                     </div>
                   </div>
                 ))}

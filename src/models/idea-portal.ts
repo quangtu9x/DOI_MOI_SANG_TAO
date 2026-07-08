@@ -122,6 +122,76 @@ export interface IIdeaContributionReport {
   donVi: IIdeaContribution[];
 }
 
+/** Báo cáo tương tác hệ thống: lượt xem/thích/bình luận + mức độ sử dụng, theo người dùng/đơn vị */
+export interface ITuongTacTheoNguoi {
+  userId: string;
+  tenNguoiDung: string;
+  donVi?: string | null;
+  email?: string | null;
+  luotXem: number;
+  luotThich: number;
+  binhLuan: number;
+  soLanDangNhap: number;
+  soHanhVi: number;
+  mucDoSuDung: 'Cao' | 'Trung bình' | 'Thấp' | string;
+}
+
+export interface ITuongTacTheoDonVi {
+  donViCode: string;
+  soNguoiSuDung: number;
+  luotXem: number;
+  luotThich: number;
+  binhLuan: number;
+  soLanDangNhap: number;
+  soHanhVi: number;
+  mucDoSuDung: 'Cao' | 'Trung bình' | 'Thấp' | string;
+}
+
+export interface IIdeaTuongTacReport {
+  ky: string;
+  theoNguoiDung: ITuongTacTheoNguoi[];
+  theoDonVi: ITuongTacTheoDonVi[];
+}
+
+/** Báo cáo quy trình xử lý & SLA: thời gian xử lý từng bước, tỷ lệ đúng hạn, điểm nghẽn, cảnh báo tồn đọng */
+export interface ISlaBuoc {
+  tenBuoc: string;
+  soHoSo: number;
+  gioTrungBinh?: number | null;
+  tyLeDungHan?: number | null;
+  soQuaHan: number;
+  laDiemNghen: boolean;
+}
+
+export interface ISlaTheoDonVi {
+  donVi: string;
+  tongHoSo: number;
+  gioTrungBinh?: number | null;
+  tyLeDungHan?: number | null;
+  soTonDongQuaHan: number;
+}
+
+export interface ISlaCanhBao {
+  ideaId: string;
+  code: string;
+  title: string;
+  donVi?: string | null;
+  buoc: string;
+  soGioTonDong: number;
+}
+
+export interface IIdeaSlaReport {
+  slaGio: number;
+  thoiHanTiepNhanNgay: number;
+  thoiHanKiemDuyetCongNhanNgay: number;
+  tongHoSoDaXuLy: number;
+  tyLeDungHanChung?: number | null;
+  cacBuoc: ISlaBuoc[];
+  theoDonVi: ISlaTheoDonVi[];
+  diemNghen: string[];
+  canhBaoTonDong: ISlaCanhBao[];
+}
+
 /** POST /api/v1/ideas/search */
 export interface IIdeaSearchRequest {
   pageNumber?: number;

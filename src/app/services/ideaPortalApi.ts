@@ -12,6 +12,8 @@ import {
   IIdeaContributionReport,
   IAttachmentUploadResult,
   ICauHinhXuLyYTuong,
+  IIdeaTuongTacReport,
+  IIdeaSlaReport,
 } from '@/models/idea-portal';
 import { IPaginationResponse, IResult } from '@/models';
 
@@ -86,6 +88,21 @@ export const getIdeaContributions = (params: { nam?: number; quy?: number; thang
   if (params.thang) q.append('thang', String(params.thang));
   if (params.top) q.append('top', String(params.top));
   return requestGET<IResult<IIdeaContributionReport>>(`IdeaReports/contributions?${q}`);
+};
+
+/** Báo cáo tương tác hệ thống: lượt xem/thích/bình luận (Ý tưởng + Tài liệu) và mức độ sử dụng, theo người dùng/đơn vị */
+export const getIdeaTuongTacReport = (params?: { top?: number } & IKhoangThoiGian) => {
+  const q = rangeQuery(params);
+  if (params?.top) q.append('top', String(params.top));
+  return requestGET<IResult<IIdeaTuongTacReport>>(`IdeaReports/tuong-tac?${q}`);
+};
+
+/** Báo cáo quy trình xử lý & SLA: thời gian xử lý từng bước, tỷ lệ đúng hạn, điểm nghẽn, cảnh báo tồn đọng theo đơn vị */
+export const getIdeaSlaReport = (params?: { slaGio?: number; topCanhBao?: number } & IKhoangThoiGian) => {
+  const q = rangeQuery(params);
+  q.append('slaGio', String(params?.slaGio ?? 72));
+  if (params?.topCanhBao) q.append('topCanhBao', String(params.topCanhBao));
+  return requestGET<IResult<IIdeaSlaReport>>(`IdeaReports/quy-trinh-sla?${q}`);
 };
 
 /** Xuất báo cáo ĐMST tổng hợp (CSV mở bằng Excel) */

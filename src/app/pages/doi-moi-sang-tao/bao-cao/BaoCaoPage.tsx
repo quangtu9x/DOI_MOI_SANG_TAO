@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Select, DatePicker, message, Table, Tag, Spin, Empty, Tabs, Tooltip, Row, Col, Statistic, Segmented, AutoComplete } from 'antd';
 import type { Dayjs } from 'dayjs';
 import ReactApexChart from 'react-apexcharts';
@@ -6,11 +7,11 @@ import type { ApexOptions } from 'apexcharts';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import {
-  getIdeaDashboard, getIdeaContributions,
+  getIdeaDashboard, getIdeaContributions, getIdeaTuongTacReport, getIdeaSlaReport,
   exportIdeaReport, exportIdeaReportExcel, exportIdeaReportPdf, exportIdeaReportWord,
   IKhoangThoiGian,
 } from '@/app/services/ideaPortalApi';
-import type { IIdeaDashboard, IIdeaContributionReport, IIdeaContribution, INhomSoLuong } from '@/models/idea-portal';
+import type { IIdeaDashboard, IIdeaContributionReport, IIdeaContribution, INhomSoLuong, IIdeaTuongTacReport, ITuongTacTheoNguoi, ITuongTacTheoDonVi, IIdeaSlaReport, ISlaTheoDonVi, ISlaCanhBao } from '@/models/idea-portal';
 import { requestPOST } from '@/utils/baseAPI';
 import type { IPaginationResponse } from '@/models';
 
@@ -84,10 +85,16 @@ const ROLE_VIEWS = [
 
 // ── Mock: Hiệu quả ĐMST (IV.5) ───────────────────────────────────────────────
 const HIEU_QUA_DATA = [
-  { ten: 'AI dự đoán nhu cầu nhiên liệu tối ưu theo tuyến bay', tietKiem: 6800000000, doanhThu: 0, nhanRong: 4, chatLuong: 'Cao' },
-  { ten: 'Số hóa check-in nội địa', tietKiem: 1200000000, doanhThu: 350000000, nhanRong: 8, chatLuong: 'Cao' },
-  { ten: 'Blended learning đào tạo phi công & tiếp viên', tietKiem: 900000000, doanhThu: 0, nhanRong: 2, chatLuong: 'Trung bình' },
-  { ten: 'Hệ thống phản hồi hành khách qua QR', tietKiem: 250000000, doanhThu: 180000000, nhanRong: 12, chatLuong: 'Cao' },
+  { ten: 'AI dự đoán nhu cầu nhiên liệu tối ưu theo tuyến bay', tietKiem: 6800000000, doanhThu: 0, nhanRong: 4, chatLuong: 'Cao', linhVuc: 'Khai thác bay', donVi: 'Ban Kế hoạch phát triển', ngayGhiNhan: '2026-01-20' },
+  { ten: 'Số hóa check-in nội địa', tietKiem: 1200000000, doanhThu: 350000000, nhanRong: 8, chatLuong: 'Cao', linhVuc: 'Dịch vụ hành khách', donVi: 'Ban Dịch vụ Hành khách', ngayGhiNhan: '2026-02-10' },
+  { ten: 'Blended learning đào tạo phi công & tiếp viên', tietKiem: 900000000, doanhThu: 0, nhanRong: 2, chatLuong: 'Trung bình', linhVuc: 'Đào tạo nhân lực', donVi: 'Ban Tổ chức và Nhân lực', ngayGhiNhan: '2026-03-05' },
+  { ten: 'Hệ thống phản hồi hành khách qua QR', tietKiem: 250000000, doanhThu: 180000000, nhanRong: 12, chatLuong: 'Cao', linhVuc: 'Công nghệ thông tin', donVi: 'Ban Chuyển đổi số công nghệ', ngayGhiNhan: '2026-03-22' },
+  { ten: 'Tối ưu lịch bảo dưỡng định kỳ động cơ', tietKiem: 3200000000, doanhThu: 0, nhanRong: 5, chatLuong: 'Cao', linhVuc: 'Kỹ thuật bảo dưỡng', donVi: 'Ban Kỹ thuật', ngayGhiNhan: '2026-04-08' },
+  { ten: 'Tự động hóa đối soát công nợ đại lý', tietKiem: 680000000, doanhThu: 220000000, nhanRong: 3, chatLuong: 'Trung bình', linhVuc: 'Công nghệ thông tin', donVi: 'Ban Tài chính Kế toán', ngayGhiNhan: '2026-04-25' },
+  { ten: 'Chuẩn hóa quy trình xử lý hành lý thất lạc', tietKiem: 150000000, doanhThu: 0, nhanRong: 6, chatLuong: 'Trung bình', linhVuc: 'Dịch vụ mặt đất', donVi: 'Ban Dịch vụ Hành khách', ngayGhiNhan: '2026-05-12' },
+  { ten: 'Ứng dụng bán vé phụ trợ trên di động', tietKiem: 0, doanhThu: 1450000000, nhanRong: 1, chatLuong: 'Cao', linhVuc: 'Thương mại & Doanh thu', donVi: 'Ban Tiếp thị và Bán sản phẩm', ngayGhiNhan: '2026-05-30' },
+  { ten: 'Sổ tay an toàn khai thác điện tử', tietKiem: 90000000, doanhThu: 0, nhanRong: 15, chatLuong: 'Thấp', linhVuc: 'An toàn hàng không', donVi: 'Ban An toàn Chất lượng', ngayGhiNhan: '2026-06-14' },
+  { ten: 'Cổng dịch vụ công nội bộ một cửa', tietKiem: 320000000, doanhThu: 0, nhanRong: 7, chatLuong: 'Trung bình', linhVuc: 'Cải cách hành chính', donVi: 'Ban Pháp chế', ngayGhiNhan: '2026-06-28' },
 ];
 
 // ── Mock: Ngân sách & ROI (so sánh chi phí quỹ khen thưởng với giá trị mang lại) ──
@@ -109,31 +116,32 @@ const CAMPAIGNS = [
 ];
 
 // ── Mock: Chương trình CĐS/R&D/Sandbox (IV.11, IV.12) ────────────────────────
-const CDS_PROGRAMS = [
+// Xuất (export) để DashboardDoiMoiPage.tsx tái sử dụng cho ô "Chương trình/dự án CĐS".
+export const CDS_PROGRAMS = [
   { ten: 'Nền tảng dữ liệu hành khách 360°', trangThai: 'Đúng hạn', tienDo: 72, nganSach: 65, mocTong: 8, mocHoanThanh: 6 },
   { ten: 'Sandbox AI dự báo bảo trì động cơ', trangThai: 'Rủi ro', tienDo: 45, nganSach: 80, mocTong: 6, mocHoanThanh: 3 },
   { ten: 'Ứng dụng di động cho phi hành đoàn', trangThai: 'Trễ tiến độ', tienDo: 30, nganSach: 55, mocTong: 5, mocHoanThanh: 2 },
   { ten: 'Tự động hóa quy trình kế toán (RPA)', trangThai: 'Đúng hạn', tienDo: 90, nganSach: 88, mocTong: 4, mocHoanThanh: 4 },
   { ten: 'R&D vật liệu tiết kiệm nhiên liệu', trangThai: 'Đúng hạn', tienDo: 55, nganSach: 40, mocTong: 7, mocHoanThanh: 4 },
 ];
-const CDS_STATUS_COLOR: Record<string, string> = { 'Đúng hạn': '#22c55e', 'Trễ tiến độ': '#ef4444', 'Rủi ro': '#f59e0b' };
+export const CDS_STATUS_COLOR: Record<string, string> = { 'Đúng hạn': '#22c55e', 'Trễ tiến độ': '#ef4444', 'Rủi ro': '#f59e0b' };
 
 // ── Mock: Quỹ phát triển KHCN (IV.13) ─────────────────────────────────────────
-const QUY_KHCN = [
+export const QUY_KHCN = [
   { loaiQuy: 'Quỹ phát triển KHCN Tổng công ty', nganSachDau: 20000000000, daChi: 8200000000 },
   { loaiQuy: 'Quỹ ĐMST cấp đơn vị', nganSachDau: 6000000000, daChi: 3450000000 },
   { loaiQuy: 'Quỹ khen thưởng sáng kiến', nganSachDau: 2500000000, daChi: 1780000000 },
 ];
 
 // ── Mock: Chi thưởng (IV.14) ──────────────────────────────────────────────────
-const CHI_THUONG = [
+export const CHI_THUONG = [
   { doiTuong: 'Trần Minh Hoàng', donVi: 'Ban Kỹ thuật Bay', tienThuong: 25000000, diemThuong: 500, kyThuong: 'Q1/2026' },
   { doiTuong: 'Nguyễn Văn An', donVi: 'Ban Dịch vụ Mặt đất', tienThuong: 12000000, diemThuong: 300, kyThuong: 'Q1/2026' },
   { doiTuong: 'Ban Khai thác Bay', donVi: '—', tienThuong: 40000000, diemThuong: 0, kyThuong: 'Năm 2025' },
 ];
 
-// ── Mock: Ví và giao dịch (IV.15) ─────────────────────────────────────────────
-const VI_GIAO_DICH = [
+// ── Mock: Ví và giao dịch (IV.15) — số dư hiện tại theo loại ví (Cánh sen/Bông sen) ──
+export const VI_GIAO_DICH = [
   { thoiGian: '05/07/2026 09:12', loai: 'Nhận thưởng sáng kiến', vi: 'Cánh sen', soTien: '+500', soDu: 2150 },
   { thoiGian: '02/07/2026 14:30', loai: 'Quy đổi quà tặng', vi: 'Bông sen', soTien: '-1200', soDu: 3400 },
   { thoiGian: '28/06/2026 08:05', loai: 'Nhận thưởng chiến dịch', vi: 'Cánh sen', soTien: '+300', soDu: 1650 },
@@ -319,6 +327,10 @@ export const BaoCaoPage: React.FC = () => {
   const [lbLoading, setLbLoading] = useState(false);
   const [lb, setLb] = useState<IIdeaContributionReport | null>(null);
 
+  // Báo cáo tương tác hệ thống (lượt xem/thích/bình luận + mức độ sử dụng)
+  const [tuongTacLoading, setTuongTacLoading] = useState(false);
+  const [tuongTac, setTuongTac] = useState<IIdeaTuongTacReport | null>(null);
+
   const [exporting, setExporting] = useState(false);
 
   // ── Bộ lọc bổ sung cho báo cáo ──────────────────────────────────────────────
@@ -374,6 +386,30 @@ export const BaoCaoPage: React.FC = () => {
     finally { setLbLoading(false); }
   }, [year, lbPeriod, lbValue, range, lbTop]);
 
+  const loadTuongTac = useCallback(async (r = range) => {
+    setTuongTacLoading(true);
+    try {
+      const res = await getIdeaTuongTacReport({ top: 50, ...toRangeParam(r) });
+      setTuongTac(safeItem<IIdeaTuongTacReport>(res) ?? null);
+    } catch {
+      setTuongTac(null);
+    } finally { setTuongTacLoading(false); }
+  }, [range]);
+
+  // Báo cáo quy trình xử lý & SLA (thời gian từng bước, đúng hạn/quá hạn, điểm nghẽn, tồn đọng theo đơn vị)
+  const [slaLoading, setSlaLoading] = useState(false);
+  const [slaReport, setSlaReport] = useState<IIdeaSlaReport | null>(null);
+
+  const loadSlaReport = useCallback(async (r = range) => {
+    setSlaLoading(true);
+    try {
+      const res = await getIdeaSlaReport({ slaGio: 72, topCanhBao: 20, ...toRangeParam(r) });
+      setSlaReport(safeItem<IIdeaSlaReport>(res) ?? null);
+    } catch {
+      setSlaReport(null);
+    } finally { setSlaLoading(false); }
+  }, [range]);
+
   // ── Điều khiển bảng xếp hạng: kỳ (năm/quý/tháng) + Top nhanh ──────────────
   const changeLbPeriod = (period: 'nam' | 'quy' | 'thang') => {
     setLbPeriod(period);
@@ -389,7 +425,7 @@ export const BaoCaoPage: React.FC = () => {
     loadLb(year, lbPeriod, lbValue, range, top);
   };
 
-  useEffect(() => { loadDash(); loadLb(); }, []);
+  useEffect(() => { loadDash(); loadLb(); loadTuongTac(); loadSlaReport(); }, []);
 
   const changeYear = (y: number) => {
     setYear(y);
@@ -406,11 +442,26 @@ export const BaoCaoPage: React.FC = () => {
     setRange(r);
     loadDash(year, r);
     loadLb(year, lbPeriod, lbValue, r);
+    loadTuongTac(r);
+    loadSlaReport(r);
   };
 
   const [exportingFormat, setExportingFormat] = useState<'csv' | 'excel' | 'pdf' | 'word' | null>(null);
   const [reportObject, setReportObject] = useState<ReportObjectType>('TatCa');
-  const [reportTemplate, setReportTemplate] = useState<ReportTemplateKey>('trang-thai');
+
+  // Cho phép deep-link chọn sẵn mẫu báo cáo qua query string, vd: /doi-moi-sang-tao/bao-cao?template=chuong-trinh
+  const [searchParams] = useSearchParams();
+  const templateParam = searchParams.get('template') as ReportTemplateKey | null;
+  const [reportTemplate, setReportTemplate] = useState<ReportTemplateKey>(
+    (templateParam && REPORT_TEMPLATES.some(t => t.value === templateParam)) ? templateParam : 'trang-thai'
+  );
+
+  useEffect(() => {
+    if (templateParam && REPORT_TEMPLATES.some(t => t.value === templateParam)) {
+      setReportTemplate(templateParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateParam]);
 
   const templateOptions = useMemo(() => {
     // Tất cả mẫu báo cáo đều khả dụng cho mọi đối tượng
@@ -442,6 +493,17 @@ export const BaoCaoPage: React.FC = () => {
       if (!filterHieuQua) return items;
       return items.filter(x => (x.chatLuong || '').includes(filterHieuQua));
     };
+    // Lọc theo khoảng thời gian đã chọn ở bộ lọc chính (range) — dùng ngày ghi nhận (ngayGhiNhan)
+    const filterByRange = (items: any[]) => {
+      if (!range) return items;
+      const from = range[0].startOf('day').valueOf();
+      const to = range[1].endOf('day').valueOf();
+      return items.filter(x => {
+        if (!x.ngayGhiNhan) return true;
+        const t = new Date(x.ngayGhiNhan).getTime();
+        return t >= from && t <= to;
+      });
+    };
 
     switch (reportTemplate) {
       case 'trang-thai': {
@@ -459,29 +521,35 @@ export const BaoCaoPage: React.FC = () => {
       }
       case 'hieu-qua': {
         // Thống kê theo mức độ hiệu quả
-        let data = HIEU_QUA_DATA.map(x => ({
+        let data = filterByRange(HIEU_QUA_DATA).map(x => ({
           ten: x.ten,
           soLuong: x.tietKiem,
           tietKiem: x.tietKiem,
           doanhThu: x.doanhThu,
           nhanRong: x.nhanRong,
           chatLuong: x.chatLuong,
-          ghiChu: `${fmtNum(x.nhanRong)} lần nhân rộng • Chất lượng: ${x.chatLuong}`,
-          linhVuc: '',
-          donVi: '',
+          ghiChu: `${fmtNum(x.nhanRong)} lần nhân rộng • Chất lượng: ${x.chatLuong} • Ghi nhận: ${new Date(x.ngayGhiNhan).toLocaleDateString('vi-VN')}`,
+          linhVuc: x.linhVuc,
+          donVi: x.donVi,
         }));
         data = filterByDonVi(data);
         data = filterByLinhVuc(data);
         data = filterByHieuQua(data);
         return data;
       }
-      case 'sla':
-        return dash ? [
-          { ten: 'Thời gian xử lý trung bình', soLuong: dash.gioXuLyTrungBinh ?? 0, ghiChu: `SLA ${dash.slaGio}h` },
-          { ten: 'Tỷ lệ đúng hạn', soLuong: dash.tyLeDungHan ?? 0, ghiChu: 'Phần trăm' },
-          { ten: 'Hồ sơ đang chờ xử lý', soLuong: dash.soChoXuLy, ghiChu: 'Đang mở' },
-          { ten: 'Tồn đọng quá hạn', soLuong: dash.soTonDong, ghiChu: 'Cảnh báo' },
-        ] : [];
+      case 'sla': {
+        // Dữ liệu thật: theo đơn vị, từ báo cáo quy trình xử lý & SLA
+        let data = (slaReport?.theoDonVi ?? []).map(x => ({
+          ten: x.donVi,
+          soLuong: x.gioTrungBinh ?? 0,
+          ghiChu: `Tỷ lệ đúng hạn: ${x.tyLeDungHan ?? '—'}% • ${x.tongHoSo} hồ sơ • ${x.soTonDongQuaHan} tồn đọng quá hạn`,
+          linhVuc: '',
+          donVi: x.donVi,
+          chatLuong: '',
+        }));
+        data = filterByDonVi(data);
+        return data;
+      }
       case 'dong-gop': {
         let data = (lb?.caNhan ?? []).map(x => ({
           ...x,
@@ -503,12 +571,13 @@ export const BaoCaoPage: React.FC = () => {
         return data;
       }
       case 'tuong-tac': {
-        let data = USAGE_BY_DEPT.map(x => ({
-          ten: x.donVi,
-          soLuong: x.nguoiDungHoatDong,
-          ghiChu: `${x.tanSuatDangNhap} lần/tuần`,
+        // Dữ liệu thật: lượt xem/thích/bình luận (Ý tưởng + Tài liệu) + mức độ sử dụng, theo đơn vị
+        let data = (tuongTac?.theoDonVi ?? []).map(x => ({
+          ten: x.donViCode,
+          soLuong: x.luotXem,
+          ghiChu: `Thích: ${x.luotThich} • Bình luận: ${x.binhLuan} • Đăng nhập: ${x.soLanDangNhap} • Mức độ: ${x.mucDoSuDung}`,
           linhVuc: '',
-          donVi: x.donVi,
+          donVi: x.donViCode,
           chatLuong: '',
         }));
         data = filterByDonVi(data);
@@ -562,7 +631,7 @@ export const BaoCaoPage: React.FC = () => {
       default:
         return [];
     }
-  }, [reportTemplate, dash, lb, filterDonVi, filterLinhVuc, filterHieuQua]);
+  }, [reportTemplate, dash, lb, tuongTac, slaReport, filterDonVi, filterLinhVuc, filterHieuQua, range]);
 
   const mucDoTuongTacColor = (v: string) => {
     if (v === 'Cao') return 'green';
@@ -692,45 +761,6 @@ export const BaoCaoPage: React.FC = () => {
         },
         {
           title: 'Ý tưởng đã nộp', dataIndex: 'soYTuongDaNop', key: 'soYTuongDaNop', width: 120, align: 'center' as const,
-          render: (v: number) => <span className="fw-semibold">{v}</span>,
-        },
-      ];
-    }
-
-    if (reportTemplate === 'tuong-tac') {
-      return [
-        {
-          title: '#', dataIndex: 'xepHang', key: 'xepHang', width: 50, fixed: 'left' as const, align: 'center' as const,
-          render: (v: number) =>
-            v === 1 ? <i className="fa-solid fa-trophy text-warning" style={{ fontSize: 18 }} />
-              : v === 2 ? <i className="fa-solid fa-trophy text-secondary" style={{ fontSize: 18 }} />
-                : v === 3 ? <i className="fa-solid fa-trophy" style={{ color: '#cd7f32', fontSize: 18 }} />
-                  : <span className="fw-bold">{v}</span>,
-        },
-        {
-          title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 220, fixed: 'left' as const,
-          render: (value: string) => <span className="fw-semibold">{value}</span>,
-        },
-        {
-          title: 'Người dùng hoạt động', dataIndex: 'nguoiDungHoatDong', key: 'nguoiDungHoatDong', width: 140, align: 'center' as const,
-          render: (v: number) => <span className="fw-bold" style={{ color: '#003087' }}>{fmtNum(v)}</span>,
-        },
-        {
-          title: 'Tần suất ĐN (lần/tuần)', dataIndex: 'tanSuatDangNhap', key: 'tanSuatDangNhap', width: 140, align: 'center' as const,
-          render: (v: number) => <span className="fw-semibold">{v}</span>,
-        },
-        {
-          title: 'Tỷ lệ SD tính năng', dataIndex: 'tyLeSuDungTinhNang', key: 'tyLeSuDungTinhNang', width: 130, align: 'center' as const,
-          render: (v: number) => (
-            <span className="fw-bold" style={{ color: v >= 80 ? '#22c55e' : v >= 60 ? '#f59e0b' : '#ef4444' }}>{v}%</span>
-          ),
-        },
-        {
-          title: 'Mức độ tương tác', dataIndex: 'mucDoTuongTac', key: 'mucDoTuongTac', width: 120, align: 'center' as const,
-          render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag>,
-        },
-        {
-          title: 'Ý tưởng đã nộp', dataIndex: 'soYTuongDaNop', key: 'soYTuongDaNop', width: 110, align: 'center' as const,
           render: (v: number) => <span className="fw-semibold">{v}</span>,
         },
       ];
@@ -1131,12 +1161,16 @@ export const BaoCaoPage: React.FC = () => {
                 <div className="col-md-4">
                   <div className="fs-8 text-muted mb-1">Lĩnh vực</div>
                   <AutoComplete
+                    value={filterLinhVuc}
+                    onChange={setFilterLinhVuc}
+                    onSelect={setFilterLinhVuc}
                     options={LINH_VUC_OPTIONS}
                     placeholder="Chọn hoặc nhập lĩnh vực"
                     filterOption={(input, option) =>
                       (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
                     }
                     allowClear
+                    className="w-100"
                   />
                 </div>
                 <div className="col-md-4">
@@ -1252,6 +1286,184 @@ export const BaoCaoPage: React.FC = () => {
                           pagination={false}
                           scroll={{ x: 'max-content' }}
                           locale={{ emptyText: <Empty description="Chưa có dữ liệu xếp hạng đơn vị trong kỳ" /> }}
+                        />
+                      </div>
+                    </div>
+                  </Spin>
+                </>
+              ) : reportTemplate === 'tuong-tac' ? (
+                /* ── Mẫu "Báo cáo tương tác hệ thống": lượt xem/thích/bình luận + mức độ sử dụng ── */
+                <>
+                  {tuongTac?.ky && <Tag color="gold" className="mb-3">{tuongTac.ky}</Tag>}
+                  <Spin spinning={tuongTacLoading}>
+                    <div className="row g-4">
+                      <div className="col-xl-7">
+                        <div className="fw-bold text-gray-700 fs-7 mb-2">
+                          <i className="fa-regular fa-user me-2 text-primary" />Theo người dùng
+                        </div>
+                        <Table
+                          columns={[
+                            { title: 'Người dùng', dataIndex: 'tenNguoiDung', key: 'tenNguoiDung', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v}</span> },
+                            { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 180, ellipsis: true, render: (v: string) => v || '—' },
+                            { title: 'Lượt xem', dataIndex: 'luotXem', key: 'luotXem', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+                            { title: 'Lượt thích', dataIndex: 'luotThich', key: 'luotThich', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+                            { title: 'Bình luận', dataIndex: 'binhLuan', key: 'binhLuan', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+                            { title: 'Đăng nhập', dataIndex: 'soLanDangNhap', key: 'soLanDangNhap', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+                            { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
+                          ] as any}
+                          dataSource={tuongTac?.theoNguoiDung ?? []}
+                          rowKey={(r: ITuongTacTheoNguoi) => r.userId}
+                          size="small"
+                          pagination={{ pageSize: 10 }}
+                          scroll={{ x: 'max-content' }}
+                          locale={{ emptyText: <Empty description="Chưa có dữ liệu tương tác theo người dùng" /> }}
+                        />
+                      </div>
+                      <div className="col-xl-5">
+                        <div className="fw-bold text-gray-700 fs-7 mb-2">
+                          <i className="fa-regular fa-building me-2 text-info" />Theo đơn vị
+                        </div>
+                        <Table
+                          columns={[
+                            { title: 'Đơn vị', dataIndex: 'donViCode', key: 'donViCode', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v}</span> },
+                            { title: 'Số người SD', dataIndex: 'soNguoiSuDung', key: 'soNguoiSuDung', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+                            { title: 'Lượt xem', dataIndex: 'luotXem', key: 'luotXem', width: 90, align: 'center' as const, render: (v: number) => fmtNum(v) },
+                            { title: 'Lượt thích', dataIndex: 'luotThich', key: 'luotThich', width: 90, align: 'center' as const, render: (v: number) => fmtNum(v) },
+                            { title: 'Bình luận', dataIndex: 'binhLuan', key: 'binhLuan', width: 90, align: 'center' as const, render: (v: number) => fmtNum(v) },
+                            { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
+                          ] as any}
+                          dataSource={tuongTac?.theoDonVi ?? []}
+                          rowKey={(r: ITuongTacTheoDonVi) => r.donViCode}
+                          size="small"
+                          pagination={{ pageSize: 10 }}
+                          scroll={{ x: 'max-content' }}
+                          locale={{ emptyText: <Empty description="Chưa có dữ liệu tương tác theo đơn vị" /> }}
+                        />
+                      </div>
+                    </div>
+                  </Spin>
+                </>
+              ) : reportTemplate === 'sla' ? (
+                /* ── Mẫu "Quy trình xử lý & SLA": thời gian từng bước, đúng hạn, điểm nghẽn, tồn đọng ── */
+                <>
+                  <Spin spinning={slaLoading}>
+                    <div className="row g-3 mb-4">
+                      <div className="col-md-3">
+                        <div className="p-3 rounded-3 bg-light-primary h-100">
+                          <div className="text-primary fw-semibold fs-8 mb-1">Tỷ lệ đúng hạn chung</div>
+                          <div className="fs-4 fw-bold">{slaReport?.tyLeDungHanChung ?? '—'}{slaReport?.tyLeDungHanChung != null ? '%' : ''}</div>
+                        </div>
+                      </div>
+                      <div className="col-md-3">
+                        <div className="p-3 rounded-3 bg-light-success h-100">
+                          <div className="text-success fw-semibold fs-8 mb-1">Hồ sơ đã xử lý</div>
+                          <div className="fs-4 fw-bold">{fmtNum(slaReport?.tongHoSoDaXuLy ?? 0)}</div>
+                        </div>
+                      </div>
+                      <div className="col-md-3">
+                        <div className="p-3 rounded-3 bg-light-warning h-100">
+                          <div className="text-warning fw-semibold fs-8 mb-1">Ngưỡng SLA tiếp nhận</div>
+                          <div className="fs-4 fw-bold">{slaReport?.thoiHanTiepNhanNgay ?? '—'} ngày</div>
+                        </div>
+                      </div>
+                      <div className="col-md-3">
+                        <div className="p-3 rounded-3 bg-light-danger h-100">
+                          <div className="text-danger fw-semibold fs-8 mb-1">Ngưỡng SLA kiểm duyệt</div>
+                          <div className="fs-4 fw-bold">{slaReport?.thoiHanKiemDuyetCongNhanNgay ?? '—'} ngày</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="row g-3 mb-4">
+                      {(slaReport?.cacBuoc ?? []).map((b, i) => (
+                        <div key={i} className="col-md-6">
+                          <div className="card h-100" style={{ borderLeft: `3px solid ${b.laDiemNghen ? '#F1416C' : '#17C653'}` }}>
+                            <div className="card-body py-3 px-4">
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <span className="fw-bold text-gray-800">{b.tenBuoc}</span>
+                                {b.laDiemNghen && <Tag color="error">Điểm nghẽn</Tag>}
+                              </div>
+                              <div className="d-flex gap-4">
+                                <div>
+                                  <div className="fs-9 text-muted">Thời gian TB</div>
+                                  <div className="fs-5 fw-bold">{b.gioTrungBinh ?? '—'} giờ</div>
+                                </div>
+                                <div>
+                                  <div className="fs-9 text-muted">Tỷ lệ đúng hạn</div>
+                                  <div className="fs-5 fw-bold">{b.tyLeDungHan ?? '—'}{b.tyLeDungHan != null ? '%' : ''}</div>
+                                </div>
+                                <div>
+                                  <div className="fs-9 text-muted">Quá hạn</div>
+                                  <div className="fs-5 fw-bold" style={{ color: '#F1416C' }}>{b.soQuaHan}</div>
+                                </div>
+                                <div>
+                                  <div className="fs-9 text-muted">Số hồ sơ</div>
+                                  <div className="fs-5 fw-bold">{b.soHoSo}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {(slaReport?.diemNghen?.length ?? 0) > 0 && (
+                      <div className="card mb-4">
+                        <div className="card-header border-0 pt-3 pb-1">
+                          <h4 className="card-title fw-semibold text-gray-700 fs-7 mb-0">
+                            <i className="fa-regular fa-triangle-exclamation me-2 text-warning" />Điểm nghẽn quy trình
+                          </h4>
+                        </div>
+                        <div className="card-body pt-1 pb-3">
+                          {slaReport!.diemNghen.map((d, i) => (
+                            <div key={i} className="d-flex gap-2 align-items-start mb-2 p-2 rounded" style={{ background: '#f1416c12', borderLeft: '3px solid #F1416C' }}>
+                              <i className="fa-regular fa-circle-exclamation mt-1" style={{ color: '#F1416C' }} />
+                              <span className="fs-8 text-gray-700">{d}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="row g-4">
+                      <div className="col-xl-6">
+                        <div className="fw-bold text-gray-700 fs-7 mb-2">
+                          <i className="fa-regular fa-building me-2 text-info" />Theo đơn vị
+                        </div>
+                        <Table
+                          columns={[
+                            { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v}</span> },
+                            { title: 'Hồ sơ', dataIndex: 'tongHoSo', key: 'tongHoSo', width: 80, align: 'center' as const },
+                            { title: 'TB (giờ)', dataIndex: 'gioTrungBinh', key: 'gioTrungBinh', width: 90, align: 'center' as const, render: (v: number) => v ?? '—' },
+                            { title: 'Đúng hạn', dataIndex: 'tyLeDungHan', key: 'tyLeDungHan', width: 100, align: 'center' as const, render: (v: number) => <span style={{ color: v != null && v < 70 ? '#F1416C' : '#17C653', fontWeight: 700 }}>{v != null ? `${v}%` : '—'}</span> },
+                            { title: 'Tồn đọng', dataIndex: 'soTonDongQuaHan', key: 'soTonDongQuaHan', width: 90, align: 'center' as const, render: (v: number) => v > 0 ? <Tag color="error">{v}</Tag> : 0 },
+                          ] as any}
+                          dataSource={slaReport?.theoDonVi ?? []}
+                          rowKey={(r: ISlaTheoDonVi) => r.donVi}
+                          size="small"
+                          pagination={{ pageSize: 8 }}
+                          scroll={{ x: 'max-content' }}
+                          locale={{ emptyText: <Empty description="Chưa có dữ liệu SLA theo đơn vị" /> }}
+                        />
+                      </div>
+                      <div className="col-xl-6">
+                        <div className="fw-bold text-gray-700 fs-7 mb-2">
+                          <i className="fa-regular fa-bell-exclamation me-2 text-danger" />Cảnh báo tồn đọng hồ sơ
+                        </div>
+                        <Table
+                          columns={[
+                            { title: 'Mã hồ sơ', dataIndex: 'code', key: 'code', width: 110, render: (v: string) => <span className="fw-bold text-primary">{v}</span> },
+                            { title: 'Tên ý tưởng', dataIndex: 'title', key: 'title', ellipsis: true },
+                            { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 150, ellipsis: true, render: (v: string) => v || '—' },
+                            { title: 'Bước', dataIndex: 'buoc', key: 'buoc', width: 120 },
+                            { title: 'Tồn đọng (giờ)', dataIndex: 'soGioTonDong', key: 'soGioTonDong', width: 110, align: 'center' as const, render: (v: number) => <Tag color="error">{fmtNum(v)}</Tag> },
+                          ] as any}
+                          dataSource={slaReport?.canhBaoTonDong ?? []}
+                          rowKey={(r: ISlaCanhBao) => r.ideaId}
+                          size="small"
+                          pagination={{ pageSize: 8 }}
+                          scroll={{ x: 'max-content' }}
+                          locale={{ emptyText: <Empty description="Không có hồ sơ tồn đọng quá hạn" /> }}
                         />
                       </div>
                     </div>
