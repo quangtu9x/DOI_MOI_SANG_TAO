@@ -227,9 +227,16 @@ const DEFAULT_WORKFLOW_CONFIG: IKhoTriThucWorkflowConfig = {
 // Danh mục LinhVucKHCNs được BE seed các mục này; nếu danh mục có mục hàng không thì chỉ
 // hiển thị đúng danh sách đó (theo thứ tự chuẩn), ngược lại fallback toàn bộ danh mục.
 const LINH_VUC_HANG_KHONG = [
-  'Khai thác bay', 'Kỹ thuật bảo dưỡng', 'Dịch vụ hành khách', 'Dịch vụ mặt đất',
-  'Đào tạo nhân lực', 'Chuyển đổi số', 'Cải cách hành chính', 'An toàn hàng không',
-  'Thương mại & Doanh thu', 'Công nghệ thông tin',
+  'An toàn hàng không',
+  'Cải cách hành chính',
+  'Chuyển đổi số',
+  'Công nghệ thông tin',
+  'Dịch vụ hành khách',
+  'Dịch vụ mặt đất',
+  'Đào tạo nhân lực',
+  'Khai thác bay',
+  'Kỹ thuật bảo dưỡng',
+  'Thương mại & Doanh thu',
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -492,6 +499,14 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [tagOptions, setTagOptions] = useState<ITag[]>([]);
 
   useEffect(() => {
+    setLinhVucOptions(LINH_VUC_HANG_KHONG.map(v => ({ id: v, ten: v })));
+    searchOrganizationUnits({ pageNumber: 1, pageSize: 200 } as any)
+      .then(res => setDonViOptions(safeList<any>(res).map((x: any) => ({ id: x.id, name: x.name ?? x.ten ?? '' }))))
+      .catch(() => {});
+    searchTags({ pageNumber: 1, pageSize: 200 })
+      .then(res => setTagOptions(safeList<ITag>(res)))
+      .catch(() => {});
+    return;
     // Đúng 10 lĩnh vực hàng không (BE ensure-on-read); fallback danh mục chung nếu BE cũ
     requestGET<any>('NewsFeed/linh-vuc')
       .then(res => {
@@ -512,7 +527,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
               .sort((a, b) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
             setLinhVucOptions(hk.length > 0 ? hk : all);
           })
-          .catch(() => {});
+          .catch(() => setLinhVucOptions(LINH_VUC_HANG_KHONG.map(v => ({ id: v, ten: v }))));
       });
     searchOrganizationUnits({ pageNumber: 1, pageSize: 200 } as any)
       .then(res => setDonViOptions(safeList<any>(res).map((x: any) => ({ id: x.id, name: x.name ?? x.ten ?? '' }))))
@@ -1035,6 +1050,13 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                     <i className="fa-regular fa-diagram-project me-1" />
                     {NGUON_LABEL[item.loaiNguonThamChieu]}{item.tenNguonThamChieu ? `: ${item.tenNguonThamChieu}` : ''}
                   </span>
+                )}
+                {item.urlNgoai && (
+                  <a href={item.urlNgoai} title={item.urlNgoai} target="_blank" rel="noopener noreferrer"
+                    className="text-info fs-9 text-truncate" style={{ maxWidth: 160 }}
+                    onClick={e => e.stopPropagation()}>
+                    <i className="fa-regular fa-link me-1" />Liên kết ngoài
+                  </a>
                 )}
               </div>
             </div>
