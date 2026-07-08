@@ -85,14 +85,14 @@ const getStatusDateInfo = (idea: IIdea): { label: string; date: string } | null 
 };
 
 // ── Timeline helper ────────────────────────────────────────────────────────────
-const buildSteps = (idea: IIdea) => {
+const buildSteps = (idea: IIdea, recognitionDate?: string | null) => {
   const st = STATUS_MAP[idea.status ?? ''] ?? 'ChoTiepNhan';
   const ORDER: TrangThai[] = ['BanNhap', 'ChoTiepNhan', 'DaTiepNhan', 'DuocCongNhan'];
   const stepDefs = [
     { key: 'BanNhap',      label: 'Khởi tạo hồ sơ',          date: getCreatedOn(idea) },
     { key: 'ChoTiepNhan',  label: 'Đã nộp/Chờ xét duyệt',    date: getSubmittedOn(idea) ?? getLastModifiedOn(idea) },
     { key: 'DaTiepNhan',   label: 'Đã tiếp nhận',            date: getLastModifiedOn(idea) },
-    { key: 'DuocCongNhan', label: 'Công nhận & lưu kho',     date: null },
+    { key: 'DuocCongNhan', label: 'Công nhận & lưu kho',     date: recognitionDate ?? null },
   ];
   const idx = ORDER.indexOf(st);
   return stepDefs.map((s, i) => ({
@@ -105,9 +105,6 @@ const buildSteps = (idea: IIdea) => {
 
 // ── Detail Modal ───────────────────────────────────────────────────────────────
 const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) => {
-  const statusKey = STATUS_MAP[item.status ?? ''] ?? 'ChoTiepNhan';
-  const cfg = STATUS_CFG[statusKey] ?? DEFAULT_STATUS;
-  const steps = buildSteps(item);
 
   // Kết quả của người duyệt (thông tin công nhận) — lấy từ lịch sử xử lý
   const [histories, setHistories] = useState<IIdeaHistory[]>([]);
@@ -133,7 +130,12 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
     histories.find(h => h.actionType === 'Được công nhận' && !!h.remark?.trim())
     ?? histories.find(h => h.actionType === 'Được công nhận');
   const recognitionRemark = recognitionEntry?.remark?.trim() ?? '';
+  const recognitionDate = recognitionEntry?.actionDate ?? null;
   const kqcnAttachments = attachments.filter((a: any) => isKqcnAttachment(a.originalName));
+
+  const statusKey = STATUS_MAP[item.status ?? ''] ?? 'ChoTiepNhan';
+  const cfg = STATUS_CFG[statusKey] ?? DEFAULT_STATUS;
+  const steps = buildSteps(item, recognitionDate);
 
   return (
     <div
@@ -192,19 +194,18 @@ const DetailModal = ({ item, onClose }: { item: IIdea; onClose: () => void }) =>
                           : s.active ? 'bg-white border-[#003087] text-[#003087]'
                           : 'bg-white border-gray-300 text-gray-400'}`}
                     >
-                      {s.done ? <i className="fa-solid fa-check" /> : i + 1}
+                      {s.done ? <i className="fa-solid fa-check" style={{ color: '#fff' }} /> : i + 1}
                     </div>
                     {i < steps.length - 1 && (
                       <div className={`flex-1 h-1 rounded ${s.done ? 'bg-[#003087]' : 'bg-gray-200'}`} />
                     )}
                   </div>
-                  <p className={`text-sm text-center font-semibold mt-1
-                    ${s.done ? 'text-white' : s.active ? 'text-gray-800' : 'text-gray-400'}`}>
-                    {s.label}
-                  </p>
-                  <p className={`text-xs text-center font-medium ${s.done ? 'text-gray-600' : 'text-gray-400'}`}>
-                    {s.date}
-                  </p>
+                   <p className={`text-sm text-center font-semibold mt-1 text-gray-800`}>
+                     {s.label}
+                   </p>
+                   <p className={`text-xs text-center font-medium ${s.done ? 'text-gray-600' : 'text-gray-400'}`}>
+                     {s.date}
+                   </p>
                 </div>
               ))}
             </div>

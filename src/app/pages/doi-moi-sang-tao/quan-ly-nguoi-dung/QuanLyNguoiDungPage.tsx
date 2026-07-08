@@ -1,393 +1,364 @@
-import { useState } from 'react';
-import { Table, Input, Select, Button, Tag, Avatar, Modal, Form, Switch, Tooltip } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Table, Tag, Input, Button, Modal, Spin, Avatar, message, Tooltip, Checkbox, Switch, Empty } from 'antd';
+import { Content } from '@/_metronic/layout/components/content';
+import { PageTitle } from '@/_metronic/layout/core';
+import { requestGET, requestPOST } from '@/utils/baseAPI';
+import type { IUserDto } from '@/models';
+import { IPaginationResponse } from '@/models';
+import { OrganizationUnitTreeSelect } from '@/app/components/OrganizationUnitTreeSelect';
 
-// ─── Interfaces ───────────────────────────────────────────────────────────────
+const PAGE_SIZE = 15;
 
-type VaiTro = 'admin' | 'reviewer' | 'member';
-type TrangThaiTK = 'active' | 'inactive';
-
-interface INguoiDung {
+interface IRole {
   id: string;
-  maNV: string;
-  hoTen: string;
-  email: string;
-  donVi: string;
-  chucVu: string;
-  vaiTro: VaiTro;
-  trangThai: TrangThaiTK;
-  soYTuong: number;
-  soDuocDuyet: number;
-  ngayTao: string;
-  avatar?: string;
+  name: string;
+  description?: string | null;
 }
 
-// ─── Mock data (Vietnam Airlines) ─────────────────────────────────────────────
-
-const DON_VI_OPTIONS = [
-  'Đoàn bay 919',
-  'Xí nghiệp Kỹ thuật máy bay A76',
-  'Xí nghiệp Kỹ thuật máy bay A75',
-  'Ban Khai thác bay',
-  'Ban Dịch vụ hành khách',
-  'Ban Thương mại',
-  'Ban Tài chính - Kế toán',
-  'Ban Công nghệ thông tin',
-  'Ban Tổ chức nhân sự',
-  'Ban An toàn - Chất lượng',
-  'Trung tâm Đào tạo bay',
-  'Trung tâm Vận tải hàng hóa',
-  'Văn phòng Tổng công ty',
-];
-
-const MOCK_NGUOI_DUNG: INguoiDung[] = [
-  {
-    id: '1', maNV: 'VNA-001', hoTen: 'Nguyễn Minh Tuấn', email: 'nmt@vietnamairlines.com',
-    donVi: 'Đoàn bay 919', chucVu: 'Cơ trưởng', vaiTro: 'member',
-    trangThai: 'active', soYTuong: 6, soDuocDuyet: 4, ngayTao: '01/01/2026',
-  },
-  {
-    id: '2', maNV: 'VNA-002', hoTen: 'Trần Quang Hùng', email: 'tqh@vietnamairlines.com',
-    donVi: 'Xí nghiệp Kỹ thuật máy bay A76', chucVu: 'Kỹ sư trưởng', vaiTro: 'reviewer',
-    trangThai: 'active', soYTuong: 5, soDuocDuyet: 5, ngayTao: '05/01/2026',
-  },
-  {
-    id: '3', maNV: 'VNA-003', hoTen: 'Phạm Thị Lan', email: 'ptl@vietnamairlines.com',
-    donVi: 'Ban Khai thác bay', chucVu: 'Chuyên viên', vaiTro: 'reviewer',
-    trangThai: 'active', soYTuong: 4, soDuocDuyet: 3, ngayTao: '10/01/2026',
-  },
-  {
-    id: '4', maNV: 'VNA-004', hoTen: 'Lê Thị Hương', email: 'lth@vietnamairlines.com',
-    donVi: 'Ban Dịch vụ hành khách', chucVu: 'Trưởng phòng', vaiTro: 'reviewer',
-    trangThai: 'active', soYTuong: 7, soDuocDuyet: 4, ngayTao: '12/01/2026',
-  },
-  {
-    id: '5', maNV: 'VNA-005', hoTen: 'Nguyễn Thành Nam', email: 'ntn@vietnamairlines.com',
-    donVi: 'Trung tâm Đào tạo bay', chucVu: 'Huấn luyện viên bay', vaiTro: 'member',
-    trangThai: 'active', soYTuong: 4, soDuocDuyet: 3, ngayTao: '15/01/2026',
-  },
-  {
-    id: '6', maNV: 'VNA-006', hoTen: 'Hoàng Văn Đức', email: 'hvd@vietnamairlines.com',
-    donVi: 'Ban Công nghệ thông tin', chucVu: 'Trưởng ban', vaiTro: 'admin',
-    trangThai: 'active', soYTuong: 3, soDuocDuyet: 2, ngayTao: '20/01/2026',
-  },
-  {
-    id: '7', maNV: 'VNA-007', hoTen: 'Vũ Thị Mai', email: 'vtm@vietnamairlines.com',
-    donVi: 'Ban Thương mại', chucVu: 'Chuyên viên', vaiTro: 'member',
-    trangThai: 'active', soYTuong: 2, soDuocDuyet: 1, ngayTao: '22/01/2026',
-  },
-  {
-    id: '8', maNV: 'VNA-008', hoTen: 'Đỗ Văn Khoa', email: 'dvk@vietnamairlines.com',
-    donVi: 'Ban An toàn - Chất lượng', chucVu: 'Kiểm tra viên an toàn', vaiTro: 'reviewer',
-    trangThai: 'active', soYTuong: 5, soDuocDuyet: 4, ngayTao: '25/01/2026',
-  },
-  {
-    id: '9', maNV: 'VNA-009', hoTen: 'Ngô Thị Thu', email: 'ntt@vietnamairlines.com',
-    donVi: 'Xí nghiệp Kỹ thuật máy bay A75', chucVu: 'Kỹ thuật viên', vaiTro: 'member',
-    trangThai: 'inactive', soYTuong: 1, soDuocDuyet: 0, ngayTao: '01/02/2026',
-  },
-  {
-    id: '10', maNV: 'VNA-010', hoTen: 'Lưu Đình Phong', email: 'ldp@vietnamairlines.com',
-    donVi: 'Ban Tài chính - Kế toán', chucVu: 'Kế toán trưởng', vaiTro: 'member',
-    trangThai: 'active', soYTuong: 3, soDuocDuyet: 2, ngayTao: '05/02/2026',
-  },
-  {
-    id: '11', maNV: 'VNA-011', hoTen: 'Trịnh Thị Bích', email: 'ttb@vietnamairlines.com',
-    donVi: 'Ban Tổ chức nhân sự', chucVu: 'Chuyên viên tuyển dụng', vaiTro: 'member',
-    trangThai: 'active', soYTuong: 2, soDuocDuyet: 1, ngayTao: '10/02/2026',
-  },
-  {
-    id: '12', maNV: 'VNA-012', hoTen: 'Phạm Đức Anh', email: 'pda@vietnamairlines.com',
-    donVi: 'Trung tâm Vận tải hàng hóa', chucVu: 'Giám sát khai thác', vaiTro: 'member',
-    trangThai: 'inactive', soYTuong: 1, soDuocDuyet: 1, ngayTao: '15/02/2026',
-  },
-];
-
-// ─── Role config ───────────────────────────────────────────────────────────────
-
-const VAI_TRO_DISPLAY: Record<VaiTro, { label: string; color: string }> = {
-  admin:    { label: 'Quản trị viên', color: 'red' },
-  reviewer: { label: 'Người duyệt',   color: 'blue' },
-  member:   { label: 'Thành viên',    color: 'default' },
+// Nhãn tiếng Việt cho các vai trò hệ thống
+const ROLE_LABEL: Record<string, string> = {
+  Admin: 'Quản trị hệ thống',
+  Basic: 'CBNV',
+  Specialist: 'Người kiểm duyệt / Chuyên gia',
+  LanhDaoDonVi: 'Lãnh đạo đơn vị',
+  LanhDaoTCT: 'Lãnh đạo TCT',
 };
+const ROLE_COLOR: Record<string, string> = {
+  Admin: 'red',
+  Basic: 'default',
+  Specialist: 'blue',
+  LanhDaoDonVi: 'cyan',
+  LanhDaoTCT: 'purple',
+};
+const roleLabel = (r: IRole) => ROLE_LABEL[r.name] ?? r.description ?? r.name;
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+const AVATAR_COLORS = ['#1677ff', '#52c41a', '#fa8c16', '#eb2f96', '#722ed1', '#13c2c2'];
+const getAvatarColor = (name: string) => AVATAR_COLORS[(name ?? '?').charCodeAt(0) % AVATAR_COLORS.length];
 
-export const QuanLyNguoiDungPage = () => {
-  const [data, setData] = useState<INguoiDung[]>(MOCK_NGUOI_DUNG);
-  const [search, setSearch] = useState('');
-  const [filterDonVi, setFilterDonVi] = useState<string | null>(null);
-  const [filterVaiTro, setFilterVaiTro] = useState<VaiTro | null>(null);
-  const [filterTrangThai, setFilterTrangThai] = useState<TrangThaiTK | null>(null);
-  const [editUser, setEditUser] = useState<INguoiDung | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form] = Form.useForm();
+export const QuanLyNguoiDungPage: React.FC = () => {
+  // ── Danh sách người dùng (API thật — đơn vị lấy từ cây tổ chức)
+  const [loading, setLoading]       = useState(false);
+  const [users, setUsers]           = useState<IUserDto[]>([]);
+  const [total, setTotal]           = useState(0);
+  const [page, setPage]             = useState(1);
+  const [keyword, setKeyword]       = useState('');
+  const [donViId, setDonViId]       = useState<string | undefined>(undefined);
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  // ── Filter ──────────────────────────────────────────────────────────────────
-  const filtered = data.filter(u => {
-    const matchSearch = !search ||
-      u.hoTen.toLowerCase().includes(search.toLowerCase()) ||
-      u.maNV.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
-    const matchDonVi    = !filterDonVi    || u.donVi    === filterDonVi;
-    const matchVaiTro   = !filterVaiTro   || u.vaiTro   === filterVaiTro;
-    const matchTrangThai = !filterTrangThai || u.trangThai === filterTrangThai;
-    return matchSearch && matchDonVi && matchVaiTro && matchTrangThai;
-  });
+  // ── Vai trò
+  const [allRoles, setAllRoles]     = useState<IRole[]>([]);
+  const [userRolesMap, setUserRolesMap] = useState<Record<string, string[]>>({}); // userId → roleIds
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
-  const handleEdit = (user: INguoiDung) => {
-    setEditUser(user);
-    form.setFieldsValue({ vaiTro: user.vaiTro, trangThai: user.trangThai === 'active' });
-    setIsModalOpen(true);
+  // ── Modal chỉnh sửa vai trò
+  const [editUser, setEditUser]     = useState<IUserDto | null>(null);
+  const [editOpen, setEditOpen]     = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editRoleIds, setEditRoleIds] = useState<string[]>([]);
+  const [saving, setSaving]         = useState(false);
+
+  // ── Load danh sách vai trò hệ thống (1 lần)
+  useEffect(() => {
+    requestPOST<IPaginationResponse<IRole[]>>('Roles/search', {}, 'neutral')
+      .then(res => setAllRoles(res.data?.data ?? []))
+      .catch(() => { /* ignore */ });
+  }, []);
+
+  // ── Load người dùng + vai trò từng người
+  const loadUsers = useCallback(async (kw = keyword, p = page, orgId = donViId) => {
+    setLoading(true);
+    try {
+      const res = await requestPOST<IPaginationResponse<IUserDto[]>>('users/search', {
+        pageNumber: p,
+        pageSize: PAGE_SIZE,
+        keyword: kw?.trim() || undefined,
+        organizationUnitId: orgId || undefined,
+      }, 'neutral');
+
+      const list = res.data?.data ?? [];
+      setUsers(list);
+      setTotal(res.data?.totalCount ?? 0);
+
+      // Nạp vai trò của từng người dùng trên trang hiện tại
+      const results = await Promise.allSettled(
+        list.map(u => requestGET<string[]>(`users/${u.id}/roles`, 'neutral')),
+      );
+      const map: Record<string, string[]> = {};
+      list.forEach((u, i) => {
+        const r = results[i];
+        map[u.id] = r.status === 'fulfilled' ? ((r.value as any)?.data ?? []) : [];
+      });
+      setUserRolesMap(map);
+    } catch {
+      message.error('Không tải được danh sách người dùng');
+    } finally {
+      setLoading(false);
+    }
+  }, [keyword, page, donViId]);
+
+  useEffect(() => { loadUsers(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const onSearch = (kw: string) => { setKeyword(kw); setPage(1); loadUsers(kw, 1); };
+
+  /** Gõ đến đâu tìm đến đó (debounce 500ms) — không cần bấm Enter */
+  const onKeywordChange = (val: string) => {
+    setKeyword(val);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => { setPage(1); loadUsers(val, 1); }, 500);
   };
 
-  const handleSave = () => {
-    form.validateFields().then(values => {
-      setData(prev => prev.map(u =>
-        u.id === editUser!.id
-          ? { ...u, vaiTro: values.vaiTro, trangThai: values.trangThai ? 'active' : 'inactive' }
-          : u
-      ));
-      setIsModalOpen(false);
-      setEditUser(null);
-    });
+  const onDonViChange = (val?: string) => {
+    setDonViId(val);
+    setPage(1);
+    loadUsers(keyword, 1, val);
   };
 
-  const handleToggleStatus = (id: string) => {
-    setData(prev => prev.map(u =>
-      u.id === id ? { ...u, trangThai: u.trangThai === 'active' ? 'inactive' : 'active' } : u
-    ));
+  const onPageChange = (p: number) => { setPage(p); loadUsers(keyword, p); };
+
+  // ── Bật / tắt tài khoản
+  const toggleStatus = async (u: IUserDto) => {
+    try {
+      await requestPOST(`users/${u.id}/toggle-status`, { userId: u.id, activateUser: !u.isActive }, 'neutral');
+      message.success(!u.isActive ? 'Đã kích hoạt tài khoản' : 'Đã vô hiệu hóa tài khoản');
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, isActive: !u.isActive } : x));
+    } catch {
+      message.error('Không đổi được trạng thái');
+    }
   };
 
-  // ── Summary stats ─────────────────────────────────────────────────────────
-  const totalActive  = data.filter(u => u.trangThai === 'active').length;
-  const totalAdmin   = data.filter(u => u.vaiTro === 'admin').length;
-  const totalReview  = data.filter(u => u.vaiTro === 'reviewer').length;
-  const totalMember  = data.filter(u => u.vaiTro === 'member').length;
+  // ── Chỉnh sửa vai trò
+  const openEdit = async (u: IUserDto) => {
+    setEditUser(u);
+    setEditOpen(true);
+    setEditLoading(true);
+    try {
+      const res = await requestGET<string[]>(`users/${u.id}/roles`, 'neutral');
+      setEditRoleIds(((res as any)?.data ?? []) as string[]);
+    } catch {
+      setEditRoleIds(userRolesMap[u.id] ?? []);
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
-  // ── Columns ──────────────────────────────────────────────────────────────────
-  const columns: ColumnsType<INguoiDung> = [
+  const saveRoles = async () => {
+    if (!editUser) return;
+    setSaving(true);
+    try {
+      const userRoles = allRoles.map(r => ({
+        roleId: r.id,
+        roleName: r.name,
+        description: r.description,
+        enabled: editRoleIds.includes(r.id),
+      }));
+      const res = await requestPOST(`users/${editUser.id}/roles`, { userRoles }, 'neutral');
+      if ((res as any)?.status >= 400) { message.error('Không lưu được vai trò'); return; }
+      message.success('Đã cập nhật vai trò');
+      setUserRolesMap(prev => ({ ...prev, [editUser.id]: editRoleIds }));
+      setEditOpen(false);
+    } catch {
+      message.error('Lỗi khi lưu vai trò');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Render vai trò của một user
+  const renderRoles = (userId: string) => {
+    const ids = userRolesMap[userId] ?? [];
+    if (ids.length === 0) return <span className="text-muted fs-8">—</span>;
+    return (
+      <div className="d-flex flex-wrap gap-1">
+        {ids.map(rid => {
+          const role = allRoles.find(r => r.id === rid);
+          if (!role) return null;
+          return (
+            <Tag key={rid} color={ROLE_COLOR[role.name] ?? 'default'} style={{ margin: 0 }}>
+              {roleLabel(role)}
+            </Tag>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const columns = [
     {
-      title: 'Nhân viên',
-      key: 'hoTen',
-      render: (_, r) => (
+      title: 'Người dùng',
+      key: 'user',
+      render: (_: unknown, u: IUserDto) => (
         <div className="d-flex align-items-center gap-3">
-          <Avatar size={38} style={{ background: '#e7f0fa', color: '#0a65cc', fontWeight: 700, fontSize: 14 }}>
-            {r.hoTen.split(' ').slice(-1)[0][0]}
+          <Avatar size={38} src={u.imageUrl || undefined}
+            style={{ backgroundColor: getAvatarColor(u.fullName ?? u.userName), fontWeight: 600 }}>
+            {(u.fullName ?? u.userName).charAt(0).toUpperCase()}
           </Avatar>
           <div>
-            <div className="fw-semibold text-gray-800 fs-7">{r.hoTen}</div>
-            <div className="text-muted fs-8">{r.maNV} · {r.email}</div>
+            <div className="fw-semibold text-gray-800">{u.fullName ?? u.userName}</div>
+            <div className="text-muted fs-8">{u.email ?? u.userName}</div>
           </div>
         </div>
       ),
-      width: 260,
     },
     {
-      title: 'Đơn vị / Chức vụ',
-      key: 'donVi',
-      render: (_, r) => (
-        <div>
-          <div className="fs-7 fw-medium text-gray-700">{r.donVi}</div>
-          <div className="text-muted fs-8">{r.chucVu}</div>
-        </div>
-      ),
+      title: 'Đơn vị',
+      dataIndex: 'organizationUnitName',
+      key: 'organizationUnitName',
       width: 220,
+      render: (v: string | null) => v
+        ? <span className="fs-7">{v}</span>
+        : <span className="text-muted fs-8">Chưa gán đơn vị</span>,
+    },
+    {
+      title: 'Chức vụ',
+      dataIndex: 'positionName',
+      key: 'positionName',
+      width: 160,
+      render: (v: string | null) => v ?? <span className="text-muted fs-8">—</span>,
     },
     {
       title: 'Vai trò',
-      dataIndex: 'vaiTro',
-      key: 'vaiTro',
-      render: (v: VaiTro) => (
-        <Tag color={VAI_TRO_DISPLAY[v].color}>{VAI_TRO_DISPLAY[v].label}</Tag>
-      ),
-      width: 130,
+      key: 'roles',
+      width: 260,
+      render: (_: unknown, u: IUserDto) => renderRoles(u.id),
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'trangThai',
-      key: 'trangThai',
-      render: (v: TrangThaiTK, r) => (
-        <Switch
-          checked={v === 'active'}
-          checkedChildren="Hoạt động"
-          unCheckedChildren="Khoá"
-          onChange={() => handleToggleStatus(r.id)}
-          size="small"
-        />
+      title: 'Hoạt động',
+      key: 'isActive',
+      width: 100,
+      className: 'text-center',
+      render: (_: unknown, u: IUserDto) => (
+        <Switch size="small" checked={u.isActive} onChange={() => toggleStatus(u)} />
       ),
-      width: 130,
-    },
-    {
-      title: 'Ý tưởng',
-      key: 'ytg',
-      render: (_, r) => (
-        <div className="text-center">
-          <div className="fs-7 fw-bold text-primary">{r.soYTuong}</div>
-          <div className="text-muted fs-8">{r.soDuocDuyet} duyệt</div>
-        </div>
-      ),
-      width: 90,
-      align: 'center',
-    },
-    {
-      title: 'Ngày tạo',
-      dataIndex: 'ngayTao',
-      key: 'ngayTao',
-      width: 110,
-      render: v => <span className="text-muted fs-8">{v}</span>,
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 100,
-      render: (_, r) => (
-        <Tooltip title="Chỉnh sửa vai trò / trạng thái">
-          <Button size="small" type="default" onClick={() => handleEdit(r)}>
-            <i className="fa-regular fa-pen-to-square me-1" /> Sửa
-          </Button>
+      width: 90,
+      className: 'text-center',
+      render: (_: unknown, u: IUserDto) => (
+        <Tooltip title="Chỉnh sửa vai trò">
+          <Button size="small" icon={<i className="fa-regular fa-user-gear" />} onClick={() => openEdit(u)} />
         </Tooltip>
       ),
     },
   ];
 
   return (
-    <div className="container-fluid py-6 px-7">
-      {/* Header */}
-      <div className="d-flex align-items-center justify-content-between mb-6">
-        <div>
-          <h1 className="fs-3 fw-bold text-gray-900 mb-1">Quản lý người dùng</h1>
-          <p className="text-muted fs-7">Quản lý tài khoản và phân quyền nhân viên trong hệ thống đổi mới sáng tạo</p>
-        </div>
-      </div>
+    <>
+      <PageTitle breadcrumbs={[
+        { title: 'Đổi mới sáng tạo', path: '/doi-moi-sang-tao/dashboard', isActive: false, isSeparator: false },
+      ]}>Quản lý người dùng</PageTitle>
 
-      {/* Stats row */}
-      <div className="row g-4 mb-6">
-        {[
-          { label: 'Tổng tài khoản',  value: data.length,    icon: 'fa-users',        color: '#0a65cc', bg: '#e7f0fa' },
-          { label: 'Đang hoạt động',  value: totalActive,    icon: 'fa-circle-check', color: '#059669', bg: '#ecfdf5' },
-          { label: 'Quản trị viên',   value: totalAdmin,     icon: 'fa-shield-check', color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Người duyệt',     value: totalReview,    icon: 'fa-user-check',   color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Thành viên',      value: totalMember,    icon: 'fa-user',         color: '#d97706', bg: '#fffbeb' },
-        ].map((s, i) => (
-          <div className="col-6 col-md-4 col-xl" key={i}>
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body d-flex align-items-center gap-3 p-4">
-                <div className="rounded-xl d-flex align-items-center justify-content-center flex-shrink-0"
-                  style={{ width: 44, height: 44, background: s.bg }}>
-                  <i className={`fa-regular ${s.icon} fs-5`} style={{ color: s.color }} />
-                </div>
-                <div>
-                  <div className="fs-4 fw-bold text-gray-900">{s.value}</div>
-                  <div className="text-muted fs-8">{s.label}</div>
+      <Content>
+        <div className="card border-0 shadow-sm" style={{ borderRadius: 12 }}>
+          <div className="card-header border-0 pt-5 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+              <h3 className="card-title fw-bold text-gray-800 mb-1">
+                Người dùng hệ thống <Tag color="blue" className="ms-2">{total}</Tag>
+              </h3>
+              <span className="text-muted fs-8">
+                Dữ liệu thật từ hệ thống — đơn vị khớp với cây Cơ cấu tổ chức
+              </span>
+            </div>
+            <div className="d-flex gap-2 flex-wrap align-items-center">
+              <div style={{ width: 260 }}>
+                <OrganizationUnitTreeSelect
+                  placeholder="Lọc theo đơn vị"
+                  value={donViId}
+                  showSearch
+                  treeNodeFilterProp="title"
+                  onChange={(val: any) => onDonViChange(val ?? undefined)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <Input.Search
+                placeholder="Tìm theo tên, email, tài khoản..."
+                value={keyword}
+                onChange={e => onKeywordChange(e.target.value)}
+                onSearch={onSearch}
+                style={{ width: 280 }}
+                allowClear
+              />
+              <Tooltip title="Làm mới">
+                <Button icon={<i className="fa-regular fa-refresh" />} onClick={() => loadUsers()} />
+              </Tooltip>
+            </div>
+          </div>
+          <div className="card-body py-3">
+            <Table
+              columns={columns}
+              dataSource={users}
+              rowKey="id"
+              loading={loading}
+              pagination={{
+                current: page,
+                pageSize: PAGE_SIZE,
+                total,
+                onChange: onPageChange,
+                showSizeChanger: false,
+              }}
+              locale={{ emptyText: <Empty description="Không có người dùng" /> }}
+              size="middle"
+            />
+          </div>
+        </div>
+      </Content>
+
+      {/* ── Modal chỉnh sửa vai trò ─────────────────────────────────────────── */}
+      <Modal
+        open={editOpen}
+        onCancel={() => setEditOpen(false)}
+        onOk={saveRoles}
+        okText="Lưu vai trò"
+        cancelText="Đóng"
+        confirmLoading={saving}
+        title={
+          editUser && (
+            <div className="d-flex align-items-center gap-3">
+              <Avatar size={40} src={editUser.imageUrl || undefined}
+                style={{ backgroundColor: getAvatarColor(editUser.fullName ?? editUser.userName), fontWeight: 600 }}>
+                {(editUser.fullName ?? editUser.userName).charAt(0).toUpperCase()}
+              </Avatar>
+              <div>
+                <div className="fw-bold">{editUser.fullName ?? editUser.userName}</div>
+                <div className="text-muted fs-8">
+                  {editUser.organizationUnitName ?? 'Chưa gán đơn vị'}
+                  {editUser.positionName ? ` · ${editUser.positionName}` : ''}
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filter bar */}
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body p-4">
-          <div className="d-flex flex-wrap gap-3 align-items-center">
-            <Input
-              placeholder="Tìm theo tên, mã NV, email..."
-              prefix={<i className="fa-regular fa-search text-muted" />}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ width: 260 }}
-              allowClear
-            />
-            <Select
-              placeholder="Đơn vị"
-              allowClear
-              style={{ width: 220 }}
-              value={filterDonVi}
-              onChange={v => setFilterDonVi(v ?? null)}
-              options={DON_VI_OPTIONS.map(d => ({ value: d, label: d }))}
-            />
-            <Select
-              placeholder="Vai trò"
-              allowClear
-              style={{ width: 160 }}
-              value={filterVaiTro}
-              onChange={v => setFilterVaiTro(v ?? null)}
-              options={[
-                { value: 'admin',    label: 'Quản trị viên' },
-                { value: 'reviewer', label: 'Người duyệt' },
-                { value: 'member',   label: 'Thành viên' },
-              ]}
-            />
-            <Select
-              placeholder="Trạng thái"
-              allowClear
-              style={{ width: 140 }}
-              value={filterTrangThai}
-              onChange={v => setFilterTrangThai(v ?? null)}
-              options={[
-                { value: 'active',   label: '✅ Hoạt động' },
-                { value: 'inactive', label: '🔒 Khoá' },
-              ]}
-            />
-            <span className="text-muted fs-8 ms-auto">
-              Hiển thị <strong>{filtered.length}</strong> / {data.length} tài khoản
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="card border-0 shadow-sm">
-        <div className="card-body p-0">
-          <Table
-            dataSource={filtered}
-            columns={columns}
-            rowKey="id"
-            size="middle"
-            pagination={{ pageSize: 10, showSizeChanger: false, showTotal: t => `${t} tài khoản` }}
-            rowClassName={r => r.trangThai === 'inactive' ? 'opacity-50' : ''}
-            scroll={{ x: 1000 }}
-          />
-        </div>
-      </div>
-
-      {/* Edit Modal */}
-      <Modal
-        title={
-          <div className="d-flex align-items-center gap-2">
-            <i className="fa-regular fa-user-pen text-primary fs-5" />
-            <span>Chỉnh sửa tài khoản: <strong>{editUser?.hoTen}</strong></span>
-          </div>
+          )
         }
-        open={isModalOpen}
-        onOk={handleSave}
-        onCancel={() => { setIsModalOpen(false); setEditUser(null); }}
-        okText="Lưu thay đổi"
-        cancelText="Huỷ"
-        width={480}
       >
-        {editUser && (
-          <div className="mb-4 p-3 bg-light rounded">
-            <div className="fs-7 text-muted">Mã NV: <strong>{editUser.maNV}</strong></div>
-            <div className="fs-7 text-muted">Đơn vị: <strong>{editUser.donVi}</strong></div>
-            <div className="fs-7 text-muted">Chức vụ: <strong>{editUser.chucVu}</strong></div>
+        <Spin spinning={editLoading}>
+          <div className="text-muted fs-8 mb-3">
+            Chọn vai trò trong hệ thống ĐMST (một người có thể giữ nhiều vai trò):
           </div>
-        )}
-        <Form form={form} layout="vertical">
-          <Form.Item name="vaiTro" label="Vai trò trong hệ thống" rules={[{ required: true }]}>
-            <Select options={[
-              { value: 'admin',    label: '🔴 Quản trị viên — toàn quyền hệ thống' },
-              { value: 'reviewer', label: '🔵 Người duyệt — xét duyệt ý tưởng' },
-              { value: 'member',   label: '⬜ Thành viên — gửi và theo dõi ý tưởng' },
-            ]} />
-          </Form.Item>
-          <Form.Item name="trangThai" label="Trạng thái tài khoản" valuePropName="checked">
-            <Switch checkedChildren="Hoạt động" unCheckedChildren="Khoá" />
-          </Form.Item>
-        </Form>
+          <div className="d-flex flex-column gap-2">
+            {allRoles.map(r => (
+              <label key={r.id}
+                className="d-flex align-items-center gap-3 p-3 rounded border cursor-pointer"
+                style={{
+                  borderColor: editRoleIds.includes(r.id) ? '#1677ff' : '#e5e7eb',
+                  background: editRoleIds.includes(r.id) ? '#f0f7ff' : '#fff',
+                  transition: 'all 0.15s',
+                }}>
+                <Checkbox
+                  checked={editRoleIds.includes(r.id)}
+                  onChange={e => setEditRoleIds(prev =>
+                    e.target.checked ? [...prev, r.id] : prev.filter(x => x !== r.id))}
+                />
+                <div className="flex-grow-1">
+                  <Tag color={ROLE_COLOR[r.name] ?? 'default'} style={{ margin: 0 }}>{roleLabel(r)}</Tag>
+                  {r.description && <div className="text-muted fs-8 mt-1">{r.description}</div>}
+                </div>
+              </label>
+            ))}
+            {allRoles.length === 0 && !editLoading && (
+              <Empty description="Không tải được danh sách vai trò" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
+          </div>
+        </Spin>
       </Modal>
-    </div>
+    </>
   );
 };

@@ -1,24 +1,36 @@
 /**
- * NewsFeedPage — IV.2.4 Bảng tin cá nhân hóa
+ * NewsFeedPage — News Feed cá nhân hóa (IV.2.4)
  *
- * Cá nhân hóa theo: đơn vị công tác + lĩnh vực quan tâm (server tự suy ra
- * đơn vị từ người dùng hiện tại, xem GetNewsFeedRequestHandler), lịch sử
- * tương tác (tài liệu đã thích được giữ lại dù quá hạn 7 ngày) và vai trò
- * người dùng (Admin/Specialist thấy thêm nội dung chờ duyệt).
+ * BE tính Điểm phù hợp (Relevance Score) theo trọng số cấu hình được:
+ * cùng đơn vị, đúng lĩnh vực quan tâm (đăng ký hoặc học từ hành vi), đã tương tác
+ * nội dung/tác giả tương tự, vai trò người dùng, thịnh hành, mới đăng.
+ * FE ghi nhận hành vi (hiển thị/xem/thích/tìm kiếm/đăng ký quan tâm) qua
+ * NewsFeed/hanh-vi để hệ thống liên tục học sở thích.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Avatar, Select, Spin, Empty, message } from 'antd';
+import { useNavigate, Link } from 'react-router-dom';
+import { Avatar, Select, Spin, Empty, Tag, Tooltip, message } from 'antd';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { getNewsFeed, toggleThich } from '@/app/services/khoTriThucApi';
+import {
+  getNewsFeed, toggleThich, ghiNhanHanhVi, searchChuyenGias, LoaiHanhVi,
+  getLinhVucQuanTam, capNhatLinhVucQuanTam, getLinhVucHangKhong,
+} from '@/app/services/khoTriThucApi';
 import { requestPOST } from '@/utils/baseAPI';
 import { LoaiDoiTuong, LoaiNewsFeedItem } from '@/app/models/knowledge-hub';
-import type { INewsFeedItem } from '@/app/models/knowledge-hub';
+import type { INewsFeedItem, IChuyenGia } from '@/app/models/knowledge-hub';
 import { NguoiThichPopover } from '@/app/components/tuong-tac/NguoiThichPopover';
+import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 
 const PAGE_SIZE = 20;
+
+// Danh sách lĩnh vực hàng không chuẩn — cùng thứ tự với LINH_VUC_OPTIONS ở form nộp ý tưởng.
+const LINH_VUC_HANG_KHONG = [
+  'Khai thác bay', 'Kỹ thuật bảo dưỡng', 'Dịch vụ hành khách', 'Dịch vụ mặt đất',
+  'Đào tạo nhân lực', 'Chuyển đổi số', 'Cải cách hành chính', 'An toàn hàng không',
+  'Thương mại & Doanh thu', 'Công nghệ thông tin',
+];
 
 const AVATAR_COLORS = ['#1677ff', '#52c41a', '#fa8c16', '#eb2f96', '#722ed1', '#13c2c2'];
 const getAvatarColor = (name: string) => AVATAR_COLORS[(name ?? '?').charCodeAt(0) % AVATAR_COLORS.length];
@@ -35,30 +47,49 @@ const relativeTime = (date?: string) => {
   return new Date(date).toLocaleDateString('vi-VN');
 };
 
-const LOAI_LABEL: Record<LoaiNewsFeedItem, string> = {
+// ── Các tab chế độ feed (đồng bộ tham số cheDo BE) ───────────────────────────
+const FEED_TABS: { key: string; label: string; icon: string }[] = [
+  { key: 'danh-cho-ban', label: 'Dành cho bạn', icon: 'fa-wand-magic-sparkles' },
+  { key: 'noi-bat', label: 'Nổi bật', icon: 'fa-star' },
+  { key: 'don-vi', label: 'Theo đơn vị', icon: 'fa-building' },
+  { key: 'linh-vuc', label: 'Theo lĩnh vực', icon: 'fa-layer-group' },
+  { key: 'trending', label: 'Thịnh hành', icon: 'fa-fire' },
+  { key: 'moi-nhat', label: 'Mới nhất', icon: 'fa-clock' },
+];
+
+const LOAI_LABEL: Record<number, string> = {
   [LoaiNewsFeedItem.TaiLieu]: 'Tài liệu',
   [LoaiNewsFeedItem.BaiViet]: 'Bài viết cộng đồng',
+  [LoaiNewsFeedItem.YTuong]: 'Ý tưởng/Sáng kiến',
 };
-const LOAI_ICON: Record<LoaiNewsFeedItem, string> = {
+const LOAI_ICON: Record<number, string> = {
   [LoaiNewsFeedItem.TaiLieu]: 'fa-file-lines',
   [LoaiNewsFeedItem.BaiViet]: 'fa-comments',
+  [LoaiNewsFeedItem.YTuong]: 'fa-lightbulb',
 };
-const LOAI_COLOR: Record<LoaiNewsFeedItem, string> = {
+const LOAI_COLOR: Record<number, string> = {
   [LoaiNewsFeedItem.TaiLieu]: '#1677ff',
   [LoaiNewsFeedItem.BaiViet]: '#52c41a',
+  [LoaiNewsFeedItem.YTuong]: '#faad14',
 };
 
 const doiTuongCuaItem = (item: INewsFeedItem): LoaiDoiTuong =>
-  item.loaiItem === LoaiNewsFeedItem.TaiLieu ? LoaiDoiTuong.TaiLieu : LoaiDoiTuong.BaiViet;
+  item.loaiItem === LoaiNewsFeedItem.TaiLieu ? LoaiDoiTuong.TaiLieu
+    : item.loaiItem === LoaiNewsFeedItem.BaiViet ? LoaiDoiTuong.BaiViet
+    : LoaiDoiTuong.YTuong;
 
 const duongDanChiTiet = (item: INewsFeedItem): string =>
   item.loaiItem === LoaiNewsFeedItem.TaiLieu
     ? `/doi-moi-sang-tao/kho-tri-thuc/thu-vien?taiLieuId=${item.id}`
-    : `/doi-moi-sang-tao/kho-tri-thuc/cong-dong?postId=${item.id}`;
+    : item.loaiItem === LoaiNewsFeedItem.BaiViet
+    ? `/doi-moi-sang-tao/kho-tri-thuc/cong-dong?postId=${item.id}`
+    : `/doi-moi-sang-tao/quan-ly-y-tuong/chi-tiet/${item.id}`;
 
 export const NewsFeedPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useDMSTRole();
 
+  const [cheDo, setCheDo]       = useState<string>('danh-cho-ban');
   const [items, setItems]       = useState<INewsFeedItem[]>([]);
   const [loading, setLoading]   = useState(false);
   const [page, setPage]         = useState(1);
@@ -66,25 +97,78 @@ export const NewsFeedPage: React.FC = () => {
   const [hasMore, setHasMore]   = useState(false);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
-  // ── Danh mục lĩnh vực (bộ lọc cá nhân hóa)
+  // ── Lĩnh vực: hiển thị theo danh sách cứng như form khởi tạo ý tưởng ───────
+  // (value = tên; `linhVucs` chỉ là bảng tra tên → id danh mục khi gọi API)
   const [linhVucs, setLinhVucs]           = useState<{ id: string; ten: string }[]>([]);
-  const [linhVucFilter, setLinhVucFilter] = useState<string | undefined>(undefined);
+  const [linhVucFilter, setLinhVucFilter] = useState<string | undefined>(undefined); // tên lĩnh vực
+  const [quanTamTens, setQuanTamTens]     = useState<string[]>([]);                  // tên lĩnh vực
+  const [quanTamIdsRaw, setQuanTamIdsRaw] = useState<string[]>([]);                  // id BE trả về
+  const [savingQuanTam, setSavingQuanTam] = useState(false);
+
+  const LINH_VUC_OPTIONS = LINH_VUC_HANG_KHONG.map(v => ({ value: v, label: v }));
+  const idTheoTen = (ten?: string) => (ten ? linhVucs.find(x => x.ten === ten)?.id : undefined);
+
+  // ── Gợi ý: chuyên gia có thể quan tâm ──────────────────────────────────────
+  const [goiYChuyenGia, setGoiYChuyenGia] = useState<IChuyenGia[]>([]);
 
   useEffect(() => {
-    requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 200 })
+    // Lĩnh vực: đúng 10 lĩnh vực hàng không như form nộp ý tưởng — BE đảm bảo tồn tại
+    // trong danh mục (ensure-on-read). Fallback danh mục chung nếu endpoint chưa có (BE cũ).
+    getLinhVucHangKhong()
       .then(res => {
-        const d = res?.data;
-        const list = Array.isArray(d?.data) ? d.data : [];
-        setLinhVucs(list.map((x: any) => ({ id: x.id, ten: x.ten ?? x.name ?? '' })));
+        const d = (res as any)?.data;
+        const list = d?.data ?? d;
+        if (Array.isArray(list) && list.length > 0) {
+          setLinhVucs(list.map((x: any) => ({ id: x.id, ten: x.ten })));
+          return;
+        }
+        throw new Error('empty');
+      })
+      .catch(() => {
+        requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 500 })
+          .then(res => {
+            const d = res?.data;
+            const list = Array.isArray(d?.data) ? d.data : [];
+            const all = list.map((x: any) => ({ id: x.id, ten: (x.ten ?? x.name ?? '').trim() }));
+            const hk = all
+              .filter((x: any) => LINH_VUC_HANG_KHONG.includes(x.ten))
+              .sort((a: any, b: any) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
+            setLinhVucs(hk.length > 0 ? hk : all);
+          })
+          .catch(() => { /* ignore */ });
+      });
+
+    // Lĩnh vực quan tâm mặc định đã đăng ký (id — quy đổi sang tên khi có bảng tra)
+    getLinhVucQuanTam()
+      .then(res => {
+        const d = (res as any)?.data;
+        const ids = d?.data ?? d;
+        if (Array.isArray(ids)) setQuanTamIdsRaw(ids);
+      })
+      .catch(() => { /* ignore */ });
+
+    searchChuyenGias({ pageNumber: 1, pageSize: 5 } as any)
+      .then(res => {
+        const d = (res as any)?.data;
+        setGoiYChuyenGia(Array.isArray(d?.data) ? d.data : []);
       })
       .catch(() => { /* ignore */ });
   }, []);
 
-  // ── Tải bảng tin
-  const loadFeed = useCallback(async (p = 1, reset = false) => {
+  // Quy đổi id đã đăng ký → tên hiển thị (khi cả hai nguồn đã tải xong)
+  useEffect(() => {
+    if (linhVucs.length === 0 || quanTamIdsRaw.length === 0) return;
+    const tens = quanTamIdsRaw
+      .map(id => linhVucs.find(x => x.id === id)?.ten)
+      .filter((t): t is string => !!t);
+    if (tens.length > 0) setQuanTamTens(tens);
+  }, [linhVucs, quanTamIdsRaw]);
+
+  // ── Tải bảng tin + ghi nhận hiển thị (impression cho CTR) ──────────────────
+  const loadFeed = useCallback(async (p = 1, reset = false, mode = cheDo, lv = linhVucFilter) => {
     setLoading(true);
     try {
-      const res = await getNewsFeed(p, PAGE_SIZE, undefined, linhVucFilter);
+      const res = await getNewsFeed(p, PAGE_SIZE, undefined, idTheoTen(lv), mode);
       const d = (res as any)?.data;
       const data: INewsFeedItem[] = d?.data ?? [];
       const tot: number = d?.totalCount ?? 0;
@@ -92,19 +176,36 @@ export const NewsFeedPage: React.FC = () => {
       setTotal(tot);
       const loaded = reset ? data.length : items.length + data.length;
       setHasMore(loaded < tot);
+
+      // Impression — 1 bản ghi mỗi lần tải trang đầu của feed
+      if (p === 1) ghiNhanHanhVi({ loaiHanhVi: LoaiHanhVi.HienThi, tuKhoa: mode });
     } catch {
       message.error('Không tải được bảng tin');
     } finally {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linhVucFilter, items.length]);
+  }, [cheDo, linhVucFilter, items.length, linhVucs]);
 
   useEffect(() => {
     setPage(1);
     loadFeed(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [linhVucFilter]);
+  }, [cheDo, linhVucFilter]);
+
+  // ── Hành vi: nhấp xem chi tiết ─────────────────────────────────────────────
+  const moChiTiet = (item: INewsFeedItem) => {
+    ghiNhanHanhVi({
+      loaiHanhVi: LoaiHanhVi.Xem,
+      loaiDoiTuong: doiTuongCuaItem(item) as unknown as number,
+      doiTuongId: item.id,
+      linhVucKHCNId: item.linhVucKHCNId,
+      donViId: item.donViId,
+      tacGiaNoiDungId: item.tacGiaId,
+      tuKhoa: cheDo,
+    });
+    navigate(duongDanChiTiet(item));
+  };
 
   const handleLike = async (item: INewsFeedItem) => {
     try {
@@ -118,8 +219,39 @@ export const NewsFeedPage: React.FC = () => {
       setItems(prev => prev.map(i => i.id === item.id
         ? { ...i, soLuotThich: Math.max(0, (i.soLuotThich ?? 0) + (nowLiked ? 1 : -1)) }
         : i));
+      if (nowLiked) {
+        ghiNhanHanhVi({
+          loaiHanhVi: LoaiHanhVi.Thich,
+          loaiDoiTuong: doiTuongCuaItem(item) as unknown as number,
+          doiTuongId: item.id,
+          linhVucKHCNId: item.linhVucKHCNId,
+          tacGiaNoiDungId: item.tacGiaId,
+        });
+      }
     } catch {
       message.error('Lỗi khi thích');
+    }
+  };
+
+  // ── Cấu hình lĩnh vực theo dõi mặc định (đồng bộ: bỏ chọn = hủy theo dõi) ──
+  const luuQuanTam = async () => {
+    // Quy đổi tên đã chọn → id danh mục (BE đảm bảo đủ 10 mục qua NewsFeed/linh-vuc)
+    const ids = quanTamTens.map(t => idTheoTen(t)).filter((x): x is string => !!x);
+    if (quanTamTens.length > 0 && ids.length === 0) {
+      message.error('Chưa tra được mã lĩnh vực — kiểm tra BE đã cập nhật bản mới chưa');
+      return;
+    }
+    setSavingQuanTam(true);
+    try {
+      const res = await capNhatLinhVucQuanTam(ids);
+      const ok = (res as any)?.status < 400 && (res as any)?.data?.succeeded !== false;
+      if (!ok) { message.error('Không lưu được lĩnh vực quan tâm'); return; }
+      message.success('Đã lưu lĩnh vực theo dõi mặc định — feed "Dành cho bạn" sẽ ưu tiên các lĩnh vực này');
+      if (cheDo === 'danh-cho-ban' || cheDo === 'linh-vuc') loadFeed(1, true);
+    } catch {
+      message.error('Lỗi khi lưu lĩnh vực quan tâm');
+    } finally {
+      setSavingQuanTam(false);
     }
   };
 
@@ -131,108 +263,235 @@ export const NewsFeedPage: React.FC = () => {
       ]}>Bảng tin</PageTitle>
 
       <Content>
-        <div className="shadow-sm" style={{ borderRadius: 12, background: '#fff', padding: '16px 20px 4px' }}>
-          <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-            <div className="fw-bold fs-5 text-gray-800">
-              <i className="fa-solid fa-rss text-primary me-2" />Bảng tin của bạn
-            </div>
-            <Select
-              allowClear
-              placeholder="Lọc theo lĩnh vực quan tâm"
-              style={{ minWidth: 240 }}
-              value={linhVucFilter}
-              onChange={v => setLinhVucFilter(v)}
-              options={linhVucs.map(lv => ({ value: lv.id, label: lv.ten }))}
-            />
-          </div>
+        <div className="row g-4">
+          {/* ── Cột chính: feed ── */}
+          <div className="col-xl-8">
+            <div className="shadow-sm" style={{ borderRadius: 12, background: '#fff', padding: '16px 20px 4px' }}>
+              <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div className="fw-bold fs-5 text-gray-800">
+                  <i className="fa-solid fa-rss text-primary me-2" />Bảng tin của bạn
+                </div>
+                <div className="d-flex gap-2 align-items-center flex-wrap">
+                  <Select
+                    allowClear
+                    placeholder="Lọc theo lĩnh vực"
+                    style={{ minWidth: 200 }}
+                    value={linhVucFilter}
+                    onChange={v => {
+                      setLinhVucFilter(v);
+                      if (v) {
+                        ghiNhanHanhVi({ loaiHanhVi: LoaiHanhVi.TimKiem, linhVucKHCNId: idTheoTen(v), tuKhoa: v });
+                      }
+                    }}
+                    options={LINH_VUC_OPTIONS}
+                  />
+                  {isAdmin && (
+                    <Tooltip title="Cấu hình thuật toán & hiệu quả News Feed">
+                      <Link to="/doi-moi-sang-tao/kho-tri-thuc/news-feed-admin" className="btn btn-sm btn-light">
+                        <i className="fa-regular fa-sliders" />
+                      </Link>
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
 
-          <Spin spinning={loading && items.length === 0}>
-            {items.length === 0 && !loading ? (
-              <Empty
-                description="Chưa có tin mới phù hợp — hãy tham gia cộng đồng hoặc theo dõi thêm lĩnh vực"
-                style={{ padding: '48px 0' }}
-              />
-            ) : (
-              <div className="d-flex flex-column gap-3 pb-3">
-                {items.map(item => (
-                  <div
-                    key={`${item.loaiItem}-${item.id}`}
-                    className="border rounded-3 p-3"
-                    style={{ transition: 'box-shadow .15s' }}
+              {/* Pill tabs chế độ feed */}
+              <div className="d-flex gap-2 flex-wrap mb-3">
+                {FEED_TABS.map(t => (
+                  <button
+                    key={t.key}
+                    className="btn btn-sm"
+                    style={{
+                      borderRadius: 20, padding: '5px 14px', fontWeight: 600, fontSize: '0.8rem',
+                      border: cheDo === t.key ? '1px solid #003087' : '1px solid #e5e7eb',
+                      background: cheDo === t.key ? '#003087' : '#fff',
+                      color: cheDo === t.key ? '#fff' : '#555',
+                    }}
+                    onClick={() => setCheDo(t.key)}
                   >
-                    <div className="d-flex align-items-start gap-2 mb-2">
-                      <Avatar size={40} src={item.tacGia?.hinhDaiDien || undefined}
-                        style={{ backgroundColor: getAvatarColor(item.tacGia?.hoTen ?? '?'), flexShrink: 0, fontWeight: 600 }}>
-                        {getInitials(item.tacGia?.hoTen)}
-                      </Avatar>
-                      <div className="flex-grow-1 min-w-0">
-                        <div className="fw-semibold fs-7 text-gray-800">{item.tacGia?.hoTen ?? 'Ẩn danh'}</div>
-                        <div className="text-muted fs-8">
-                          <i className={`fa-solid ${LOAI_ICON[item.loaiItem]} me-1`} style={{ color: LOAI_COLOR[item.loaiItem] }} />
-                          {LOAI_LABEL[item.loaiItem]} · {relativeTime(item.createdOn)}
+                    <i className={`fa-regular ${t.icon} me-1`} />{t.label}
+                  </button>
+                ))}
+              </div>
+
+              <Spin spinning={loading && items.length === 0}>
+                {items.length === 0 && !loading ? (
+                  <Empty
+                    description="Chưa có tin phù hợp — hãy đăng ký lĩnh vực quan tâm hoặc tham gia cộng đồng"
+                    style={{ padding: '48px 0' }}
+                  />
+                ) : (
+                  <div className="d-flex flex-column gap-3 pb-3">
+                    {items.map(item => (
+                      <div
+                        key={`${item.loaiItem}-${item.id}`}
+                        className="border rounded-3 p-3"
+                        style={{ transition: 'box-shadow .15s' }}
+                      >
+                        <div className="d-flex align-items-start gap-2 mb-2">
+                          <Avatar size={40} src={item.tacGia?.hinhDaiDien || undefined}
+                            style={{ backgroundColor: getAvatarColor(item.tacGia?.hoTen ?? '?'), flexShrink: 0, fontWeight: 600 }}>
+                            {getInitials(item.tacGia?.hoTen)}
+                          </Avatar>
+                          <div className="flex-grow-1 min-w-0">
+                            <div className="fw-semibold fs-7 text-gray-800">{item.tacGia?.hoTen ?? 'Ẩn danh'}</div>
+                            <div className="text-muted fs-8">
+                              <i className={`fa-solid ${LOAI_ICON[item.loaiItem]} me-1`} style={{ color: LOAI_COLOR[item.loaiItem] }} />
+                              {LOAI_LABEL[item.loaiItem]}
+                              {item.tenLinhVuc ? ` · ${item.tenLinhVuc}` : ''} · {relativeTime(item.createdOn)}
+                            </div>
+                          </div>
+                          {cheDo === 'danh-cho-ban' && (item.diemPhuHop ?? 0) > 0 && (
+                            <Tooltip title={`Điểm phù hợp: ${item.diemPhuHop}`}>
+                              <Tag color="blue" style={{ margin: 0 }}>{Math.round(item.diemPhuHop!)}</Tag>
+                            </Tooltip>
+                          )}
+                        </div>
+
+                        {/* Lý do gợi ý */}
+                        {(item.lyDoGoiY?.length ?? 0) > 0 && (
+                          <div className="d-flex gap-1 flex-wrap mb-2">
+                            {item.lyDoGoiY!.slice(0, 3).map((ly, i) => (
+                              <Tag key={i} color="geekblue" style={{ fontSize: 11, margin: 0 }}>
+                                <i className="fa-regular fa-sparkles me-1" />{ly}
+                              </Tag>
+                            ))}
+                          </div>
+                        )}
+
+                        <div
+                          className="fw-bold fs-5 text-gray-900 mb-1 cursor-pointer"
+                          style={{ lineHeight: 1.4 }}
+                          onClick={() => moChiTiet(item)}
+                        >
+                          {item.tieuDe}
+                        </div>
+                        {item.moTa && (
+                          <div
+                            className="text-gray-600 fs-7 mb-2 cursor-pointer"
+                            style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.7 }}
+                            onClick={() => moChiTiet(item)}
+                          >
+                            {item.moTa}
+                          </div>
+                        )}
+
+                        <div className="d-flex gap-3 align-items-center border-top pt-2 mt-1">
+                          <div className="d-flex align-items-center gap-1">
+                            <button
+                              className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(item.id) || item.daThich ? 'text-danger' : 'text-muted'}`}
+                              onClick={() => handleLike(item)}
+                            >
+                              <i className={`fa-${likedIds.has(item.id) || item.daThich ? 'solid' : 'regular'} fa-heart me-1`} />
+                            </button>
+                            <NguoiThichPopover loaiDoiTuong={doiTuongCuaItem(item)} doiTuongId={item.id}>
+                              <span
+                                className={`fs-8 ${likedIds.has(item.id) || item.daThich ? 'text-danger' : 'text-muted'}`}
+                                style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
+                              >
+                                {Math.max(0, item.soLuotThich ?? 0)}
+                              </span>
+                            </NguoiThichPopover>
+                          </div>
+                          <button
+                            className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
+                            onClick={() => moChiTiet(item)}
+                          >
+                            <i className="fa-regular fa-comment me-1" />
+                            <span className="fs-8">{item.soBinhLuan ?? 0}</span>
+                          </button>
+                          {(item.luotXem ?? 0) > 0 && (
+                            <span className="fs-8 text-muted"><i className="fa-regular fa-eye me-1" />{item.luotXem}</span>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    ))}
 
-                    <div
-                      className="fw-bold fs-5 text-gray-900 mb-1 cursor-pointer"
-                      style={{ lineHeight: 1.4 }}
-                      onClick={() => navigate(duongDanChiTiet(item))}
-                    >
-                      {item.tieuDe}
-                    </div>
-                    {item.moTa && (
-                      <div
-                        className="text-gray-600 fs-7 mb-2 cursor-pointer"
-                        style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.7 }}
-                        onClick={() => navigate(duongDanChiTiet(item))}
-                      >
-                        {item.moTa}
+                    {hasMore && (
+                      <div className="text-center pt-1">
+                        <button
+                          className="btn btn-sm"
+                          style={{ border: '1px solid #e0e0e0', borderRadius: 20, padding: '6px 20px', background: '#fafafa', color: '#555' }}
+                          onClick={() => { const next = page + 1; setPage(next); loadFeed(next, false); }}
+                        >
+                          {loading ? <Spin size="small" /> : `Xem thêm (${total - items.length} còn lại)`}
+                        </button>
                       </div>
                     )}
-
-                    <div className="d-flex gap-3 align-items-center border-top pt-2 mt-1">
-                      <div className="d-flex align-items-center gap-1">
-                        <button
-                          className={`btn btn-sm btn-text d-flex align-items-center gap-1 p-0 ${likedIds.has(item.id) ? 'text-danger' : 'text-muted'}`}
-                          onClick={() => handleLike(item)}
-                        >
-                          <i className={`fa-${likedIds.has(item.id) ? 'solid' : 'regular'} fa-heart me-1`} />
-                        </button>
-                        <NguoiThichPopover loaiDoiTuong={doiTuongCuaItem(item)} doiTuongId={item.id}>
-                          <span
-                            className={`fs-8 ${likedIds.has(item.id) ? 'text-danger' : 'text-muted'}`}
-                            style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
-                          >
-                            {Math.max(0, item.soLuotThich ?? 0)}
-                          </span>
-                        </NguoiThichPopover>
-                      </div>
-                      <button
-                        className="btn btn-sm btn-text d-flex align-items-center gap-1 p-0 text-muted"
-                        onClick={() => navigate(duongDanChiTiet(item))}
-                      >
-                        <i className="fa-regular fa-comment me-1" />
-                        <span className="fs-8">{item.soBinhLuan ?? 0}</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {hasMore && (
-                  <div className="text-center pt-1">
-                    <button
-                      className="btn btn-sm"
-                      style={{ border: '1px solid #e0e0e0', borderRadius: 20, padding: '6px 20px', background: '#fafafa', color: '#555' }}
-                      onClick={() => { const next = page + 1; setPage(next); loadFeed(next, false); }}
-                    >
-                      {loading ? <Spin size="small" /> : `Xem thêm (${total - items.length} còn lại)`}
-                    </button>
                   </div>
                 )}
+              </Spin>
+            </div>
+          </div>
+
+          {/* ── Cột phải: cá nhân hóa & gợi ý ── */}
+          <div className="col-xl-4">
+            {/* Lĩnh vực quan tâm */}
+            <div className="shadow-sm mb-4" style={{ borderRadius: 12, background: '#fff', padding: '16px 20px' }}>
+              <div className="fw-bold fs-6 text-gray-800 mb-1">
+                <i className="fa-regular fa-heart-circle-check text-danger me-2" />Lĩnh vực theo dõi mặc định
               </div>
-            )}
-          </Spin>
+              <div className="text-muted fs-8 mb-3">
+                Chọn các lĩnh vực muốn theo dõi — feed "Dành cho bạn" và tab "Theo lĩnh vực" sẽ ưu tiên
+                các lĩnh vực này. Bỏ chọn = hủy theo dõi. Hệ thống cũng tự học thêm từ hành vi xem/thích.
+              </div>
+              <Select
+                mode="multiple"
+                allowClear
+                className="w-100 mb-2"
+                placeholder="Chọn lĩnh vực theo dõi"
+                value={quanTamTens}
+                onChange={setQuanTamTens}
+                options={LINH_VUC_OPTIONS}
+              />
+              <button className="btn btn-sm btn-primary w-100" onClick={luuQuanTam} disabled={savingQuanTam}>
+                {savingQuanTam ? <Spin size="small" /> : (<><i className="fa-regular fa-floppy-disk me-1" />Lưu cấu hình theo dõi</>)}
+              </button>
+            </div>
+
+            {/* Gợi ý chuyên gia */}
+            <div className="shadow-sm mb-4" style={{ borderRadius: 12, background: '#fff', padding: '16px 20px' }}>
+              <div className="fw-bold fs-6 text-gray-800 mb-3">
+                <i className="fa-regular fa-user-plus text-primary me-2" />Có thể bạn quan tâm
+              </div>
+              {goiYChuyenGia.length === 0 ? (
+                <div className="text-muted fs-8">Chưa có gợi ý.</div>
+              ) : goiYChuyenGia.map(cg => (
+                <div key={cg.id} className="d-flex align-items-center gap-2 mb-3">
+                  <Avatar size={36} style={{ backgroundColor: getAvatarColor(cg.hoTen ?? '?'), fontWeight: 600 }}>
+                    {getInitials(cg.hoTen)}
+                  </Avatar>
+                  <div className="flex-grow-1 min-w-0">
+                    <div className="fw-semibold fs-8 text-gray-800 text-truncate">{cg.hoTen}</div>
+                    <div className="text-muted fs-9 text-truncate">{(cg as any).chuyenMon ?? (cg as any).donViCongTac ?? 'Chuyên gia ĐMST'}</div>
+                  </div>
+                  <button
+                    className="btn btn-sm btn-light-primary"
+                    onClick={() => {
+                      ghiNhanHanhVi({ loaiHanhVi: LoaiHanhVi.TheoDoi, tuKhoa: cg.hoTen });
+                      navigate('/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia');
+                    }}
+                  >
+                    Xem
+                  </button>
+                </div>
+              ))}
+              <Link to="/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia" className="fs-8">
+                Xem danh bạ chuyên gia <i className="fa-regular fa-arrow-right" />
+              </Link>
+            </div>
+
+            {/* Chiến dịch — chờ module */}
+            <div className="shadow-sm" style={{ borderRadius: 12, background: '#fff', padding: '16px 20px' }}>
+              <div className="fw-bold fs-6 text-gray-800 mb-1">
+                <i className="fa-regular fa-bullhorn text-warning me-2" />Chiến dịch ĐMST
+              </div>
+              <div className="text-muted fs-8">
+                Gợi ý chiến dịch phù hợp sẽ xuất hiện tại đây khi module chiến dịch được triển khai —
+                thuật toán đã dự phòng trọng số "Chiến dịch đã tham gia".
+              </div>
+            </div>
+          </div>
         </div>
       </Content>
     </>

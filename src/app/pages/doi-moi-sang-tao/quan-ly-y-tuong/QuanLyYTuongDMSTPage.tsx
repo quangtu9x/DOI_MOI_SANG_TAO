@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Table, Button, Space, Tag, Input, Select, Empty, Tooltip, Spin, message } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import { searchIdeas } from '@/app/services/ideaPortalApi';
@@ -60,12 +60,28 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
   const { currentUser } = useAuth();
   const { isReviewer } = useDMSTRole();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<IIdea[]>([]);
   const [search, setSearch] = useState('');
   const [linhVuc, setLinhVuc] = useState('');
-  const [trangThai, setTrangThai] = useState('');
+  // Khởi tạo trạng thái lọc từ query param ?status=... (deep-link từ Dashboard, ví dụ "Được công nhận")
+  const [trangThai, setTrangThai] = useState(() => searchParams.get('status') ?? '');
+  const [donVi, setDonVi] = useState('');
+  const [nguoiDeXuat, setNguoiDeXuat] = useState('');
   const [cauHinhOpen, setCauHinhOpen] = useState(false);
+
+  // Đồng bộ lại nếu query param thay đổi (VD: bấm lại link khác từ Dashboard trong khi trang đang mở)
+  useEffect(() => {
+    const statusParam = searchParams.get('status') ?? '';
+    if (statusParam !== trangThai) setTrangThai(statusParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const onTrangThaiChange = (v: string) => {
+    setTrangThai(v);
+    setSearchParams(v ? { status: v } : {}, { replace: true });
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -88,21 +104,40 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
     loadData();
   }, [loadData]);
 
+  // Danh sách đơn vị / cá nhân đề xuất — lấy động từ dữ liệu đã tải (không hard-code)
+  const donViOptions = useMemo(() => {
+    const set = new Set(data.map(r => r.donViCongTac).filter(Boolean) as string[]);
+    return [
+      { label: 'Tất cả đơn vị', value: '' },
+      ...Array.from(set).sort((a, b) => a.localeCompare(b)).map(v => ({ label: v, value: v })),
+    ];
+  }, [data]);
+
+  const nguoiDeXuatOptions = useMemo(() => {
+    const set = new Set(data.map(r => r.nguoiDeXuat).filter(Boolean) as string[]);
+    return [
+      { label: 'Tất cả cá nhân đề xuất', value: '' },
+      ...Array.from(set).sort((a, b) => a.localeCompare(b)).map(v => ({ label: v, value: v })),
+    ];
+  }, [data]);
+
   const filtered = useMemo(() => {
     return data.filter(r => {
       const code = r.code || '';
       const title = r.title || '';
-      const nguoiDeXuat = r.nguoiDeXuat || '';
+      const nguoiDeXuatVal = r.nguoiDeXuat || '';
 
       const matchSearch = !search ||
         title.toLowerCase().includes(search.toLowerCase()) ||
         code.toLowerCase().includes(search.toLowerCase()) ||
-        nguoiDeXuat.toLowerCase().includes(search.toLowerCase());
+        nguoiDeXuatVal.toLowerCase().includes(search.toLowerCase());
       const matchLinhVuc = !linhVuc || (r.linhVuc || '') === linhVuc;
       const matchStatus = !trangThai || (r.status || '') === trangThai;
-      return matchSearch && matchLinhVuc && matchStatus;
+      const matchDonVi = !donVi || (r.donViCongTac || '') === donVi;
+      const matchNguoiDeXuat = !nguoiDeXuat || (r.nguoiDeXuat || '') === nguoiDeXuat;
+      return matchSearch && matchLinhVuc && matchStatus && matchDonVi && matchNguoiDeXuat;
     });
-  }, [search, linhVuc, trangThai, data]);
+  }, [search, linhVuc, trangThai, donVi, nguoiDeXuat, data]);
 
   const columns = [
     {
@@ -128,6 +163,13 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
       dataIndex: 'nguoiDeXuat',
       key: 'nguoiGuiTen',
       width: 140,
+      render: (v: string) => v || '—',
+    },
+    {
+      title: 'Đơn vị',
+      dataIndex: 'donViCongTac',
+      key: 'donVi',
+      width: 160,
       render: (v: string) => v || '—',
     },
     {
@@ -224,8 +266,24 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
               <Select
                 options={STATUS_OPTIONS}
                 value={trangThai}
-                onChange={setTrangThai}
+                onChange={onTrangThaiChange}
                 style={{ width: 180 }}
+              />
+              <Select
+                options={donViOptions}
+                value={donVi}
+                onChange={setDonVi}
+                showSearch
+                optionFilterProp="label"
+                style={{ width: 200 }}
+              />
+              <Select
+                options={nguoiDeXuatOptions}
+                value={nguoiDeXuat}
+                onChange={setNguoiDeXuat}
+                showSearch
+                optionFilterProp="label"
+                style={{ width: 200 }}
               />
               <Tooltip title="Làm mới">
                 <Button onClick={loadData} icon={<i className="fa-regular fa-refresh" />} />

@@ -43,8 +43,9 @@ export const NopYTuongPage = () => {
   const { currentUser } = useAuth();
   /**
    * Chỉ người có quyền quản lý hoặc quản trị mới được Import hàng loạt bằng Excel/CSV/API.
-   * Dùng chung `useDMSTRole().isReviewer` (Admin hoặc Specialist) — cùng định nghĩa "quản lý/quản trị"
+   * Dùng chung `useDMSTRole().isReviewer` (Admin hoặc Lãnh đạo đơn vị/TCT) — cùng định nghĩa "quản lý/quản trị"
    * với toàn bộ khu vực Đổi mới sáng tạo (Quản lý ý tưởng, Quy trình duyệt, Báo cáo...).
+   * Chuyên gia tư vấn (Specialist) không tự động có quyền này.
    * Lưu ý: `currentUser.roles` KHÔNG được BE trả về (luôn rỗng) nên không dùng được để phân quyền.
    */
   const { isReviewer: canImport } = useDMSTRole();

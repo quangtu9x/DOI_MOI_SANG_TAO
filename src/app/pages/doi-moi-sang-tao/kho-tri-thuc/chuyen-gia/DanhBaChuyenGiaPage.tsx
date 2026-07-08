@@ -84,7 +84,10 @@ const LINH_VUC_OPTIONS = [
 ];
 
 export const DanhBaChuyenGiaPage: React.FC = () => {
-  const { isReviewer, isAdmin } = useDMSTRole();
+  const { isReviewer, isAdmin, isChuyenGia } = useDMSTRole();
+  // Chuyên gia được tự xác nhận/từ chối yêu cầu tư vấn gửi tới chính mình,
+  // ngoài ra việc quản lý/duyệt chung do isReviewer (Admin/Lãnh đạo) đảm nhiệm.
+  const canXuLyTuVan = isReviewer || isChuyenGia;
   const { currentUser } = useAuth();
 
   // ── List
@@ -694,7 +697,7 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
                                 </Link>
                               </div>
                             )}
-                            {tv.trangThai === TrangThaiTuVan.ChoXacNhan && isReviewer && (
+                            {tv.trangThai === TrangThaiTuVan.ChoXacNhan && canXuLyTuVan && (
                               <div className="d-flex gap-2">
                                 <Button size="small" type="primary" onClick={() => handleXacNhan(tv.id)}>Xác nhận</Button>
                                 <Button size="small" danger onClick={() => handleTuChoiTV(tv.id)}>Từ chối</Button>

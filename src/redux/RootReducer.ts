@@ -1,4 +1,3 @@
-import { all } from 'redux-saga/effects';
 import { combineReducers } from 'redux';
 
 import { globalSlice } from './global/Slice';
@@ -14,11 +13,7 @@ export const rootReducer = combineReducers({
   organizationUnit: organizationUnitSlice.reducer,
   dashboard: dashboardSlice.reducer,
   notification: notificationReducer,
-  business: businessReducer
+  business: businessReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
-
-export function* rootSaga() {
-  yield all([]);
-}

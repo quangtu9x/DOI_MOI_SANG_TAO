@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Table, Button, Tag, Input, Space, Modal, message, Tooltip, Spin } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import { searchIdeas, receiveIdea, returnIdea } from '@/app/services/ideaPortalApi';
@@ -55,6 +55,13 @@ const formatDate = (v?: string | null) =>
 export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) => {
   const navigate = useNavigate();
   const cfg = MODE_CONFIG[mode];
+  const [searchParams] = useSearchParams();
+
+  // Lọc "quá hạn" — dùng đúng ngưỡng đang hiển thị ở Dashboard (slaGio: giờ, nguongNgay: ngày)
+  const quaHanOnly = searchParams.get('quaHan') === '1';
+  const slaGioParam = Number(searchParams.get('slaGio')) || null;
+  const nguongNgayParam = Number(searchParams.get('nguongNgay')) || null;
+
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -81,14 +88,40 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
 
   useEffect(() => { load(); }, [load]);
 
+  // Cùng logic tính "quá hạn" như IdeaReportsController.GetDashboardAsync:
+  // - Đã nộp (cho-duyet): quá hạn theo SubmittedOn + slaGio (giờ) hoặc + nguongNgay (ngày)
+  // - Đã tiếp nhận (da-duyet): quá hạn kiểm duyệt theo mốc tiếp nhận (xấp xỉ bằng lastModifiedOn) + nguongNgay (ngày)
+  const isQuaHan = useCallback((r: IIdea) => {
+    if (!quaHanOnly) return true;
+    const now = Date.now();
+
+    if (mode === 'cho-duyet') {
+      const submitted = r.submittedOn ?? r.submittedAt ?? r.createdOn;
+      if (!submitted) return false;
+      const elapsedMs = now - new Date(submitted).getTime();
+      if (slaGioParam) return elapsedMs > slaGioParam * 3600 * 1000;
+      if (nguongNgayParam) return elapsedMs > nguongNgayParam * 24 * 3600 * 1000;
+      return false;
+    }
+
+    if (mode === 'da-duyet' && nguongNgayParam) {
+      const tiepNhanRef = r.lastModifiedOn ?? r.submittedOn ?? r.createdOn;
+      if (!tiepNhanRef) return false;
+      return (now - new Date(tiepNhanRef).getTime()) > nguongNgayParam * 24 * 3600 * 1000;
+    }
+
+    return true;
+  }, [quaHanOnly, slaGioParam, nguongNgayParam, mode]);
+
   const data = useMemo(() => {
     return ideas
       .filter(r => r.status === cfg.status)
+      .filter(isQuaHan)
       .filter(r => !search
         || (r.title ?? '').toLowerCase().includes(search.toLowerCase())
         || (r.code ?? '').toLowerCase().includes(search.toLowerCase())
         || (r.nguoiDeXuat ?? '').toLowerCase().includes(search.toLowerCase()));
-  }, [ideas, search, cfg.status]);
+  }, [ideas, search, cfg.status, isQuaHan]);
 
   const countByStatus = (st: string) => ideas.filter(r => r.status === st).length;
 
@@ -254,6 +287,16 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
             <h3 className="card-title fw-bold text-gray-800">
               <Tag color={cfg.color} className="me-2 fs-6">{data.length}</Tag>
               {cfg.title}
+              {quaHanOnly && (
+                <>
+                  <Tag color="error" className="ms-2 fs-8">
+                    <i className="fa-regular fa-triangle-exclamation me-1" />Chỉ hiển thị hồ sơ quá hạn
+                  </Tag>
+                  <Link to={`/doi-moi-sang-tao/quy-trinh-duyet/${mode}`} className="fs-8 ms-2">
+                    Xóa lọc
+                  </Link>
+                </>
+              )}
             </h3>
             <div className="d-flex gap-2 align-items-center">
               <Input

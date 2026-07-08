@@ -1,9 +1,14 @@
 import React, { forwardRef, useEffect, useRef, useImperativeHandle } from 'react';
 import { HotTable, HotTableProps } from '@handsontable/react';
+import { registerAllModules } from 'handsontable/registry';
 
 import clsx from 'clsx';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
+
+// Đăng ký module handsontable tại đây (thay vì MasterInit) để chỉ tải khi
+// trang có bảng tính — mọi HotTable trong app đều render qua TDHotTable.
+registerAllModules();
 
 export interface TDHotTableProps extends HotTableProps {
   wrapperStyle?: React.CSSProperties;

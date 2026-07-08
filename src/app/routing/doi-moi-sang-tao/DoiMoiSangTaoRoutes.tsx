@@ -14,6 +14,7 @@ const DanhBaChuyenGiaPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-
 const CongDongPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/cong-dong/CongDongPage').then(m => ({ default: m.CongDongPage })));
 const NewsFeedPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed/NewsFeedPage').then(m => ({ default: m.NewsFeedPage })));
 const NewsFeedV2Page = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed-v2/NewsFeedV2Page').then(m => ({ default: m.NewsFeedV2Page })));
+const NewsFeedAdminPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/news-feed/NewsFeedAdminPage').then(m => ({ default: m.NewsFeedAdminPage })));
 const TimKiemPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/tim-kiem/TimKiemPage').then(m => ({ default: m.TimKiemPage })));
 const KTAnalyticsPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/analytics/KTAnalyticsPage').then(m => ({ default: m.KTAnalyticsPage })));
 const KTBaoCaoPage = lazy(() => import('@/app/pages/doi-moi-sang-tao/kho-tri-thuc/bao-cao/KTBaoCaoPage').then(m => ({ default: m.KTBaoCaoPage })));
@@ -75,7 +76,11 @@ export const DoiMoiSangTaoRoutes: FC = () => {
         <Route path="chuyen-gia" element={<DanhBaChuyenGiaPage />} />
         <Route path="cong-dong"  element={<CongDongPage />} />
         <Route path="news-feed"    element={<NewsFeedPage />} />
-        <Route path="news-feed-v2" element={<NewsFeedV2Page />} />
+        {/* Link cũ v2 → chuyển về bảng tin cá nhân hóa mới; trang V2 giữ tại news-feed-v2-cu */}
+        <Route path="news-feed-v2" element={<Navigate to="/doi-moi-sang-tao/kho-tri-thuc/news-feed" replace />} />
+        <Route path="news-feed-v2-cu" element={<NewsFeedV2Page />} />
+        {/* Quản trị News Feed: trọng số thuật toán + dashboard hiệu quả — admin only */}
+        <Route path="news-feed-admin" element={<AdminRoute element={<NewsFeedAdminPage />} />} />
         <Route path="tim-kiem"   element={<TimKiemPage />} />
         <Route path="bao-cao"    element={<ReviewerRoute element={<KTBaoCaoPage />} />} />
       </Route>
