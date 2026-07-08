@@ -25,7 +25,7 @@ const PortalRoutes = () => {
             <img src="/media/logos/logo-minimize.png" height="120px" className="light-logo" alt="Logo" />
             <div className="loader-wrapper">
               <span className="loader"></span>
-              <span className="loading-text">Loading...</span>
+              <span className="loading-text"></span>
             </div>
           </div>
         }>

@@ -23,7 +23,7 @@ const PortalLayout = () => {
         <img src="media/logos/logo-loading.png" width={500} height={80} className="light-logo" alt="TD light logo" />
         <div className="loader-wrapper">
           <span className="loader"></span>
-          <span className="loading-text">Loading...</span>
+          <span className="loading-text"></span>
         </div>
       </div>
     );

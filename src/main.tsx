@@ -35,7 +35,7 @@ if (container) {
         >
           <Provider store={store}>
             {/* Asynchronously persist redux stores and show `SplashScreen` while it's loading. */}
-            <PersistGate persistor={persistor} loading={<div>Loading...</div>}>
+            <PersistGate persistor={persistor} loading={<div></div>}>
               <AuthProvider>
                 <AppRoutes />
               </AuthProvider>

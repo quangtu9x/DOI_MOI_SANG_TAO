@@ -6,9 +6,9 @@ import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import {
   getIdeaDetail, getIdeaHistories, receiveIdea, returnIdea, recognizeIdea,
-  uploadIdeaFiles, addIdeaAttachments, getIdeaAttachmentDownloadUrl,
+  uploadIdeaFiles, addIdeaAttachments, getIdeaAttachmentDownloadUrl, getIdeaDashboard,
 } from '@/app/services/ideaPortalApi';
-import type { IIdea, IIdeaHistory, IIdeaAttachment } from '@/models/idea-portal';
+import type { IIdea, IIdeaHistory, IIdeaAttachment, IIdeaDashboard } from '@/models/idea-portal';
 import { TuongTacSection } from '@/app/components/tuong-tac/TuongTacSection';
 import { LoaiDoiTuong } from '@/app/models/knowledge-hub';
 import { useAuth } from '@/app/modules/auth';
@@ -73,6 +73,18 @@ export const ChiTietYTuongPage: React.FC = () => {
   const [idea, setIdea]           = useState<IIdea | null>(null);
   const [histories, setHistories] = useState<IIdeaHistory[]>([]);
   const [notFound, setNotFound]   = useState(false);
+  // Ngưỡng thời hạn xử lý từng bước (tiếp nhận / kiểm duyệt-công nhận) — lấy từ cấu hình chung
+  // dùng chung với Dashboard, để hiển thị đúng "hạn cần xử lý" tại bước hiện tại của hồ sơ.
+  const [thresholds, setThresholds] = useState<IIdeaDashboard | null>(null);
+
+  useEffect(() => {
+    getIdeaDashboard()
+      .then(res => {
+        const d = (res as any)?.data;
+        setThresholds(d?.data ?? d ?? null);
+      })
+      .catch(() => { /* không chặn hiển thị trang nếu lỗi tải ngưỡng */ });
+  }, []);
 
   // Trả lại (từ chối)
   const [rejectOpen, setRejectOpen]       = useState(false);
@@ -190,6 +202,28 @@ export const ChiTietYTuongPage: React.FC = () => {
   const statusMeta = STATUS_META[idea?.status ?? '']
     ?? { color: 'default', icon: 'fa-circle-question', label: idea?.status ?? 'Không rõ' };
 
+  // ── Hạn xử lý bước hiện tại (chỉ áp dụng khi hồ sơ đang chờ xử lý) ──────────
+  const receivedEntry = histories.find(h => h.actionType === 'Đã tiếp nhận');
+  const currentStepDeadline = (() => {
+    if (!idea || !thresholds) return null;
+    if (idea.status === 'Đã nộp') {
+      const from = idea.submittedOn ?? idea.submittedAt ?? idea.createdOn;
+      if (!from || !thresholds.thoiHanTiepNhanNgay) return null;
+      const due = new Date(from);
+      due.setDate(due.getDate() + thresholds.thoiHanTiepNhanNgay);
+      return { label: 'Hạn tiếp nhận', buoc: 'Chờ tiếp nhận', due };
+    }
+    if (idea.status === 'Đã tiếp nhận') {
+      const from = receivedEntry?.actionDate ?? idea.lastModifiedOn;
+      if (!from || !thresholds.thoiHanKiemDuyetCongNhanNgay) return null;
+      const due = new Date(from);
+      due.setDate(due.getDate() + thresholds.thoiHanKiemDuyetCongNhanNgay);
+      return { label: 'Hạn kiểm duyệt/công nhận', buoc: 'Chờ kiểm duyệt', due };
+    }
+    return null;
+  })();
+  const isCurrentStepOverdue = !!currentStepDeadline && currentStepDeadline.due.getTime() < Date.now();
+
   const breadcrumbs = [
     { title: 'Đổi mới sáng tạo', path: '/doi-moi-sang-tao/dashboard', isActive: false, isSeparator: false },
     { title: 'Quản lý ý tưởng', path: '/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach', isActive: false, isSeparator: false },
@@ -278,6 +312,25 @@ export const ChiTietYTuongPage: React.FC = () => {
                         Ngày nộp: <span className="text-gray-800 fw-semibold">{fmtDateTime(idea.submittedOn ?? idea.submittedAt)}</span>
                       </div>
                     </div>
+
+                    {currentStepDeadline && (
+                      <div
+                        className="d-flex align-items-center gap-2 mt-3 px-3 py-2 rounded fs-7"
+                        style={{
+                          background: isCurrentStepOverdue ? '#fef2f2' : '#eff6ff',
+                          border: `1px solid ${isCurrentStepOverdue ? '#fecaca' : '#bfdbfe'}`,
+                        }}
+                      >
+                        <i className={`fa-regular ${isCurrentStepOverdue ? 'fa-triangle-exclamation text-danger' : 'fa-hourglass-half text-primary'}`} />
+                        <span className="text-gray-700">
+                          <span className="fw-semibold">{currentStepDeadline.buoc}</span> — {currentStepDeadline.label}:
+                        </span>
+                        <span className={`fw-bold ${isCurrentStepOverdue ? 'text-danger' : 'text-primary'}`}>
+                          {currentStepDeadline.due.toLocaleString('vi-VN')}
+                        </span>
+                        {isCurrentStepOverdue && <Tag color="red" className="ms-1">Quá hạn</Tag>}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -413,22 +466,39 @@ export const ChiTietYTuongPage: React.FC = () => {
                       <Empty description="Chưa có lịch sử" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                     ) : (
                       <Timeline
-                        items={histories.map(h => ({
-                          color: HISTORY_DOT[h.actionType] ?? 'blue',
-                          children: (
-                            <div>
-                              <div className="fw-semibold fs-7 text-gray-800">{h.actionType}</div>
-                              {h.remark && (
-                                <div className="text-muted fs-8 mt-1" style={{ whiteSpace: 'pre-wrap' }}>
-                                  {h.remark}
+                        items={[
+                          ...histories.map(h => ({
+                            color: HISTORY_DOT[h.actionType] ?? 'blue',
+                            children: (
+                              <div>
+                                <div className="fw-semibold fs-7 text-gray-800">{h.actionType}</div>
+                                {h.remark && (
+                                  <div className="text-muted fs-8 mt-1" style={{ whiteSpace: 'pre-wrap' }}>
+                                    {h.remark}
+                                  </div>
+                                )}
+                                <div className="text-muted fs-9 mt-1">
+                                  <i className="fa-regular fa-clock me-1" />{fmtDateTime(h.actionDate)}
                                 </div>
-                              )}
-                              <div className="text-muted fs-9 mt-1">
-                                <i className="fa-regular fa-clock me-1" />{fmtDateTime(h.actionDate)}
                               </div>
-                            </div>
-                          ),
-                        }))}
+                            ),
+                          })),
+                          // Bước hiện tại đang chờ xử lý — hiển thị hạn cần xử lý ngay trong luồng lịch sử
+                          ...(currentStepDeadline ? [{
+                            color: isCurrentStepOverdue ? 'red' : 'gray',
+                            dot: <i className={`fa-regular ${isCurrentStepOverdue ? 'fa-triangle-exclamation' : 'fa-hourglass-half'}`} style={{ color: isCurrentStepOverdue ? '#ff4d4f' : '#8c8c8c' }} />,
+                            children: (
+                              <div>
+                                <div className="fw-semibold fs-7 text-gray-800">{currentStepDeadline.buoc} (đang chờ)</div>
+                                <div className={`fs-8 mt-1 ${isCurrentStepOverdue ? 'text-danger fw-semibold' : 'text-muted'}`}>
+                                  <i className="fa-regular fa-clock me-1" />
+                                  {currentStepDeadline.label}: {currentStepDeadline.due.toLocaleString('vi-VN')}
+                                  {isCurrentStepOverdue && <Tag color="red" className="ms-2">Quá hạn</Tag>}
+                                </div>
+                              </div>
+                            ),
+                          }] : []),
+                        ]}
                       />
                     )}
                   </div>

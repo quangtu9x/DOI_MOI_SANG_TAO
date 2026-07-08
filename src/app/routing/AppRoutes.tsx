@@ -9,7 +9,7 @@ const AuthPage = lazy(() => import('../modules/auth').then(m => ({ default: m.Au
 const PortalRoutes = lazy(() => import('./PortalRoutes').then(m => ({ default: m.PortalRoutes })));
 
 const withSuspense = (node: ReactNode) => (
-  <Suspense fallback={<div className="d-flex align-items-center justify-content-center py-10">Loading...</div>}>
+  <Suspense fallback={<div className="d-flex align-items-center justify-content-center py-10"></div>}>
     {node}
   </Suspense>
 );

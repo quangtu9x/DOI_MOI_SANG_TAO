@@ -576,3 +576,58 @@ body {
 .ant-steps-item-title {
   user-select: none !important
 }
+
+// ==========================================================================
+// Global readability fixes (toàn dự án):
+// - Chữ quá nhỏ (Metronic root font-size 13px làm .fs-7/.fs-8/.fs-9 quá bé)
+// - Chữ quá mờ (text-muted/text-gray-500/600 tương phản thấp)
+// - Chữ cách nhau quá rộng (letter-spacing mặc định của một số component)
+// - Quá nhiều khoảng trắng (padding/margin card, table, form quá rộng)
+// ==========================================================================
+
+html, body {
+  font-size: 14px !important;
+  letter-spacing: normal !important;
+}
+
+body, p, span, div, td, th, li, label,
+.fs-6, .fs-7, .fs-8, .fs-9 {
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+}
+
+// Tăng kích thước các mức chữ nhỏ để không bị "quá bé"
+.fs-9 { font-size: 0.85rem !important; }
+.fs-8 { font-size: 0.9rem !important; }
+.fs-7 { font-size: 0.95rem !important; }
+
+// Tăng độ tương phản của chữ mờ (text-muted / gray nhạt)
+.text-muted {
+  color: #5e6278 !important;
+}
+.text-gray-400 {
+  color: #78829d !important;
+}
+.text-gray-500,
+.text-gray-600 {
+  color: #4b5675 !important;
+}
+
+// Giảm bớt khoảng trắng thừa (card/table/form quá rộng)
+.card-body {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+.card-header {
+  min-height: 50px !important;
+}
+.ant-table-thead > tr > th,
+.ant-table-tbody > tr > td {
+  padding: 8px 12px !important;
+}
+.ant-form-item {
+  margin-bottom: 12px !important;
+}
+.ant-modal-body {
+  padding: 16px 20px !important;
+}

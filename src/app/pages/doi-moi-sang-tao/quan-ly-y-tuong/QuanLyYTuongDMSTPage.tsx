@@ -3,8 +3,9 @@ import { Table, Button, Space, Tag, Input, Select, Empty, Tooltip, Spin, message
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { searchIdeas } from '@/app/services/ideaPortalApi';
-import type { IIdea } from '@/models/idea-portal';
+import { searchIdeas, getIdeaDashboard } from '@/app/services/ideaPortalApi';
+import type { IIdea, IIdeaDashboard } from '@/models/idea-portal';
+import dayjs from 'dayjs';
 import { useAuth } from '@/app/modules/auth';
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 import { CauHinhXuLyYTuongModal } from './components/CauHinhXuLyYTuongModal';
@@ -70,6 +71,35 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
   const [donVi, setDonVi] = useState('');
   const [nguoiDeXuat, setNguoiDeXuat] = useState('');
   const [cauHinhOpen, setCauHinhOpen] = useState(false);
+  // Ngưỡng thời hạn xử lý (tiếp nhận / kiểm duyệt-công nhận) — dùng chung cấu hình với Dashboard,
+  // để tính cột "Hạn xử lý" ngay trên danh sách, không cần mở từng hồ sơ.
+  const [thresholds, setThresholds] = useState<IIdeaDashboard | null>(null);
+
+  useEffect(() => {
+    getIdeaDashboard()
+      .then(res => {
+        const d = (res as any)?.data;
+        setThresholds(d?.data ?? d ?? null);
+      })
+      .catch(() => { /* không chặn hiển thị danh sách nếu lỗi tải ngưỡng */ });
+  }, []);
+
+  /** Hạn xử lý bước hiện tại của 1 hồ sơ, dựa theo trạng thái + ngưỡng cấu hình. */
+  const getHanXuLy = useCallback((r: IIdea): { due: Date; buoc: string } | null => {
+    if (!thresholds) return null;
+    if (r.status === 'Đã nộp') {
+      const from = r.submittedOn ?? r.submittedAt ?? r.createdOn;
+      if (!from || !thresholds.thoiHanTiepNhanNgay) return null;
+      return { due: dayjs(from).add(thresholds.thoiHanTiepNhanNgay, 'day').toDate(), buoc: 'Chờ tiếp nhận' };
+    }
+    if (r.status === 'Đã tiếp nhận') {
+      // Chưa có ngày tiếp nhận riêng trong danh sách → dùng lastModifiedOn (thời điểm chuyển trạng thái gần nhất) làm mốc xấp xỉ.
+      const from = r.lastModifiedOn ?? r.submittedOn ?? r.createdOn;
+      if (!from || !thresholds.thoiHanKiemDuyetCongNhanNgay) return null;
+      return { due: dayjs(from).add(thresholds.thoiHanKiemDuyetCongNhanNgay, 'day').toDate(), buoc: 'Chờ kiểm duyệt' };
+    }
+    return null;
+  }, [thresholds]);
 
   // Đồng bộ lại nếu query param thay đổi (VD: bấm lại link khác từ Dashboard trong khi trang đang mở)
   useEffect(() => {
@@ -202,6 +232,25 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
       },
     },
     {
+      title: 'Hạn xử lý',
+      key: 'hanXuLy',
+      width: 150,
+      render: (_: unknown, record: IIdea) => {
+        const han = getHanXuLy(record);
+        if (!han) return <span className="text-muted">—</span>;
+        const overdue = han.due.getTime() < Date.now();
+        return (
+          <div>
+            <div className={`fs-8 ${overdue ? 'text-danger fw-semibold' : 'text-gray-700'}`}>
+              {dayjs(han.due).format('DD/MM/YYYY HH:mm')}
+            </div>
+            <div className="text-muted fs-9">{han.buoc}</div>
+            {overdue && <Tag color="red" className="mt-1">Quá hạn</Tag>}
+          </div>
+        );
+      },
+    },
+    {
       title: 'Thao tác',
       key: 'action',
       width: 100,
@@ -314,6 +363,7 @@ export const QuanLyYTuongDMSTPage: React.FC<QuanLyYTuongDMSTPageProps> = ({ myId
                     pagination={{ pageSize: 10, showSizeChanger: true }}
                     bordered
                     size="small"
+                    scroll={{ x: 1200 }}
                   />
                 )}
             </Spin>

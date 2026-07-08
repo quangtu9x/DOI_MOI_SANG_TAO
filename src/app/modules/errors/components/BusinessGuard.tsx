@@ -64,7 +64,7 @@ export const BusinessGuard: React.FC<BusinessGuardProps> = ({ children }) => {
                 <div className="d-flex flex-column flex-center flex-column-fluid">
                     <div className="text-center">
                         <div className="spinner-border text-primary mb-5" role="status" style={{ width: '3rem', height: '3rem' }}>
-                            <span className="visually-hidden">Loading...</span>
+                            <span className="visually-hidden"></span>
                         </div>
                         <h3 className="text-gray-700 fw-bold mb-3">Đang tải thông tin...</h3>
                         <p className="text-gray-500">Vui lòng chờ trong giây lát</p>

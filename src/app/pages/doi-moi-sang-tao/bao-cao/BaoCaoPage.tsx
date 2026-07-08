@@ -611,6 +611,9 @@ export const BaoCaoPage: React.FC = () => {
       ];
     }
 
+
+
+
     if (reportTemplate === 'chuong-trinh') {
       return [
         { title: 'Chương trình / Dự án', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },

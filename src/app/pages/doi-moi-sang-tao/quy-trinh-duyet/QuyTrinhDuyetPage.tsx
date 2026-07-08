@@ -3,8 +3,9 @@ import { Table, Button, Tag, Input, Space, Modal, message, Tooltip, Spin } from 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
-import { searchIdeas, receiveIdea, returnIdea } from '@/app/services/ideaPortalApi';
-import type { IIdea } from '@/models/idea-portal';
+import { searchIdeas, receiveIdea, returnIdea, getIdeaDashboard } from '@/app/services/ideaPortalApi';
+import type { IIdea, IIdeaDashboard } from '@/models/idea-portal';
+import dayjs from 'dayjs';
 
 interface QuyTrinhDuyetPageProps {
   mode: 'cho-duyet' | 'da-duyet' | 'tu-choi';
@@ -69,6 +70,13 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
   const [approveId, setApproveId] = useState<string | null>(null);
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [thresholds, setThresholds] = useState<IIdeaDashboard | null>(null);
+
+  useEffect(() => {
+    getIdeaDashboard()
+      .then((res: any) => setThresholds(res?.data ?? res))
+      .catch(() => {});
+  }, []);
 
   // Tải toàn bộ ý tưởng trong quy trình (3 trạng thái) để hiển thị số đếm + danh sách
   const load = useCallback(async () => {
@@ -112,6 +120,26 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
 
     return true;
   }, [quaHanOnly, slaGioParam, nguongNgayParam, mode]);
+
+  // Tính hạn xử lý bước hiện tại cho từng hồ sơ, cùng công thức với Dashboard/QuanLyYTuongDMSTPage
+  const getHanXuLy = useCallback((r: IIdea): { due: Date; buoc: string } | null => {
+    if (!thresholds) return null;
+    if (r.status === STATUS.choDuyet) {
+      const submitted = r.submittedOn ?? r.submittedAt ?? r.createdOn;
+      if (!submitted) return null;
+      const due = new Date(submitted);
+      due.setDate(due.getDate() + (thresholds.thoiHanTiepNhanNgay ?? 5));
+      return { due, buoc: 'Chờ tiếp nhận' };
+    }
+    if (r.status === STATUS.daDuyet) {
+      const receivedRef = r.lastModifiedOn ?? r.submittedOn ?? r.createdOn;
+      if (!receivedRef) return null;
+      const due = new Date(receivedRef);
+      due.setDate(due.getDate() + (thresholds.thoiHanKiemDuyetCongNhanNgay ?? 30));
+      return { due, buoc: 'Chờ kiểm duyệt' };
+    }
+    return null;
+  }, [thresholds]);
 
   const data = useMemo(() => {
     return ideas
@@ -204,6 +232,25 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
       key: 'submittedOn',
       width: 110,
       render: (v: string, record: IIdea) => formatDate(v ?? record.submittedAt ?? record.createdOn),
+    },
+    {
+      title: 'Hạn xử lý',
+      key: 'hanXuLy',
+      width: 160,
+      render: (_: unknown, record: IIdea) => {
+        const han = getHanXuLy(record);
+        if (!han) return '—';
+        const isOverdue = han.due.getTime() < Date.now();
+        return (
+          <div>
+            <div className={isOverdue ? 'text-danger fw-semibold' : ''}>
+              {dayjs(han.due).format('DD/MM/YYYY HH:mm')}
+            </div>
+            <div className="fs-8 text-muted">{han.buoc}</div>
+            {isOverdue && <Tag color="error" className="fs-8 mt-1">Quá hạn</Tag>}
+          </div>
+        );
+      },
     },
   ];
 
@@ -321,6 +368,7 @@ export const QuyTrinhDuyetPage: React.FC<QuyTrinhDuyetPageProps> = ({ mode }) =>
                 pagination={{ pageSize: 10 }}
                 bordered
                 size="small"
+                scroll={{ x: 1100 }}
                 locale={{ emptyText: cfg.emptyText }}
               />
             </Spin>

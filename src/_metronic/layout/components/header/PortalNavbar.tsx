@@ -66,8 +66,8 @@ export const PortalNavbar = () => {
       items: [
         { label: "Dashboard", to: "/doi-moi-sang-tao/dashboard", show: true },
         { label: "Danh sách ý tưởng", to: "/doi-moi-sang-tao/quan-ly-y-tuong/danh-sach", show: isReviewer },
-        { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi", show: true },
-        { label: "Quy trình phê duyệt", to: "/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet", show: isReviewer },
+        // { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi", show: true },
+        { label: "Chờ phê duyệt", to: "/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet", show: isReviewer },
         { label: "Sơ đồ quy trình", to: "/doi-moi-sang-tao/quy-trinh-duyet/so-do", show: true },
         { label: "Thông báo hệ thống", to: "/doi-moi-sang-tao/thong-bao", show: true },
         { label: "Báo cáo & thống kê", to: "/doi-moi-sang-tao/bao-cao", show: isReviewer },
