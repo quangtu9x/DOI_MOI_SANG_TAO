@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Input, Button, Tag, Modal, Form, Spin, Empty, Rate,
-  Avatar, Tabs, message, Tooltip, Divider, Card, Switch, Popconfirm, Select,
+  Avatar, Tabs, message, Tooltip, Divider, Card, Switch, Popconfirm, Select, Upload,
 } from 'antd';
+import type { RcFile, UploadFile } from 'antd/es/upload/interface';
 import debounce from 'lodash/debounce';
 import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
@@ -83,6 +84,24 @@ const LINH_VUC_OPTIONS = [
   'Thương mại', 'Nhân sự', 'Pháp lý', 'Kỹ thuật', 'Khác',
 ];
 
+const MIME_ICON: Record<string, string> = {
+  'application/pdf':                                             'fa-file-pdf text-danger',
+  'application/msword':                                          'fa-file-word text-primary',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'fa-file-word text-primary',
+  'application/vnd.ms-excel':                                    'fa-file-excel text-success',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'fa-file-excel text-success',
+  'application/vnd.ms-powerpoint':                               'fa-file-powerpoint text-warning',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'fa-file-powerpoint text-warning',
+};
+const getFileIcon = (mime?: string | null) =>
+  mime ? (MIME_ICON[mime] ?? 'fa-file text-muted') : 'fa-file text-muted';
+const formatBytes = (bytes?: number | null) => {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 export const DanhBaChuyenGiaPage: React.FC = () => {
   const { isReviewer, isAdmin, isChuyenGia } = useDMSTRole();
   // Chuyên gia được tự xác nhận/từ chối yêu cầu tư vấn gửi tới chính mình,
@@ -140,6 +159,11 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
   const [tuVanTarget, setTuVanTarget] = useState<IChuyenGia | null>(null);
   const [tuVanLoading, setTuVanLoading] = useState(false);
   const [tuVanForm] = Form.useForm();
+  // Tệp đính kèm — FE only, BE sẽ bổ sung API lưu trữ sau
+  const [tuVanFiles, setTuVanFiles] = useState<RcFile[]>([]);
+  const removeTuVanFile = (file: UploadFile | RcFile) => {
+    setTuVanFiles(prev => prev.filter(f => f.uid !== file.uid));
+  };
 
   // trường "Ý tưởng cần xin tư vấn" — tìm kiếm bất đồng bộ, không bắt buộc
   const [ideaOptions, setIdeaOptions]     = useState<{ value: string; label: string }[]>([]);
@@ -276,6 +300,7 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
       await createTuVan({ chuyenGiaId: tuVanTarget!.id, noiDung, ideaId });
       message.success('Đã gửi yêu cầu tư vấn');
       setTuVanOpen(false);
+      setTuVanFiles([]);
       if (profile?.id === tuVanTarget?.id) openProfile(profile!.id);
     } catch (e: any) { if (!e?.errorFields) message.error('Không gửi được yêu cầu'); }
     finally { setTuVanLoading(false); }
@@ -610,7 +635,7 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
                       </div>
                       <div className="d-flex gap-2">
                         <Button type="primary" icon={<i className="fa-regular fa-comments me-1" />}
-                          onClick={() => { setTuVanTarget(profile); tuVanForm.resetFields(); setIdeaOptions([]); setTuVanOpen(true); }}>
+                          onClick={() => { setTuVanTarget(profile); tuVanForm.resetFields(); setIdeaOptions([]); setTuVanFiles([]); setTuVanOpen(true); }}>
                           Gửi yêu cầu tư vấn
                         </Button>
                         <Button icon={<i className="fa-regular fa-star me-1" />}
@@ -806,7 +831,7 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
       </Modal>
 
       {/* ── Tư vấn Modal ──────────────────────────────────────────────────────── */}
-      <Modal open={tuVanOpen} onCancel={() => setTuVanOpen(false)}
+      <Modal open={tuVanOpen} onCancel={() => { setTuVanOpen(false); setTuVanFiles([]); }}
         title={`Gửi yêu cầu tư vấn — ${tuVanTarget?.hoTen ?? ''}`}
         onOk={submitTuVan} okText="Gửi yêu cầu" confirmLoading={tuVanLoading}>
         <Form form={tuVanForm} layout="vertical">
@@ -824,6 +849,38 @@ export const DanhBaChuyenGiaPage: React.FC = () => {
               onSearch={searchIdeaOptions}
               options={ideaOptions}
             />
+          </Form.Item>
+          <Form.Item label="Tệp đính kèm (tuỳ chọn)">
+            <Upload.Dragger
+              multiple
+              beforeUpload={(file) => { setTuVanFiles(prev => [...prev, file]); return false; }}
+              onRemove={(file) => removeTuVanFile(file)}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.png,.jpg,.jpeg,.gif"
+              fileList={tuVanFiles.map(f => ({
+                uid: f.uid, name: f.name, status: 'done', size: f.size, type: f.type,
+              } as UploadFile))}
+            >
+              <p className="ant-upload-drag-icon">
+                <i className="fa-regular fa-cloud-upload-alt fs-1 text-primary" />
+              </p>
+              <p className="ant-upload-text">Kéo thả hoặc click để chọn file (có thể chọn nhiều)</p>
+              <p className="ant-upload-hint text-muted fs-8">
+                Hỗ trợ PDF, Word, Excel, PowerPoint, TXT, ZIP, hình ảnh · Tối đa 50MB/file
+              </p>
+            </Upload.Dragger>
+            {tuVanFiles.length > 0 && (
+              <div className="mt-2 d-flex flex-column gap-2">
+                {tuVanFiles.map(file => (
+                  <div key={file.uid} className="p-2 border rounded bg-light d-flex align-items-center gap-2 flex-wrap">
+                    <i className={`fa-regular ${getFileIcon(file.type)} text-primary`} />
+                    <span className="fs-7 flex-grow-1">{file.name}</span>
+                    <span className="text-muted fs-8">{formatBytes(file.size)}</span>
+                    <Button size="small" type="text" danger icon={<i className="fa-regular fa-trash" />}
+                      onClick={() => removeTuVanFile(file)} />
+                  </div>
+                ))}
+              </div>
+            )}
           </Form.Item>
         </Form>
       </Modal>

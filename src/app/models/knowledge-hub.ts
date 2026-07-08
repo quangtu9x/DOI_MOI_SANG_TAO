@@ -473,6 +473,7 @@ export interface IBaiViet {
   tieuDe:      string;
   noiDung:     string;
   loaiBaiViet: LoaiBaiViet;
+  linhVucKHCNId?: string | null;
   tacGia?:     ITacGia;
   soLuotThich?: number;
   soBinhLuan?:  number;
@@ -492,6 +493,7 @@ export interface ICreateBaiVietRequest {
   tieuDe:      string;
   noiDung:     string;
   loaiBaiViet: LoaiBaiViet;
+  linhVucKHCNId?: string | null;
 }
 
 export interface IUpdateBaiVietRequest extends ICreateBaiVietRequest {

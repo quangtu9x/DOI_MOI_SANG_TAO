@@ -285,18 +285,11 @@ export const NewsFeedPage: React.FC = () => {
                     }}
                     options={LINH_VUC_OPTIONS}
                   />
-                  {isAdmin && (
-                    <Tooltip title="Cấu hình thuật toán & hiệu quả News Feed">
-                      <Link to="/doi-moi-sang-tao/kho-tri-thuc/news-feed-admin" className="btn btn-sm btn-light">
-                        <i className="fa-regular fa-sliders" />
-                      </Link>
-                    </Tooltip>
-                  )}
                 </div>
               </div>
 
               {/* Pill tabs chế độ feed */}
-              <div className="d-flex gap-2 flex-wrap mb-3">
+              <div className="d-flex align-items-center gap-2 flex-wrap mb-3">
                 {FEED_TABS.map(t => (
                   <button
                     key={t.key}
@@ -312,6 +305,13 @@ export const NewsFeedPage: React.FC = () => {
                     <i className={`fa-regular ${t.icon} me-1`} />{t.label}
                   </button>
                 ))}
+                {isAdmin && (
+                  <Tooltip title="Cấu hình thuật toán & hiệu quả News Feed">
+                    <Link to="/doi-moi-sang-tao/kho-tri-thuc/news-feed-admin" className="btn btn-sm btn-light ms-auto">
+                      <i className="fa-regular fa-gear" />
+                    </Link>
+                  </Tooltip>
+                )}
               </div>
 
               <Spin spinning={loading && items.length === 0}>
