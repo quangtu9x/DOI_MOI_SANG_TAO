@@ -116,6 +116,22 @@ export const exportIdeaReportWord = (nam?: number, range?: IKhoangThoiGian) => {
   return requestDownloadFile(`IdeaReports/export-word?${q}`, {});
 };
 
+/** Xuất MỘT mẫu báo cáo (bảng đang chọn) ra Word .docx — Times New Roman, header đậm/căn giữa/nền mờ, có border */
+export const exportIdeaReportWordMau = (payload: {
+  tieuDe: string;
+  phuDe?: string;
+  headers: string[];
+  rows: string[][];
+}) => requestDownloadFile('IdeaReports/export-word-mau', payload);
+
+/** Xuất MỘT mẫu báo cáo (bảng đang chọn) ra Excel .xlsx — cùng định dạng với Word mẫu */
+export const exportIdeaReportExcelMau = (payload: {
+  tieuDe: string;
+  phuDe?: string;
+  headers: string[];
+  rows: string[][];
+}) => requestDownloadFile('IdeaReports/export-excel-mau', payload);
+
 // ── Status transitions ────────────────────────────────────────────────────────
 
 export const submitIdea = (id: string, remark = '') =>

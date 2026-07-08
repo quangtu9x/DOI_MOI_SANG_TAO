@@ -750,13 +750,22 @@ export const BaoCaoPage: React.FC = () => {
     return `bao-cao-dmst-${objLabel}-${tmplLabel}-${timeLabel}`;
   };
 
+  /** Lưu Blob về máy với đúng tên file */
+  const saveBlob = (blob: Blob, name: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExport = async (format: 'csv' | 'excel' | 'pdf' | 'word') => {
     setExporting(true);
     setExportingFormat(format);
     try {
-      const { ext, label } = EXPORT_CONFIG[format];
+      const { label } = EXPORT_CONFIG[format];
       const fileName = getTemplateFileName();
 
+      // Tất cả định dạng đều xuất theo bảng của mẫu đang chọn (tạo file ngay tại FE)
       if (reportRows.length === 0) {
         message.warning('Không có dữ liệu để xuất cho mẫu báo cáo này!');
         return;
@@ -790,41 +799,175 @@ export const BaoCaoPage: React.FC = () => {
         URL.revokeObjectURL(url);
         message.success(`Đã xuất báo cáo "${selectedTemplate.label}" (CSV)`);
       } else if (format === 'excel') {
-        // Xuất Excel 1 sheet bằng HTML table (tương thích mọi trình duyệt)
-        const htmlTable = `
-          <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-          <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${selectedTemplate.label}</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
-          <body>
-          <table border="1" style="border-collapse:collapse;font-size:12px;">
-            <thead><tr>${headers.map(h => `<th style="background:#003087;color:#fff;padding:6px 10px;font-weight:bold;">${h}</th>`).join('')}</tr></thead>
-            <tbody>${dataRows.map((row: any[]) => `<tr>${row.map((val: any) => `<td style="padding:4px 8px;border:1px solid #ddd;">${val ?? ''}</td>`).join('')}</tr>`).join('')}</tbody>
-          </table>
-          </body></html>`;
-        const blob = new Blob([htmlTable], { type: 'application/vnd.ms-excel;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `${fileName}.xls`; a.click();
-        URL.revokeObjectURL(url);
-        message.success(`Đã xuất báo cáo "${selectedTemplate.label}" (Excel - 1 sheet)`);
+        // Xuất .xlsx ngay tại FE bằng exceljs: Times New Roman, tiêu đề bảng
+        // in đậm + căn giữa + nền mờ, border đầy đủ mọi ô
+        const em: any = await import('exceljs');
+        // Interop CJS/ESM: Workbook có thể nằm ở namespace, .default hoặc .default.default
+        const ExcelJS = em?.Workbook ? em : em?.default?.Workbook ? em.default : em?.default?.default;
+        if (!ExcelJS?.Workbook) throw new Error('Không tải được thư viện exceljs — hãy chạy pnpm install và khởi động lại dev server');
+        const wb = new ExcelJS.Workbook();
+        const sheetName = selectedTemplate.label.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31).trim() || 'BaoCao';
+        const ws = wb.addWorksheet(sheetName);
+        const soCot = headers.length;
+        const FONT = 'Times New Roman';
+        const borderAll = {
+          top: { style: 'thin' }, bottom: { style: 'thin' },
+          left: { style: 'thin' }, right: { style: 'thin' },
+        } as const;
+
+        // Tiêu đề + phụ đề + ngày xuất (merge ngang)
+        ws.mergeCells(1, 1, 1, soCot);
+        Object.assign(ws.getCell(1, 1), {
+          value: selectedTemplate.label.toUpperCase(),
+          font: { name: FONT, size: 14, bold: true },
+          alignment: { horizontal: 'center' },
+        });
+        ws.mergeCells(2, 1, 2, soCot);
+        Object.assign(ws.getCell(2, 1), {
+          value: `Đối tượng: ${REPORT_OBJECT_OPTIONS.find(x => x.value === reportObject)?.label ?? 'Tất cả'} | ${year === ALL_TIME ? 'Tất cả năm' : `Năm ${year}`}`,
+          font: { name: FONT, size: 12 },
+          alignment: { horizontal: 'center' },
+        });
+        ws.mergeCells(3, 1, 3, soCot);
+        Object.assign(ws.getCell(3, 1), {
+          value: `Xuất ngày: ${new Date().toLocaleString('vi-VN')}`,
+          font: { name: FONT, size: 10, italic: true },
+          alignment: { horizontal: 'center' },
+        });
+
+        // Hàng tiêu đề bảng (dòng 5): in đậm, căn giữa, nền mờ, border
+        const headerRowIdx = 5;
+        headers.forEach((h: any, i: number) => {
+          const c = ws.getCell(headerRowIdx, i + 1);
+          c.value = String(h ?? '');
+          c.font = { name: FONT, size: 12, bold: true };
+          c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E2F3' } };
+          c.border = borderAll as any;
+        });
+
+        // Dữ liệu: giữ số là số, border đầy đủ
+        dataRows.forEach((row: any[], r: number) => {
+          row.forEach((val: any, i: number) => {
+            const c = ws.getCell(headerRowIdx + 1 + r, i + 1);
+            c.value = typeof val === 'number' ? val : String(val ?? '');
+            c.font = { name: FONT, size: 12 };
+            c.border = borderAll as any;
+          });
+        });
+
+        // Độ rộng cột theo nội dung (tối đa 60)
+        for (let i = 0; i < soCot; i++) {
+          const maxLen = Math.max(String(headers[i] ?? '').length,
+            ...dataRows.map((r: any[]) => String(r[i] ?? '').length));
+          ws.getColumn(i + 1).width = Math.min(60, maxLen + 4);
+        }
+
+        const buf = await wb.xlsx.writeBuffer();
+        saveBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${fileName}.xlsx`);
+        message.success(`Đã xuất báo cáo "${selectedTemplate.label}" (Excel .xlsx)`);
+      } else if (format === 'word') {
+        // Word (.docx) tạo ngay tại FE bằng thư viện `docx`: Times New Roman,
+        // header đậm + căn giữa + nền mờ, bảng full-width có border đầy đủ
+        const dm: any = await import('docx');
+        // Interop CJS/ESM tương tự exceljs
+        const dx = dm?.Document ? dm : dm?.default?.Document ? dm.default : dm?.default?.default;
+        if (!dx?.Document) throw new Error('Không tải được thư viện docx — hãy chạy pnpm install và khởi động lại dev server');
+        const {
+          Document, Packer, Paragraph, TextRun, Table: DxTable, TableRow: DxRow,
+          TableCell: DxCell, WidthType, AlignmentType, BorderStyle, ShadingType,
+        } = dx;
+
+        const FONT = 'Times New Roman';
+        const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+        const lamPara = (text: string, opts: { bold?: boolean; size?: number; center?: boolean; italics?: boolean } = {}) =>
+          new Paragraph({
+            alignment: opts.center ? AlignmentType.CENTER : undefined,
+            children: [new TextRun({ text, font: FONT, bold: opts.bold, italics: opts.italics, size: opts.size ?? 24 })],
+          });
+
+        const headerRow = new DxRow({
+          tableHeader: true,
+          children: headers.map((h: any) => new DxCell({
+            shading: { type: ShadingType.CLEAR, color: 'auto', fill: 'D9E2F3' },
+            margins: { top: 60, bottom: 60, left: 100, right: 100 },
+            children: [new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: String(h ?? ''), font: FONT, bold: true, size: 24 })],
+            })],
+          })),
+        });
+
+        const bodyRows = dataRows.map((row: any[]) => new DxRow({
+          children: row.map((val: any) => new DxCell({
+            margins: { top: 60, bottom: 60, left: 100, right: 100 },
+            children: [lamPara(String(val ?? ''))],
+          })),
+        }));
+
+        const doc = new Document({
+          sections: [{
+            children: [
+              lamPara(selectedTemplate.label.toUpperCase(), { bold: true, size: 28, center: true }),
+              lamPara(`Đối tượng: ${REPORT_OBJECT_OPTIONS.find(x => x.value === reportObject)?.label ?? 'Tất cả'} | ${year === ALL_TIME ? 'Tất cả năm' : `Năm ${year}`}`, { center: true }),
+              lamPara(`Xuất ngày: ${new Date().toLocaleString('vi-VN')}`, { center: true, size: 20, italics: true }),
+              lamPara(' '),
+              new DxTable({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: {
+                  top: border, bottom: border, left: border, right: border,
+                  insideHorizontal: border, insideVertical: border,
+                },
+                rows: [headerRow, ...bodyRows],
+              }),
+            ],
+          }],
+        });
+
+        const docxBlob: Blob = await Packer.toBlob(doc);
+        saveBlob(docxBlob, `${fileName}.docx`);
+        message.success(`Đã xuất báo cáo "${selectedTemplate.label}" (Word .docx)`);
       } else {
-        // PDF / Word: xuất dưới dạng HTML để in/word
-        const htmlContent = `
-          <html>
-          <head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:12px;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;} th{background:#003087;color:#fff;font-weight:bold;}</style></head>
-          <body>
-          <h2 style="color:#003087;">${selectedTemplate.label}</h2>
-          <p style="color:#666;font-size:11px;">Đối tượng: ${REPORT_OBJECT_OPTIONS.find(x => x.value === reportObject)?.label} | ${year === ALL_TIME ? 'Tất cả năm' : `Năm ${year}`}</p>
-          <table>${dataRows.map((row: any[]) => `<tr>${row.map((val: any) => `<td>${val ?? ''}</td>`).join('')}</tr>`).join('')}</table>
-          </body></html>`;
-        const blob = new Blob([htmlContent], { type: format === 'pdf' ? 'text/html' : 'application/msword' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `${fileName}.${ext}`; a.click();
-        URL.revokeObjectURL(url);
+        // PDF tạo ngay tại FE bằng pdfmake (font Roboto kèm sẵn — hỗ trợ tiếng Việt)
+        // @ts-ignore — pdfmake không kèm type declaration cho deep import
+        const pdfMakeModule: any = await import('pdfmake/build/pdfmake');
+        // @ts-ignore
+        const pdfFontsModule: any = await import('pdfmake/build/vfs_fonts');
+        const pdfMake = pdfMakeModule.default ?? pdfMakeModule;
+        pdfMake.vfs = pdfFontsModule.default?.pdfMake?.vfs
+          ?? pdfFontsModule.pdfMake?.vfs
+          ?? pdfFontsModule.default?.vfs
+          ?? pdfFontsModule.vfs;
+
+        const soCot = headers.length;
+        const docDefinition: any = {
+          pageOrientation: soCot > 6 ? 'landscape' : 'portrait',
+          content: [
+            { text: selectedTemplate.label.toUpperCase(), bold: true, fontSize: 14, alignment: 'center' },
+            { text: `Đối tượng: ${REPORT_OBJECT_OPTIONS.find(x => x.value === reportObject)?.label ?? 'Tất cả'} | ${year === ALL_TIME ? 'Tất cả năm' : `Năm ${year}`}`, alignment: 'center', margin: [0, 2, 0, 0] },
+            { text: `Xuất ngày: ${new Date().toLocaleString('vi-VN')}`, alignment: 'center', fontSize: 9, italics: true, margin: [0, 2, 0, 10] },
+            {
+              table: {
+                headerRows: 1,
+                widths: Array(soCot).fill('*'),
+                body: [
+                  // Hàng tiêu đề: in đậm, căn giữa, nền mờ
+                  headers.map((h: any) => ({ text: String(h ?? ''), bold: true, alignment: 'center', fillColor: '#D9E2F3' })),
+                  ...dataRows.map((row: any[]) => row.map((val: any) => ({ text: String(val ?? '') }))),
+                ],
+              },
+              // layout mặc định của pdfmake đã kẻ border đầy đủ mọi ô
+            },
+          ],
+          defaultStyle: { fontSize: 10 },
+        };
+
+        pdfMake.createPdf(docDefinition).download(`${fileName}.pdf`);
         message.success(`Đã xuất báo cáo "${selectedTemplate.label}" (${label})`);
       }
-    } catch {
-      message.error('Không xuất được báo cáo');
+    } catch (e: any) {
+      console.error('[BaoCao] export error:', e);
+      message.error(`Không xuất được báo cáo: ${e?.message ?? e}`);
     } finally { setExporting(false); setExportingFormat(null); }
   };
 
