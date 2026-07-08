@@ -117,6 +117,8 @@ export interface IIdeaContribution {
   xepHang: number;
   diemThuong: number;
   huyHieu?: string | null;
+  /** Lượt tương tác nhận được (lượt xem + lượt thích + bình luận) trên các ý tưởng thuộc nhóm này. */
+  luotTuongTac: number;
 }
 
 export interface IIdeaContributionReport {
