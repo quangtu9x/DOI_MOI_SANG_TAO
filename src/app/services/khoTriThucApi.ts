@@ -352,12 +352,77 @@ export const toggleThich = (req: IThichRequest) =>
 
 // ── 8. News Feed ──────────────────────────────────────────────────────────────
 
-/** News Feed cá nhân (7 ngày gần nhất, lọc theo vai trò & lịch sử) */
-export const getNewsFeed = (pageNumber = 1, pageSize = 20, donViId?: string, linhVucKHCNId?: string) => {
+/** News Feed cá nhân hóa — cheDo: danh-cho-ban | noi-bat | don-vi | linh-vuc | trending | moi-nhat */
+export const getNewsFeed = (pageNumber = 1, pageSize = 20, donViId?: string, linhVucKHCNId?: string, cheDo?: string) => {
   const params = new URLSearchParams({ pageNumber: String(pageNumber), pageSize: String(pageSize) });
   if (donViId) params.append('donViId', donViId);
   if (linhVucKHCNId) params.append('linhVucKHCNId', linhVucKHCNId);
+  if (cheDo) params.append('cheDo', cheDo);
   return requestGET<IPaginationResponse<INewsFeedItem[]>>(`NewsFeed?${params}`);
+};
+
+// ── News Feed cá nhân hóa: hành vi, trọng số, hiệu quả ───────────────────────
+
+/** Loại hành vi người dùng (đồng bộ enum LoaiHanhVi BE) */
+export enum LoaiHanhVi {
+  HienThi = 0, Xem = 1, TimKiem = 2, Thich = 3, BinhLuan = 4,
+  ChiaSe = 5, Luu = 6, TheoDoi = 7, ThamGia = 8, DeXuat = 9, DangKyQuanTam = 10,
+}
+
+export interface IGhiNhanHanhVi {
+  loaiHanhVi: LoaiHanhVi;
+  loaiDoiTuong?: number;      // LoaiDoiTuong BE (1=TaiLieu, 2=BaiViet, 4=YTuong...)
+  doiTuongId?: string;
+  linhVucKHCNId?: string;
+  donViId?: string;
+  tacGiaNoiDungId?: string;
+  tuKhoa?: string;
+}
+
+/** Ghi nhận hành vi để hệ thống học sở thích — best-effort, không chặn UI */
+export const ghiNhanHanhVi = (req: IGhiNhanHanhVi) =>
+  requestPOST<IResult<string>>('NewsFeed/hanh-vi', req).catch(() => null);
+
+export interface INewsFeedTrongSo {
+  cungDonVi: number;
+  dungLinhVuc: number;
+  daTuongTac: number;
+  vaiTro: number;
+  trending: number;
+  moiDang: number;
+  chienDich: number;
+}
+
+/** Trọng số thuật toán xếp hạng hiện hành */
+export const getNewsFeedTrongSo = () =>
+  requestGET<IResult<INewsFeedTrongSo>>('NewsFeed/trong-so');
+
+/** Lưu trọng số (JSON vào AppConfig NewsFeed_TrongSo) */
+export const saveNewsFeedTrongSo = (trongSo: INewsFeedTrongSo) =>
+  requestPOST<IResult<boolean>>('appconfigs/createall', {
+    data: [{
+      key: 'NewsFeed_TrongSo',
+      value: JSON.stringify(trongSo),
+      description: 'Trong so thuat toan xep hang News Feed ca nhan hoa',
+      isActivePortal: false,
+    }],
+  });
+
+export interface INewsFeedHieuQuaTheoNgay { ngay: string; soHienThi: number; soXem: number; soTuongTac: number; }
+export interface INewsFeedHieuQua {
+  soHienThi: number; soXem: number; ctr: number;
+  soTimKiem: number; soThich: number; soBinhLuan: number; soChiaSe: number;
+  soLuu: number; soTheoDoi: number; soThamGia: number; soDeXuat: number; soDangKyQuanTam: number;
+  soNguoiDungHoatDong: number; tuongTacTrungBinhMoiNguoi: number;
+  theoNgay: INewsFeedHieuQuaTheoNgay[];
+}
+
+/** Dashboard hiệu quả News Feed (CTR, tương tác...) */
+export const getNewsFeedHieuQua = (tuNgay?: string, denNgay?: string) => {
+  const params = new URLSearchParams();
+  if (tuNgay) params.append('tuNgay', tuNgay);
+  if (denNgay) params.append('denNgay', denNgay);
+  return requestGET<IResult<INewsFeedHieuQua>>(`NewsFeed/hieu-qua?${params}`);
 };
 
 // ── 9. Phiên Bản Tài Liệu ────────────────────────────────────────────────────

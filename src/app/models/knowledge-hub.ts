@@ -513,6 +513,7 @@ export interface IThichRequest {
 export enum LoaiNewsFeedItem {
   TaiLieu = 0,
   BaiViet = 1,
+  YTuong = 2,
 }
 
 export interface INewsFeedItem {
@@ -522,12 +523,19 @@ export interface INewsFeedItem {
   moTa?:           string;
   tacGiaId?:       string;
   linhVucKHCNId?:  string;
+  tenLinhVuc?:     string | null;
   donViId?:        string;
   congDongId?:     string;
   soLuotThich?:    number;
   soBinhLuan?:     number;
+  luotXem?:        number;
+  daThich?:        boolean;
   createdOn?:      string;
   tacGia?:         ITacGia;
+  /** Điểm phù hợp (Relevance Score) do BE tính theo trọng số cấu hình */
+  diemPhuHop?:     number;
+  /** Lý do gợi ý: "Cùng đơn vị", "Lĩnh vực bạn quan tâm", "Đang thịnh hành"... */
+  lyDoGoiY?:       string[];
 }
 
 // ── Analytics (Phase 2A) ──────────────────────────────────────────────────────
