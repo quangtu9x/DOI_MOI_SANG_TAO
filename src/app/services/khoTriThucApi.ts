@@ -383,6 +383,14 @@ export interface IGhiNhanHanhVi {
 export const ghiNhanHanhVi = (req: IGhiNhanHanhVi) =>
   requestPOST<IResult<string>>('NewsFeed/hanh-vi', req).catch(() => null);
 
+/** Lĩnh vực quan tâm mặc định người dùng đã đăng ký */
+export const getLinhVucQuanTam = () =>
+  requestGET<IResult<string[]>>('NewsFeed/quan-tam');
+
+/** Cập nhật (đồng bộ) lĩnh vực quan tâm mặc định — bỏ chọn = hủy theo dõi */
+export const capNhatLinhVucQuanTam = (linhVucKHCNIds: string[]) =>
+  requestPOST<IResult<boolean>>('NewsFeed/quan-tam', { linhVucKHCNIds });
+
 export interface INewsFeedTrongSo {
   cungDonVi: number;
   dungLinhVuc: number;

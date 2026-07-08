@@ -15,6 +15,7 @@ import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import {
   getNewsFeed, toggleThich, ghiNhanHanhVi, searchChuyenGias, LoaiHanhVi,
+  getLinhVucQuanTam, capNhatLinhVucQuanTam,
 } from '@/app/services/khoTriThucApi';
 import { requestPOST } from '@/utils/baseAPI';
 import { LoaiDoiTuong, LoaiNewsFeedItem } from '@/app/models/knowledge-hub';
@@ -23,6 +24,13 @@ import { NguoiThichPopover } from '@/app/components/tuong-tac/NguoiThichPopover'
 import { useDMSTRole } from '@/app/hooks/useDMSTRole';
 
 const PAGE_SIZE = 20;
+
+// Danh sách lĩnh vực hàng không chuẩn — cùng thứ tự với LINH_VUC_OPTIONS ở form nộp ý tưởng.
+const LINH_VUC_HANG_KHONG = [
+  'Khai thác bay', 'Kỹ thuật bảo dưỡng', 'Dịch vụ hành khách', 'Dịch vụ mặt đất',
+  'Đào tạo nhân lực', 'Chuyển đổi số', 'Cải cách hành chính', 'An toàn hàng không',
+  'Thương mại & Doanh thu', 'Công nghệ thông tin',
+];
 
 const AVATAR_COLORS = ['#1677ff', '#52c41a', '#fa8c16', '#eb2f96', '#722ed1', '#13c2c2'];
 const getAvatarColor = (name: string) => AVATAR_COLORS[(name ?? '?').charCodeAt(0) % AVATAR_COLORS.length];
@@ -99,11 +107,26 @@ export const NewsFeedPage: React.FC = () => {
   const [goiYChuyenGia, setGoiYChuyenGia] = useState<IChuyenGia[]>([]);
 
   useEffect(() => {
+    // Lĩnh vực: cùng danh sách hàng không như form nộp ý tưởng (danh mục được BE seed);
+    // fallback toàn bộ danh mục nếu chưa seed.
     requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 200 })
       .then(res => {
         const d = res?.data;
         const list = Array.isArray(d?.data) ? d.data : [];
-        setLinhVucs(list.map((x: any) => ({ id: x.id, ten: x.ten ?? x.name ?? '' })));
+        const all = list.map((x: any) => ({ id: x.id, ten: (x.ten ?? x.name ?? '').trim() }));
+        const hk = all
+          .filter((x: any) => LINH_VUC_HANG_KHONG.includes(x.ten))
+          .sort((a: any, b: any) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
+        setLinhVucs(hk.length > 0 ? hk : all);
+      })
+      .catch(() => { /* ignore */ });
+
+    // Lĩnh vực quan tâm mặc định đã đăng ký
+    getLinhVucQuanTam()
+      .then(res => {
+        const d = (res as any)?.data;
+        const ids = d?.data ?? d;
+        if (Array.isArray(ids)) setQuanTamIds(ids);
       })
       .catch(() => { /* ignore */ });
 
@@ -184,15 +207,17 @@ export const NewsFeedPage: React.FC = () => {
     }
   };
 
-  // ── Đăng ký lĩnh vực quan tâm (học sở thích chủ động) ──────────────────────
+  // ── Cấu hình lĩnh vực theo dõi mặc định (đồng bộ: bỏ chọn = hủy theo dõi) ──
   const luuQuanTam = async () => {
-    if (quanTamIds.length === 0) { message.info('Chọn ít nhất một lĩnh vực'); return; }
     setSavingQuanTam(true);
     try {
-      await Promise.all(quanTamIds.map(id =>
-        ghiNhanHanhVi({ loaiHanhVi: LoaiHanhVi.DangKyQuanTam, linhVucKHCNId: id })));
-      message.success('Đã lưu lĩnh vực quan tâm — feed "Dành cho bạn" sẽ ưu tiên các lĩnh vực này');
+      const res = await capNhatLinhVucQuanTam(quanTamIds);
+      const ok = (res as any)?.status < 400 && (res as any)?.data?.succeeded !== false;
+      if (!ok) { message.error('Không lưu được lĩnh vực quan tâm'); return; }
+      message.success('Đã lưu lĩnh vực theo dõi mặc định — feed "Dành cho bạn" sẽ ưu tiên các lĩnh vực này');
       if (cheDo === 'danh-cho-ban' || cheDo === 'linh-vuc') loadFeed(1, true);
+    } catch {
+      message.error('Lỗi khi lưu lĩnh vực quan tâm');
     } finally {
       setSavingQuanTam(false);
     }
@@ -373,22 +398,23 @@ export const NewsFeedPage: React.FC = () => {
             {/* Lĩnh vực quan tâm */}
             <div className="shadow-sm mb-4" style={{ borderRadius: 12, background: '#fff', padding: '16px 20px' }}>
               <div className="fw-bold fs-6 text-gray-800 mb-1">
-                <i className="fa-regular fa-heart-circle-check text-danger me-2" />Lĩnh vực bạn quan tâm
+                <i className="fa-regular fa-heart-circle-check text-danger me-2" />Lĩnh vực theo dõi mặc định
               </div>
               <div className="text-muted fs-8 mb-3">
-                Đăng ký để feed "Dành cho bạn" ưu tiên đúng lĩnh vực. Hệ thống cũng tự học từ hành vi xem/thích của bạn.
+                Chọn các lĩnh vực muốn theo dõi — feed "Dành cho bạn" và tab "Theo lĩnh vực" sẽ ưu tiên
+                các lĩnh vực này. Bỏ chọn = hủy theo dõi. Hệ thống cũng tự học thêm từ hành vi xem/thích.
               </div>
               <Select
                 mode="multiple"
                 allowClear
                 className="w-100 mb-2"
-                placeholder="Chọn lĩnh vực quan tâm"
+                placeholder="Chọn lĩnh vực theo dõi"
                 value={quanTamIds}
                 onChange={setQuanTamIds}
                 options={linhVucs.map(lv => ({ value: lv.id, label: lv.ten }))}
               />
               <button className="btn btn-sm btn-primary w-100" onClick={luuQuanTam} disabled={savingQuanTam}>
-                {savingQuanTam ? <Spin size="small" /> : (<><i className="fa-regular fa-floppy-disk me-1" />Lưu lĩnh vực quan tâm</>)}
+                {savingQuanTam ? <Spin size="small" /> : (<><i className="fa-regular fa-floppy-disk me-1" />Lưu cấu hình theo dõi</>)}
               </button>
             </div>
 

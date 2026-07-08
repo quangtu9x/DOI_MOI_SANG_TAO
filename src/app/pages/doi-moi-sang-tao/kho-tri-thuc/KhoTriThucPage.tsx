@@ -9,8 +9,8 @@ const BASE_NAV_ITEMS = [
   { to: 'thu-vien',   label: 'Thư viện tài liệu',     icon: 'fa-books',             reviewerOnly: false },
   { to: 'chuyen-gia', label: 'Danh bạ chuyên gia',    icon: 'fa-user-tie',          reviewerOnly: false },
   { to: 'cong-dong',  label: 'Cộng đồng',              icon: 'fa-users',             reviewerOnly: false },
-  // { to: 'news-feed',    label: 'Bảng tin',                icon: 'fa-newspaper',         reviewerOnly: false },
-  { to: 'news-feed-v2', label: 'Bảng tin',             icon: 'fa-newspaper',         reviewerOnly: false },
+  // Bảng tin cá nhân hóa (Relevance Score + tabs + cấu hình lĩnh vực theo dõi)
+  { to: 'news-feed',    label: 'Bảng tin',             icon: 'fa-newspaper',         reviewerOnly: false },
   { to: 'tim-kiem',   label: 'Tìm kiếm',               icon: 'fa-magnifying-glass',  reviewerOnly: false },
   { to: 'bao-cao',    label: 'Báo cáo',                icon: 'fa-file-chart-column', reviewerOnly: true  },
 ];

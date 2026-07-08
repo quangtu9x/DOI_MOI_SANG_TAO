@@ -53,7 +53,7 @@ export const PortalNavbar = () => {
         { label: "Thư viện tài liệu", to: "/doi-moi-sang-tao/kho-tri-thuc/thu-vien" },
         { label: "Danh bạ chuyên gia", to: "/doi-moi-sang-tao/kho-tri-thuc/chuyen-gia" },
         { label: "Cộng đồng", to: "/doi-moi-sang-tao/kho-tri-thuc/cong-dong" },
-        { label: "Bảng tin", to: "/doi-moi-sang-tao/kho-tri-thuc/news-feed-v2" },
+        { label: "Bảng tin", to: "/doi-moi-sang-tao/kho-tri-thuc/news-feed" },
         { label: "Tìm kiếm tri thức", to: "/doi-moi-sang-tao/kho-tri-thuc/tim-kiem" },
       ]
     },
