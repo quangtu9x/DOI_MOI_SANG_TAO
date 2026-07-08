@@ -741,7 +741,7 @@ export const DashboardDoiMoiPage: React.FC = () => {
             {[
               { icon: 'fa-books', label: 'Kho tri thức', to: '/doi-moi-sang-tao/kho-tri-thuc' },
               { icon: 'fa-users', label: 'Cộng đồng', to: '/doi-moi-sang-tao/kho-tri-thuc/cong-dong' },
-              { icon: 'fa-newspaper', label: 'Bảng tin', to: '/doi-moi-sang-tao/kho-tri-thuc/news-feed' },
+              { icon: 'fa-newspaper', label: 'Bảng tin', to: '/doi-moi-sang-tao/kho-tri-thuc/news-feed-v2' },
             ].map((item, i) => (
               <Link
                 key={i}

@@ -14,10 +14,10 @@ import { ThemeModeComponent } from '../assets/ts/layout'
 import { useLayout } from './core'
 import { preloadEssentialConfigs } from '@/hooks'
 import { registerLicense } from '@syncfusion/ej2-base';
-import { registerAllModules } from 'handsontable/registry';
+// Tối ưu first-load: registerAllModules() của handsontable đã chuyển vào
+// @/app/components/tdhottable — chỉ tải khi trang thực sự dùng bảng tính.
 
 registerLicense('Ngo9BigBOggjHTQxAR8/V1NMaF1cW2hIfEx1RHxQdld5ZFRHallYTnNWUj0eQnxTdEBjW35WcHdWQ2BaVkV1Xw==');
-registerAllModules();
 
 export function MasterInit() {
   const { config } = useLayout()

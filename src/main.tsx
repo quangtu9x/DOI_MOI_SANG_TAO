@@ -11,10 +11,9 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { MetronicI18nProvider } from './_metronic/i18n/Metronici18n';
 import 'react-toastify/dist/ReactToastify.css';
 import './_metronic/assets/sass/style.react.scss';
-import './_metronic/assets/fonticon/fonticon.css';
+// Tối ưu first-load: chỉ giữ bộ icon thực dùng.
+// KTIcon mặc định iconType='duotone' (_LayoutConfig) — outline/solid/fonticon không được dùng.
 import './_metronic/assets/keenicons/duotone/style.css';
-import './_metronic/assets/keenicons/outline/style.css';
-import './_metronic/assets/keenicons/solid/style.css';
 import './_metronic/assets/sass/style.scss';
 import './app/styles/buttons.css';
 

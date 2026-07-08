@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="Hệ thống phần mềm quản trị đổi mới sáng tạo" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap"
       rel="stylesheet">
     <title>Đổi mới sáng tạo</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+    <!-- handsontable CSS: đã chuyển vào component TDHotTable (code-split theo route), không tải CDN toàn cục -->
     <link rel="shortcut icon" href="media/logos/logo.png" />
     <link rel="stylesheet" id="layout-styles-anchor" href="/splash-screen.css" />
   </head>
@@ -46,10 +48,10 @@
     <!--end::Loading markup-->
 
     <div id="root-modals"></div>
-    <!-- jsTree JS -->
-    <script src="/plugin/jquery.min.js"></script>
-    <script src="/plugin/jstree.min.js"></script>
-    <script src="/plugin/jstreetable.js"></script>
+    <!-- jsTree JS: defer để không chặn parse HTML; vẫn giữ thứ tự jquery -> jstree -> jstreetable -->
+    <script defer src="/plugin/jquery.min.js"></script>
+    <script defer src="/plugin/jstree.min.js"></script>
+    <script defer src="/plugin/jstreetable.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
