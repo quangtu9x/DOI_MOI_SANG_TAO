@@ -38,8 +38,8 @@ export const PortalNavbar = () => {
         { label: "Tra cứu hồ sơ", to: "/doi-moi/tra-cuu" },
         // Mục cá nhân — chỉ hiện khi đã đăng nhập (CBNV không còn menu Quản lý ĐMST)
         ...(currentUser ? [
-          { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi" },
-          { label: "Thông báo hệ thống", to: "/doi-moi-sang-tao/thong-bao" },
+          // { label: "Ý tưởng của tôi", to: "/doi-moi-sang-tao/quan-ly-y-tuong/cua-toi" },
+          // { label: "Thông báo hệ thống", to: "/doi-moi-sang-tao/thong-bao" },
         ] : []),
         // { label: "Import hàng loạt", to: "/doi-moi/y-tuong?mode=import" },
       ]
@@ -135,6 +135,12 @@ export const PortalNavbar = () => {
                 </ul>
               </li>
             ))}
+            
+            <li>
+              <Link to="/doi-moi-sang-tao/thong-bao" className="flex items-center h-[50px] px-5 text-white hover:bg-portal-hover transition-colors border-r border-white/5">
+                <i className="fa-regular fa-bell text-[18px]"></i>
+              </Link>
+            </li>
           </ul>
         </div>
       </nav>

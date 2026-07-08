@@ -97,51 +97,51 @@ const getApiError = (res: any): string | null => {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const LOAI_LABEL: Record<LoaiTaiLieu, string> = {
-  [LoaiTaiLieu.HuongDan]:         'Hướng dẫn',
-  [LoaiTaiLieu.Playbook]:         'Playbook',
-  [LoaiTaiLieu.Template]:         'Mẫu biểu',
-  [LoaiTaiLieu.NghienCuu]:        'Nghiên cứu',
-  [LoaiTaiLieu.TinhHuong]:        'Tình huống',
+  [LoaiTaiLieu.HuongDan]: 'Hướng dẫn',
+  [LoaiTaiLieu.Playbook]: 'Playbook',
+  [LoaiTaiLieu.Template]: 'Mẫu biểu',
+  [LoaiTaiLieu.NghienCuu]: 'Nghiên cứu',
+  [LoaiTaiLieu.TinhHuong]: 'Tình huống',
   [LoaiTaiLieu.BaiHocKinhNghiem]: 'Bài học KN',
 };
 
 const LOAI_COLOR: Record<LoaiTaiLieu, string> = {
-  [LoaiTaiLieu.HuongDan]:         'blue',
-  [LoaiTaiLieu.Playbook]:         'purple',
-  [LoaiTaiLieu.Template]:         'cyan',
-  [LoaiTaiLieu.NghienCuu]:        'geekblue',
-  [LoaiTaiLieu.TinhHuong]:        'orange',
+  [LoaiTaiLieu.HuongDan]: 'blue',
+  [LoaiTaiLieu.Playbook]: 'purple',
+  [LoaiTaiLieu.Template]: 'cyan',
+  [LoaiTaiLieu.NghienCuu]: 'geekblue',
+  [LoaiTaiLieu.TinhHuong]: 'orange',
   [LoaiTaiLieu.BaiHocKinhNghiem]: 'green',
 };
 
 const TRANG_THAI_LABEL: Record<TrangThaiTaiLieu, string> = {
-  [TrangThaiTaiLieu.NhapLieu]:    'Nháp',
+  [TrangThaiTaiLieu.NhapLieu]: 'Nháp',
   [TrangThaiTaiLieu.ChoXetDuyet]: 'Chờ duyệt',
-  [TrangThaiTaiLieu.DaXuatBan]:   'Đã xuất bản',
-  [TrangThaiTaiLieu.TuChoi]:      'Từ chối',
+  [TrangThaiTaiLieu.DaXuatBan]: 'Đã xuất bản',
+  [TrangThaiTaiLieu.TuChoi]: 'Từ chối',
 };
 
 const TRANG_THAI_COLOR: Record<TrangThaiTaiLieu, string> = {
-  [TrangThaiTaiLieu.NhapLieu]:    'default',
+  [TrangThaiTaiLieu.NhapLieu]: 'default',
   [TrangThaiTaiLieu.ChoXetDuyet]: 'processing',
-  [TrangThaiTaiLieu.DaXuatBan]:   'success',
-  [TrangThaiTaiLieu.TuChoi]:      'error',
+  [TrangThaiTaiLieu.DaXuatBan]: 'success',
+  [TrangThaiTaiLieu.TuChoi]: 'error',
 };
 
 const NGUON_LABEL: Record<LoaiNguonThamChieu, string> = {
-  [LoaiNguonThamChieu.DuAn]:     'Dự án',
+  [LoaiNguonThamChieu.DuAn]: 'Dự án',
   [LoaiNguonThamChieu.SangKien]: 'Sáng kiến',
-  [LoaiNguonThamChieu.YTuong]:   'Ý tưởng',
-  [LoaiNguonThamChieu.NhiemVu]:  'Nhiệm vụ',
+  [LoaiNguonThamChieu.YTuong]: 'Ý tưởng',
+  [LoaiNguonThamChieu.NhiemVu]: 'Nhiệm vụ',
 };
 
 const MIME_ICON: Record<string, string> = {
-  'application/pdf':                                             'fa-file-pdf text-danger',
-  'application/msword':                                          'fa-file-word text-primary',
+  'application/pdf': 'fa-file-pdf text-danger',
+  'application/msword': 'fa-file-word text-primary',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'fa-file-word text-primary',
-  'application/vnd.ms-excel':                                    'fa-file-excel text-success',
+  'application/vnd.ms-excel': 'fa-file-excel text-success',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'fa-file-excel text-success',
-  'application/vnd.ms-powerpoint':                               'fa-file-powerpoint text-warning',
+  'application/vnd.ms-powerpoint': 'fa-file-powerpoint text-warning',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'fa-file-powerpoint text-warning',
 };
 
@@ -160,9 +160,9 @@ const normalizeTL = (item: any): ITaiLieu => ({
   ...item,
   // Flatten thongTinFile into top-level fields
   duongDanLuuTru: item.thongTinFile?.duongDanLuuTru ?? item.duongDanLuuTru ?? null,
-  tenGoc:         item.thongTinFile?.tenGoc         ?? item.tenGoc         ?? null,
-  kichThuocBytes: item.thongTinFile?.kichThuocBytes  ?? item.kichThuocBytes  ?? null,
-  mimeType:       item.thongTinFile?.mimeType        ?? item.mimeType        ?? null,
+  tenGoc: item.thongTinFile?.tenGoc ?? item.tenGoc ?? null,
+  kichThuocBytes: item.thongTinFile?.kichThuocBytes ?? item.kichThuocBytes ?? null,
+  mimeType: item.thongTinFile?.mimeType ?? item.mimeType ?? null,
   // tags: BE gửi [{id, ten, soLanDung}] → cần string[]
   tags: (item.tags ?? []).map((t: any) =>
     typeof t === 'string' ? t : (t?.ten ?? '')
@@ -173,11 +173,11 @@ const normalizeDinhKem = (item: any): ITaiLieuDinhKem => {
   const thongTinFile = item.thongTinFile ?? (
     item.filePath || item.fileName || item.originalName || item.fileSize
       ? {
-          duongDanLuuTru: item.filePath ?? item.duongDanLuuTru ?? '',
-          tenGoc: item.fileName ?? item.originalName ?? item.tenGoc ?? '',
-          kichThuocBytes: item.fileSize ?? item.kichThuocBytes ?? 0,
-          mimeType: item.mimeType ?? item.fileExt ?? 'application/octet-stream',
-        }
+        duongDanLuuTru: item.filePath ?? item.duongDanLuuTru ?? '',
+        tenGoc: item.fileName ?? item.originalName ?? item.tenGoc ?? '',
+        kichThuocBytes: item.fileSize ?? item.kichThuocBytes ?? 0,
+        mimeType: item.mimeType ?? item.fileExt ?? 'application/octet-stream',
+      }
       : null
   );
 
@@ -220,29 +220,29 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const isAdmin = canApprove;
 
   // ── State
-  const [activeTab, setActiveTab]       = useState('danh-sach');
-  const [loading, setLoading]           = useState(false);
-  const [items, setItems]               = useState<ITaiLieu[]>([]);
-  const [total, setTotal]               = useState(0);
-  const [searchReq, setSearchReq]       = useState<ISearchTaiLieuRequest>(DEFAULT_SEARCH);
-  const [ranking, setRanking]           = useState<ITaiLieu[]>([]);
-  const [rankLoading, setRankLoading]   = useState(false);
+  const [activeTab, setActiveTab] = useState('danh-sach');
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<ITaiLieu[]>([]);
+  const [total, setTotal] = useState(0);
+  const [searchReq, setSearchReq] = useState<ISearchTaiLieuRequest>(DEFAULT_SEARCH);
+  const [ranking, setRanking] = useState<ITaiLieu[]>([]);
+  const [rankLoading, setRankLoading] = useState(false);
 
   // detail
-  const [detail, setDetail]             = useState<ITaiLieu | null>(null);
-  const [detailOpen, setDetailOpen]     = useState(false);
+  const [detail, setDetail] = useState<ITaiLieu | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [versions, setVersions]         = useState<any[]>([]);
-  const [dinhKems, setDinhKems]         = useState<ITaiLieuDinhKem[]>([]);
+  const [versions, setVersions] = useState<any[]>([]);
+  const [dinhKems, setDinhKems] = useState<ITaiLieuDinhKem[]>([]);
 
   // form
-  const [formOpen, setFormOpen]         = useState(false);
-  const [formMode, setFormMode]         = useState<'create' | 'edit'>('create');
-  const [formLoading, setFormLoading]   = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [formLoading, setFormLoading] = useState(false);
   const [form] = Form.useForm();
 
   // trường "Thuộc ý tưởng nào" — tìm kiếm bất đồng bộ, không bắt buộc
-  const [ideaOptions, setIdeaOptions]   = useState<{ value: string; label: string }[]>([]);
+  const [ideaOptions, setIdeaOptions] = useState<{ value: string; label: string }[]>([]);
   const [ideaSearching, setIdeaSearching] = useState(false);
   const searchIdeaOptions = useMemo(
     () => debounce((keyword: string) => {
@@ -255,26 +255,26 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             label: it.code ? `${it.code} - ${it.title}` : it.title,
           })));
         })
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => setIdeaSearching(false));
     }, 500),
     []
   );
 
   // file upload
-  const [uploadFile, setUploadFile]     = useState<RcFile | null>(null);
+  const [uploadFile, setUploadFile] = useState<RcFile | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploading, setUploading]       = useState(false);
-  const [extraFiles, setExtraFiles]     = useState<RcFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [extraFiles, setExtraFiles] = useState<RcFile[]>([]);
 
   // từ chối
-  const [tuChoiOpen, setTuChoiOpen]     = useState(false);
-  const [tuChoiId, setTuChoiId]         = useState('');
+  const [tuChoiOpen, setTuChoiOpen] = useState(false);
+  const [tuChoiId, setTuChoiId] = useState('');
   const [tuChoiForm] = Form.useForm();
 
   // nộp kiểm duyệt
-  const [nopOpen, setNopOpen]           = useState(false);
-  const [nopId, setNopId]               = useState('');
+  const [nopOpen, setNopOpen] = useState(false);
+  const [nopId, setNopId] = useState('');
   const [nopForm] = Form.useForm();
 
   // cấu hình quy trình kiểm duyệt/phê duyệt
@@ -287,8 +287,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [workflowForm] = Form.useForm();
 
   // chia sẻ
-  const [shareOpen, setShareOpen]       = useState(false);
-  const [shareTarget, setShareTarget]   = useState<ITaiLieu | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareTarget, setShareTarget] = useState<ITaiLieu | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareForm] = Form.useForm();
 
@@ -351,7 +351,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     try {
       const res = await getRankingTaiLieus(1, 10);
       setRanking(safeList<ITaiLieu>(res));
-    } catch {}
+    } catch { }
     finally { setRankLoading(false); }
   }, []);
 
@@ -436,21 +436,36 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     }
   };
 
-  // ── Dữ liệu cho các ô lọc bổ sung (Lĩnh vực KHCN, Đơn vị, Tags) ─────────────
+  // ── Dữ liệu cho các ô lọc bổ sung (Lĩnh vực, Đơn vị, Tags) ─────────────
   const [linhVucOptions, setLinhVucOptions] = useState<{ id: string; ten: string }[]>([]);
   const [donViOptions, setDonViOptions] = useState<{ id: string; name: string }[]>([]);
   const [tagOptions, setTagOptions] = useState<ITag[]>([]);
 
+  // Danh sách lĩnh vực hàng không chuẩn — cùng thứ tự với LINH_VUC_OPTIONS ở form nộp ý tưởng.
+  // Danh mục LinhVucKHCNs được BE seed các mục này; nếu danh mục có mục hàng không thì chỉ
+  // hiển thị đúng danh sách đó (theo thứ tự chuẩn), ngược lại fallback toàn bộ danh mục.
+  const LINH_VUC_HANG_KHONG = [
+    'Khai thác bay', 'Kỹ thuật bảo dưỡng', 'Dịch vụ hành khách', 'Dịch vụ mặt đất',
+    'Đào tạo nhân lực', 'Chuyển đổi số', 'Cải cách hành chính', 'An toàn hàng không',
+    'Thương mại & Doanh thu', 'Công nghệ thông tin',
+  ];
+
   useEffect(() => {
     requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 200 })
-      .then(res => setLinhVucOptions(safeList<any>(res).map((x: any) => ({ id: x.id, ten: x.ten ?? x.name ?? '' }))))
-      .catch(() => {});
+      .then(res => {
+        const all = safeList<any>(res).map((x: any) => ({ id: x.id, ten: (x.ten ?? x.name ?? '').trim() }));
+        const hk = all
+          .filter(x => LINH_VUC_HANG_KHONG.includes(x.ten))
+          .sort((a, b) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
+        setLinhVucOptions(hk.length > 0 ? hk : all);
+      })
+      .catch(() => { });
     searchOrganizationUnits({ pageNumber: 1, pageSize: 200 } as any)
       .then(res => setDonViOptions(safeList<any>(res).map((x: any) => ({ id: x.id, name: x.name ?? x.ten ?? '' }))))
-      .catch(() => {});
+      .catch(() => { });
     searchTags({ pageNumber: 1, pageSize: 200 })
       .then(res => setTagOptions(safeList<ITag>(res)))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // ── Cây thư mục tri thức ────────────────────────────────────────────────────
@@ -677,6 +692,10 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     form.setFieldsValue({
       ...item,
       tags: item.tags?.join(', '),
+      // Lĩnh vực hiển thị theo tên (giống form ý tưởng)
+      linhVuc: item.tenLinhVuc
+        || linhVucOptions.find(o => o.id === item.linhVucKHCNId)?.ten
+        || undefined,
     });
     setFormOpen(true);
   };
@@ -717,6 +736,10 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         tieuDe: values.tieuDe,
         moTa: values.moTa,
         loaiTaiLieu: values.loaiTaiLieu,
+        // Lĩnh vực chọn theo tên (giống form ý tưởng) -> quy đổi sang id danh mục khi lưu
+        linhVucKHCNId: values.linhVuc
+          ? (linhVucOptions.find(o => o.ten === values.linhVuc)?.id ?? null)
+          : null,
         urlNgoai: values.urlNgoai || null,
         loaiNguonThamChieu: values.loaiNguonThamChieu ?? null,
         tenNguonThamChieu: values.loaiNguonThamChieu ? (values.tenNguonThamChieu || null) : null,
@@ -737,7 +760,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         message.success('Tạo tài liệu thành công');
       } else {
         const editId = form.getFieldValue('id');
-        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true, capNhatThuMuc: true, capNhatIdea: true });
+        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true, capNhatThuMuc: true, capNhatIdea: true, capNhatUrlNgoai: true });
         taiLieuId = editId;
         message.success('Cập nhật thành công');
       }
@@ -818,7 +841,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       if (err) { message.error(err); return; }
       message.success('Đã từ chối tài liệu'); setTuChoiOpen(false);
       loadItems(); if (detail?.id === tuChoiId) openDetail(tuChoiId);
-    } catch {}
+    } catch { }
   };
   const handleDelete = async (id: string) => {
     try {
@@ -887,8 +910,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
           height: 4, borderRadius: '8px 8px 0 0',
           background: item.trangThai === TrangThaiTaiLieu.DaXuatBan ? '#52c41a'
             : item.trangThai === TrangThaiTaiLieu.ChoXetDuyet ? '#1677ff'
-            : item.trangThai === TrangThaiTaiLieu.TuChoi ? '#ff4d4f'
-            : '#d9d9d9',
+              : item.trangThai === TrangThaiTaiLieu.TuChoi ? '#ff4d4f'
+                : '#d9d9d9',
         }} />
         <div className="card-body d-flex flex-column p-4">
           {/* Header row */}
@@ -899,8 +922,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                 {item.duongDanLuuTru || item.tenGoc
                   ? <i className={`fa-regular ${getFileIcon(item.mimeType)} fs-4`} />
                   : item.urlNgoai
-                  ? <i className="fa-regular fa-link text-info fs-4" />
-                  : <i className="fa-regular fa-file-lines text-muted fs-4" />
+                    ? <i className="fa-regular fa-link text-info fs-4" />
+                    : <i className="fa-regular fa-file-lines text-muted fs-4" />
                 }
               </div>
               <div className="d-flex flex-column gap-1">
@@ -1131,121 +1154,122 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
             {/* ── Danh sách tài liệu ── */}
             <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Toolbar */}
-            <div className="card border-0 shadow-sm mb-5">
-              <div className="card-body py-4">
-                <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-                  <div className="d-flex gap-2 flex-wrap">
-                    <Input.Search key={filterResetKey} placeholder="Tìm kiếm tài liệu..." onSearch={onSearch} style={{ width: 260 }} allowClear defaultValue={searchReq.keyword ?? ''} />
-                    <Select placeholder="Loại tài liệu" allowClear value={searchReq.loaiTaiLieu ?? undefined} onChange={onLoaiChange} style={{ width: 170 }}>
-                      {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
-                    </Select>
-                    <Select placeholder="Trạng thái" allowClear value={searchReq.trangThai ?? undefined} onChange={onTrangThaiChange} style={{ width: 150 }}>
-                      {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
-                    </Select>
-                  </div>
-                  <div className="text-muted fs-8">
-                    <span className="badge badge-light-primary me-2">{total} tài liệu</span>
-                    Trang {searchReq.pageNumber}/{Math.max(1, totalPages)}
-                  </div>
-                </div>
-
-                <div className="d-flex gap-2 flex-wrap align-items-center">
-                  <UserSelect
-                    key={filterResetKey}
-                    placeholder="Tác giả"
-                    allowClear
-                    style={{ width: 190 }}
-                    onUserIdChange={onTacGiaChange}
-                  />
-                  <Select
-                    placeholder="Lĩnh vực KHCN"
-                    allowClear showSearch optionFilterProp="children"
-                    style={{ width: 190 }}
-                    value={searchReq.linhVucKHCNId ?? undefined}
-                    onChange={onLinhVucChange}
-                  >
-                    {linhVucOptions.map(lv => <Option key={lv.id} value={lv.id}>{lv.ten}</Option>)}
-                  </Select>
-                  <Select
-                    placeholder="Đơn vị"
-                    allowClear showSearch optionFilterProp="children"
-                    style={{ width: 190 }}
-                    value={searchReq.donViId ?? undefined}
-                    onChange={onDonViFilterChange}
-                  >
-                    {donViOptions.map(dv => <Option key={dv.id} value={dv.id}>{dv.name}</Option>)}
-                  </Select>
-                  <Select
-                    placeholder="Nguồn tham chiếu"
-                    allowClear
-                    style={{ width: 170 }}
-                    value={searchReq.loaiNguonThamChieu ?? undefined}
-                    onChange={onNguonChange}
-                  >
-                    {Object.entries(NGUON_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
-                  </Select>
-                  <Select
-                    mode="multiple"
-                    placeholder="Tags"
-                    allowClear showSearch optionFilterProp="children"
-                    style={{ minWidth: 190, maxWidth: 320 }}
-                    value={searchReq.tagIds ?? []}
-                    onChange={onTagsFilterChange}
-                    maxTagCount="responsive"
-                  >
-                    {tagOptions.map(t => <Option key={t.id} value={t.id}>{t.ten}</Option>)}
-                  </Select>
-                  <Checkbox checked={!!searchReq.quaHan} onChange={e => onQuaHanChange(e.target.checked)}>
-                    Quá hạn kiểm duyệt
-                  </Checkbox>
-                  {canApprove && (
-                    <Checkbox
-                      checked={!!searchReq.nguoiKiemDuyetId}
-                      onChange={e => onChiGiaoChoToiChange(e.target.checked)}
-                    >
-                      Chỉ giao cho tôi
-                    </Checkbox>
-                  )}
-                  {hasExtraFilters && (
-                    <Button size="small" type="link" onClick={onClearFilters}>
-                      <i className="fa-regular fa-filter-circle-xmark me-1" />Xóa lọc
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Grid */}
-            <Spin spinning={loading}>
-              {items.length === 0 && !loading ? (
-                <div className="text-center py-10">
-                  <Empty description={
-                    <div>
-                      <div className="text-gray-600 mb-3">Chưa có tài liệu nào. Hãy là người đầu tiên chia sẻ tri thức!</div>
-                      <Button type="primary" icon={<i className="fa-regular fa-plus me-1" />} onClick={openCreate}>
-                        Thêm tài liệu ngay
-                      </Button>
+              {/* Toolbar */}
+              <div className="card border-0 shadow-sm mb-5">
+                <div className="card-body py-4">
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                    <div className="d-flex gap-2 flex-wrap">
+                      <Input.Search key={filterResetKey} placeholder="Tìm kiếm tài liệu..." onSearch={onSearch} style={{ width: 260 }} allowClear defaultValue={searchReq.keyword ?? ''} />
+                      <Select placeholder="Loại tài liệu" allowClear value={searchReq.loaiTaiLieu ?? undefined} onChange={onLoaiChange} style={{ width: 170 }}>
+                        {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                      </Select>
+                      <Select placeholder="Trạng thái" allowClear value={searchReq.trangThai ?? undefined} onChange={onTrangThaiChange} style={{ width: 150 }}>
+                        {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                      </Select>
                     </div>
-                  } />
-                </div>
-              ) : (
-                <div className="row g-0">{items.map(renderCard)}</div>
-              )}
-            </Spin>
+                    <div className="text-muted fs-8">
+                      <span className="badge badge-light-primary me-2">{total} tài liệu</span>
+                      Trang {searchReq.pageNumber}/{Math.max(1, totalPages)}
+                    </div>
+                  </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="d-flex justify-content-center mt-5 gap-2">
-                <Button size="small" disabled={searchReq.pageNumber <= 1} onClick={() => onPageChange(searchReq.pageNumber - 1)}>
-                  <i className="fa-regular fa-chevron-left" />
-                </Button>
-                <span className="align-self-center fs-7">Trang {searchReq.pageNumber} / {totalPages}</span>
-                <Button size="small" disabled={searchReq.pageNumber >= totalPages} onClick={() => onPageChange(searchReq.pageNumber + 1)}>
-                  <i className="fa-regular fa-chevron-right" />
-                </Button>
+                  <div className="d-flex gap-2 flex-wrap align-items-center">
+                    <Select
+                      placeholder="Đơn vị"
+                      allowClear showSearch optionFilterProp="children"
+                      style={{ width: 190 }}
+                      value={searchReq.donViId ?? undefined}
+                      onChange={onDonViFilterChange}
+                    >
+                      {donViOptions.map(dv => <Option key={dv.id} value={dv.id}>{dv.name}</Option>)}
+                    </Select>
+                    <UserSelect
+                      key={filterResetKey}
+                      placeholder="Cá nhân"
+                      allowClear
+                      style={{ width: 190 }}
+                      onUserIdChange={onTacGiaChange}
+                    />
+                    <Select
+                      placeholder="Lĩnh vực"
+                      allowClear showSearch optionFilterProp="children"
+                      style={{ width: 190 }}
+                      value={searchReq.linhVucKHCNId ?? undefined}
+                      onChange={onLinhVucChange}
+                    >
+                      {linhVucOptions.map(lv => <Option key={lv.id} value={lv.id}>{lv.ten}</Option>)}
+                    </Select>
+
+                    <Select
+                      placeholder="Nguồn tham chiếu"
+                      allowClear
+                      style={{ width: 170 }}
+                      value={searchReq.loaiNguonThamChieu ?? undefined}
+                      onChange={onNguonChange}
+                    >
+                      {Object.entries(NGUON_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                    </Select>
+                    <Select
+                      mode="multiple"
+                      placeholder="Tags"
+                      allowClear showSearch optionFilterProp="children"
+                      style={{ minWidth: 190, maxWidth: 320 }}
+                      value={searchReq.tagIds ?? []}
+                      onChange={onTagsFilterChange}
+                      maxTagCount="responsive"
+                    >
+                      {tagOptions.map(t => <Option key={t.id} value={t.id}>{t.ten}</Option>)}
+                    </Select>
+                    <Checkbox checked={!!searchReq.quaHan} onChange={e => onQuaHanChange(e.target.checked)}>
+                      Quá hạn kiểm duyệt
+                    </Checkbox>
+                    {canApprove && (
+                      <Checkbox
+                        checked={!!searchReq.nguoiKiemDuyetId}
+                        onChange={e => onChiGiaoChoToiChange(e.target.checked)}
+                      >
+                        Chỉ giao cho tôi
+                      </Checkbox>
+                    )}
+                    {hasExtraFilters && (
+                      <Button size="small" type="link" onClick={onClearFilters}>
+                        <i className="fa-regular fa-filter-circle-xmark me-1" />Xóa lọc
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Grid */}
+              <Spin spinning={loading}>
+                {items.length === 0 && !loading ? (
+                  <div className="text-center py-10">
+                    <Empty description={
+                      <div>
+                        <div className="text-gray-600 mb-3">Chưa có tài liệu nào. Hãy là người đầu tiên chia sẻ tri thức!</div>
+                        <Button type="primary" icon={<i className="fa-regular fa-plus me-1" />} onClick={openCreate}>
+                          Thêm tài liệu ngay
+                        </Button>
+                      </div>
+                    } />
+                  </div>
+                ) : (
+                  <div className="row g-0">{items.map(renderCard)}</div>
+                )}
+              </Spin>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="d-flex justify-content-center mt-5 gap-2">
+                  <Button size="small" disabled={searchReq.pageNumber <= 1} onClick={() => onPageChange(searchReq.pageNumber - 1)}>
+                    <i className="fa-regular fa-chevron-left" />
+                  </Button>
+                  <span className="align-self-center fs-7">Trang {searchReq.pageNumber} / {totalPages}</span>
+                  <Button size="small" disabled={searchReq.pageNumber >= totalPages} onClick={() => onPageChange(searchReq.pageNumber + 1)}>
+                    <i className="fa-regular fa-chevron-right" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1634,11 +1658,22 @@ export const ThuVienTaiLieuPage: React.FC = () => {
               </Form.Item>
             </div>
             <div className="col-6">
-              <Form.Item name="tags" label="Tags (cách nhau bởi dấu phẩy)">
-                <Input placeholder="doi-moi, sang-tao, quy-trinh" />
+              {/* Giống form nộp ý tưởng: danh sách lĩnh vực hàng không cố định, giá trị là tên */}
+              <Form.Item name="linhVuc" label="Lĩnh vực">
+                <Select
+                  size="large"
+                  allowClear
+                  showSearch
+                  placeholder="Chọn hoặc nhập lĩnh vực"
+                  options={LINH_VUC_HANG_KHONG.map(v => ({ value: v, label: v }))}
+                />
               </Form.Item>
             </div>
           </div>
+
+          <Form.Item name="tags" label="Tags (cách nhau bởi dấu phẩy)">
+            <Input placeholder="doi-moi, sang-tao, quy-trinh" />
+          </Form.Item>
 
           <Form.Item name="thuMucId" label="Thư mục lưu trữ">
             <TreeSelect

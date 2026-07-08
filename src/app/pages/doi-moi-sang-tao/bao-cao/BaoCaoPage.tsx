@@ -159,6 +159,18 @@ const USAGE_BY_DEPT = DEPARTMENTS.map((name, i) => ({
   xepHang: i + 1,
 }));
 
+// Dữ liệu demo cố định cho báo cáo Người dùng & sử dụng hệ thống
+const USAGE_DEMO_DATA = [
+  { donVi: 'Ban Chuyển đổi số công nghệ', nguoiDungHoatDong: 156, tanSuatDangNhap: 4.5, tyLeSuDungTinhNang: 92, mucDoTuongTac: 'Cao', soYTuongDaNop: 38 },
+  { donVi: 'Ban Khai thác Bay', nguoiDungHoatDong: 134, tanSuatDangNhap: 3.8, tyLeSuDungTinhNang: 85, mucDoTuongTac: 'Cao', soYTuongDaNop: 29 },
+  { donVi: 'Ban Dịch vụ Hành khách', nguoiDungHoatDong: 98, tanSuatDangNhap: 3.2, tyLeSuDungTinhNang: 78, mucDoTuongTac: 'Trung bình', soYTuongDaNop: 22 },
+  { donVi: 'Ban Tài chính Kế toán', nguoiDungHoatDong: 72, tanSuatDangNhap: 2.8, tyLeSuDungTinhNang: 68, mucDoTuongTac: 'Trung bình', soYTuongDaNop: 15 },
+  { donVi: 'Ban Kỹ thuật', nguoiDungHoatDong: 118, tanSuatDangNhap: 3.5, tyLeSuDungTinhNang: 81, mucDoTuongTac: 'Cao', soYTuongDaNop: 26 },
+  { donVi: 'Ban Tổ chức và Nhân lựu', nguoiDungHoatDong: 65, tanSuatDangNhap: 2.5, tyLeSuDungTinhNang: 62, mucDoTuongTac: 'Trung bình', soYTuongDaNop: 11 },
+  { donVi: 'Ban An ninh hàng không', nguoiDungHoatDong: 45, tanSuatDangNhap: 2.1, tyLeSuDungTinhNang: 55, mucDoTuongTac: 'Thấp', soYTuongDaNop: 8 },
+  { donVi: 'Trung tâm Điều hành khai thác', nguoiDungHoatDong: 142, tanSuatDangNhap: 4.2, tyLeSuDungTinhNang: 88, mucDoTuongTac: 'Cao', soYTuongDaNop: 35 },
+];
+
 const REPORT_DATA = [
   { stt: 1, linhVuc: 'Khai thác bay', tongSo: 52, choDuyet: 7, daDuyet: 34, tuChoi: 6, congNhan: 5 },
   { stt: 2, linhVuc: 'Kỹ thuật bảo dưỡng', tongSo: 45, choDuyet: 8, daDuyet: 28, tuChoi: 5, congNhan: 4 },
@@ -513,13 +525,17 @@ export const BaoCaoPage: React.FC = () => {
         return data;
       }
       case 'usage': {
-        let data = USAGE_BY_DEPT.map(x => ({
+        let data = USAGE_DEMO_DATA.map(x => ({
           ten: x.donVi,
           soLuong: x.nguoiDungHoatDong,
-          ghiChu: `${x.tanSuatDangNhap} lần/tuần • ${x.tyLeSuDungTinhNang}% sử dụng`,
+          ghiChu: `${x.tanSuatDangNhap} lần/tuần • ${x.tyLeSuDungTinhNang}% sử dụng • ${x.mucDoTuongTac}`,
           linhVuc: '',
           donVi: x.donVi,
           chatLuong: '',
+          tanSuatDangNhap: x.tanSuatDangNhap,
+          tyLeSuDungTinhNang: x.tyLeSuDungTinhNang,
+          mucDoTuongTac: x.mucDoTuongTac,
+          soYTuongDaNop: x.soYTuongDaNop,
         }));
         data = filterByDonVi(data);
         return data;
@@ -625,7 +641,32 @@ export const BaoCaoPage: React.FC = () => {
       ];
     }
 
-    if (reportTemplate === 'usage' || reportTemplate === 'tuong-tac') {
+    if (reportTemplate === 'usage') {
+      return [
+        { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 220, fixed: 'left' as const,
+          render: (value: string) => <span className="fw-semibold">{value}</span>,
+        },
+        { title: 'Người dùng hoạt động', dataIndex: 'nguoiDungHoatDong', key: 'nguoiDungHoatDong', width: 150, align: 'center' as const,
+          render: (v: number) => <span className="fw-bold" style={{ color: '#003087' }}>{fmtNum(v)}</span>,
+        },
+        { title: 'Tần suất ĐN (lần/tuần)', dataIndex: 'tanSuatDangNhap', key: 'tanSuatDangNhap', width: 150, align: 'center' as const,
+          render: (v: number) => <span className="fw-semibold">{v}</span>,
+        },
+        { title: 'Tỷ lệ SD tính năng', dataIndex: 'tyLeSuDungTinhNang', key: 'tyLeSuDungTinhNang', width: 140, align: 'center' as const,
+          render: (v: number) => (
+            <span className="fw-bold" style={{ color: v >= 80 ? '#22c55e' : v >= 60 ? '#f59e0b' : '#ef4444' }}>{v}%</span>
+          ),
+        },
+        { title: 'Mức độ tương tác', dataIndex: 'mucDoTuongTac', key: 'mucDoTuongTac', width: 130, align: 'center' as const,
+          render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag>,
+        },
+        { title: 'Ý tưởng đã nộp', dataIndex: 'soYTuongDaNop', key: 'soYTuongDaNop', width: 120, align: 'center' as const,
+          render: (v: number) => <span className="fw-semibold">{v}</span>,
+        },
+      ];
+    }
+
+    if (reportTemplate === 'tuong-tac') {
       return [
         { title: '#', dataIndex: 'xepHang', key: 'xepHang', width: 50, fixed: 'left' as const, align: 'center' as const,
           render: (v: number) =>

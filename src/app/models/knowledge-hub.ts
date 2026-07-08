@@ -190,6 +190,8 @@ export interface IUpdateTaiLieuRequest extends ICreateTaiLieuRequest {
   capNhatThuMuc?: boolean;
   /** true → BE cập nhật lại ý tưởng liên quan theo ideaId (cho phép bỏ liên kết bằng null) */
   capNhatIdea?: boolean;
+  /** true → BE cập nhật lại liên kết ngoài theo urlNgoai (cho phép xóa bằng null) */
+  capNhatUrlNgoai?: boolean;
 }
 
 export interface ITuChoiRequest {
