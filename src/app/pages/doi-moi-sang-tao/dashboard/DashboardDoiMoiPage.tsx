@@ -64,29 +64,35 @@ const STATUS_COLORS: Record<string, string> = {
   'Được công nhận': 'purple',
 };
 
-type DashboardWidgetKey = 'feed' | 'kpi' | 'sla' | 'monthly' | 'status' | 'field';
+type DashboardWidgetKey = 'feed' | 'kpi' | 'sla' | 'cds' | 'monthly' | 'status' | 'field';
 
 const DASHBOARD_LAYOUT_STORAGE_KEY = 'dmst.dashboard.layout.v1';
-const DEFAULT_DASHBOARD_WIDGET_ORDER: DashboardWidgetKey[] = ['feed', 'kpi', 'sla', 'monthly', 'status', 'field'];
+const DEFAULT_DASHBOARD_WIDGET_ORDER: DashboardWidgetKey[] = ['feed', 'kpi', 'sla', 'cds', 'monthly', 'status', 'field'];
 
 const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetKey, string> = {
   feed: 'Hoạt động mới nhất',
   kpi: 'KPI tổng quan',
   sla: 'SLA / quá hạn',
+  cds: 'Tiến độ CĐS / R&D / Sandbox',
   monthly: 'Biểu đồ theo tháng',
   status: 'Phân bố theo trạng thái',
   field: 'Phân bổ theo lĩnh vực',
 };
 
+const DEFAULT_DASHBOARD_LAYOUT = () => ({
+  order: DEFAULT_DASHBOARD_WIDGET_ORDER,
+  visible: Object.fromEntries(DEFAULT_DASHBOARD_WIDGET_ORDER.map(k => [k, true])) as Record<DashboardWidgetKey, boolean>,
+});
+
 const readDashboardLayout = () => {
   if (typeof window === 'undefined') {
-    return { order: DEFAULT_DASHBOARD_WIDGET_ORDER, visible: Object.fromEntries(DEFAULT_DASHBOARD_WIDGET_ORDER.map(k => [k, true])) as Record<DashboardWidgetKey, boolean> };
+    return DEFAULT_DASHBOARD_LAYOUT();
   }
 
   try {
     const raw = window.localStorage.getItem(DASHBOARD_LAYOUT_STORAGE_KEY);
     if (!raw) {
-      return { order: DEFAULT_DASHBOARD_WIDGET_ORDER, visible: Object.fromEntries(DEFAULT_DASHBOARD_WIDGET_ORDER.map(k => [k, true])) as Record<DashboardWidgetKey, boolean> };
+      return DEFAULT_DASHBOARD_LAYOUT();
     }
 
     const parsed = JSON.parse(raw) as {
@@ -106,7 +112,7 @@ const readDashboardLayout = () => {
       }, {} as Record<DashboardWidgetKey, boolean>),
     };
   } catch {
-    return { order: DEFAULT_DASHBOARD_WIDGET_ORDER, visible: Object.fromEntries(DEFAULT_DASHBOARD_WIDGET_ORDER.map(k => [k, true])) as Record<DashboardWidgetKey, boolean> };
+    return DEFAULT_DASHBOARD_LAYOUT();
   }
 };
 
@@ -661,7 +667,7 @@ export const DashboardDoiMoiPage: React.FC = () => {
 
       case 'field':
         return (
-          <div className='card'>
+          <div className='card mb-4'>
             <div className='card-header border-0 pt-4 pb-2'>
               <h4 className='card-title fw-semibold text-gray-700 fs-7'>
                 <i className='fa-regular fa-chart-pie me-2' />Phân bổ theo lĩnh vực
@@ -701,8 +707,77 @@ export const DashboardDoiMoiPage: React.FC = () => {
     <>
       <PageTitle breadcrumbs={[]}>Tổng quan Đổi mới sáng tạo</PageTitle>
       <Content>
+        {/* ── Hero header: tiêu đề + hành động nhanh ── */}
+        <div
+          className='mb-5'
+          style={{
+            backgroundImage: `linear-gradient(120deg, ${VNA_BLUE} 0%, #0046A6 65%, #0a5bc4 100%)`,
+            backgroundColor: VNA_BLUE,
+            borderRadius: 14, padding: '20px 24px', color: '#fff',
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16,
+          }}
+        >
+          <div style={{ flex: '1 1 300px', minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: '1.12rem', lineHeight: 1.3 }}>
+              <i className='fa-regular fa-lightbulb-on me-2' style={{ color: VNA_GOLD }} />
+              Tổng quan Đổi mới sáng tạo
+            </div>
+            <div style={{ fontSize: '0.82rem', opacity: 0.75, marginTop: 4 }}>
+              Theo dõi ý tưởng, tiến độ xử lý hồ sơ và các chương trình CĐS / R&D / Sandbox
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <Link
+              to='/doi-moi-sang-tao/quan-ly-y-tuong/tao-moi'
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 18px',
+                borderRadius: 8, background: VNA_GOLD, color: '#1a1a1a',
+                fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none',
+              }}
+            >
+              <i className='fa-solid fa-plus' style={{ fontSize: 12 }} />
+              Đăng ý tưởng mới
+            </Link>
+            {[
+              { icon: 'fa-books', label: 'Kho tri thức', to: '/doi-moi-sang-tao/kho-tri-thuc' },
+              { icon: 'fa-users', label: 'Cộng đồng', to: '/doi-moi-sang-tao/kho-tri-thuc/cong-dong' },
+              { icon: 'fa-newspaper', label: 'Bảng tin', to: '/doi-moi-sang-tao/kho-tri-thuc/news-feed' },
+            ].map((item, i) => (
+              <Link
+                key={i}
+                to={item.to}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 14px',
+                  borderRadius: 8, background: 'rgba(255,255,255,0.12)',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  color: '#fff', fontSize: '0.83rem', fontWeight: 600, textDecoration: 'none',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.22)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.12)'; }}
+              >
+                <i className={`fa-regular ${item.icon}`} style={{ fontSize: 13, color: VNA_GOLD }} />
+                {item.label}
+              </Link>
+            ))}
+            <button
+              onClick={() => setLayoutModalOpen(true)}
+              title='Tùy biến giao diện'
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 38, height: 38, borderRadius: 8,
+                background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)',
+                color: '#fff', cursor: 'pointer',
+              }}
+            >
+              <i className='fa-regular fa-sliders' />
+            </button>
+          </div>
+        </div>
+
         {/* Stats row */}
-        <div className='row g-2 mb-6'>
+        {dashboardLayout.visible.kpi !== false && (
+        <div className='row g-2 mb-5'>
           {STATS.map((s, i) => (
             <div key={i} className='col-sm-6 col-xl-3'>
               <Link
@@ -728,62 +803,41 @@ export const DashboardDoiMoiPage: React.FC = () => {
             </div>
           ))}
         </div>
+        )}
 
-        {/* Missing KPI rows restored */}
-        {dash && (
-          <>
-            <div className='row g-2 mb-6'>
-              {[
-                { label: 'Thời gian xử lý trung bình', color: VNA_BLUE, value: dash.gioXuLyTrungBinh != null ? `${dash.gioXuLyTrungBinh} giờ` : '—', sub: `SLA ${dash.slaGio} giờ`, to: '/doi-moi-sang-tao/bao-cao' },
-                { label: 'Tỷ lệ đúng hạn', color: '#17C653', value: dash.tyLeDungHan != null ? `${dash.tyLeDungHan}%` : '—', sub: 'Tỷ lệ đạt SLA xử lý', to: '/doi-moi-sang-tao/bao-cao' },
-                { label: 'Hồ sơ đang chờ xử lý', color: '#F59F00', value: dash.soChoXuLy ?? 0, sub: 'Chưa chuyển sang bước tiếp theo', to: '/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet' },
-                { label: 'Tồn đọng quá hạn', color: '#F1416C', value: dash.soTonDong ?? 0, sub: dash.soTonDong > 0 ? 'Cần xử lý ngay' : 'Không có tồn đọng', to: `/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet?quaHan=1&slaGio=${dash.slaGio}` },
-              ].map((k, i) => (
-                <div key={i} className='col-6 col-xl-3'>
-                  <Link
-                    to={k.to}
-                    className='card card-flush h-100 text-decoration-none'
-                    style={{ borderLeft: `3px solid ${k.color}`, transition: 'box-shadow 0.15s, transform 0.15s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = 'none'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none'; }}
-                  >
-                    <div className='card-body py-2 px-3'>
-                      <div className='fs-9 fw-semibold text-gray-600 mb-1 text-truncate'>{k.label}</div>
-                      <div className='fs-4 fw-bold' style={{ color: k.color }}>{k.value}</div>
-                      <div className='fs-9 text-muted text-truncate'>{k.sub}</div>
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
-
-            <div className='row g-2 mb-6'>
-              {[
-                { label: 'Quá hạn tiếp nhận', color: '#F1416C', value: dash.soQuaHanTiepNhan ?? 0, sub: dash.soQuaHanTiepNhan > 0 ? `>${dash.thoiHanTiepNhanNgay} ngày` : 'Không có hồ sơ quá hạn', to: `/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet?quaHan=1&nguongNgay=${dash.thoiHanTiepNhanNgay}` },
-                { label: 'Quá hạn kiểm duyệt', color: '#B5179E', value: dash.soQuaHanKiemDuyet ?? 0, sub: dash.soQuaHanKiemDuyet > 0 ? `>${dash.thoiHanKiemDuyetCongNhanNgay} ngày` : 'Không có hồ sơ quá hạn', to: `/doi-moi-sang-tao/quy-trinh-duyet/da-duyet?quaHan=1&nguongNgay=${dash.thoiHanKiemDuyetCongNhanNgay}` },
-              ].map((k, i) => (
-                <div key={i} className='col-6 col-xl-3'>
-                  <Link
-                    to={k.to}
-                    className='card card-flush h-100 text-decoration-none'
-                    style={{ borderLeft: `3px solid ${k.color}`, transition: 'box-shadow 0.15s, transform 0.15s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = 'none'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none'; }}
-                  >
-                    <div className='card-body py-2 px-3'>
-                      <div className='fs-9 fw-semibold text-gray-600 mb-1 text-truncate'>{k.label}</div>
-                      <div className='fs-4 fw-bold' style={{ color: k.color }}>{k.value}</div>
-                      <div className='fs-9 text-muted text-truncate'>{k.sub}</div>
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </>
+        {/* SLA / quá hạn — gộp 1 hàng 6 thẻ compact */}
+        {dash && dashboardLayout.visible.sla !== false && (
+          <div className='row g-2 mb-5'>
+            {[
+              { label: 'Xử lý trung bình', color: VNA_BLUE, value: dash.gioXuLyTrungBinh != null ? `${dash.gioXuLyTrungBinh} giờ` : '—', sub: `SLA ${dash.slaGio} giờ`, to: '/doi-moi-sang-tao/bao-cao' },
+              { label: 'Tỷ lệ đúng hạn', color: '#17C653', value: dash.tyLeDungHan != null ? `${dash.tyLeDungHan}%` : '—', sub: 'Đạt SLA xử lý', to: '/doi-moi-sang-tao/bao-cao' },
+              { label: 'Đang chờ xử lý', color: '#F59F00', value: dash.soChoXuLy ?? 0, sub: 'Chưa chuyển bước', to: '/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet' },
+              { label: 'Tồn đọng quá hạn', color: '#F1416C', value: dash.soTonDong ?? 0, sub: dash.soTonDong > 0 ? 'Cần xử lý ngay' : 'Không tồn đọng', to: `/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet?quaHan=1&slaGio=${dash.slaGio}` },
+              { label: 'Quá hạn tiếp nhận', color: '#F1416C', value: dash.soQuaHanTiepNhan ?? 0, sub: dash.soQuaHanTiepNhan > 0 ? `>${dash.thoiHanTiepNhanNgay} ngày` : 'Không quá hạn', to: `/doi-moi-sang-tao/quy-trinh-duyet/cho-duyet?quaHan=1&nguongNgay=${dash.thoiHanTiepNhanNgay}` },
+              { label: 'Quá hạn kiểm duyệt', color: '#B5179E', value: dash.soQuaHanKiemDuyet ?? 0, sub: dash.soQuaHanKiemDuyet > 0 ? `>${dash.thoiHanKiemDuyetCongNhanNgay} ngày` : 'Không quá hạn', to: `/doi-moi-sang-tao/quy-trinh-duyet/da-duyet?quaHan=1&nguongNgay=${dash.thoiHanKiemDuyetCongNhanNgay}` },
+            ].map((k, i) => (
+              <div key={i} className='col-6 col-md-4 col-xl-2'>
+                <Link
+                  to={k.to}
+                  className='card card-flush h-100 text-decoration-none'
+                  style={{ borderLeft: `3px solid ${k.color}`, transition: 'box-shadow 0.15s, transform 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = 'none'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none'; }}
+                >
+                  <div className='card-body py-2 px-3'>
+                    <div className='fs-9 fw-semibold text-gray-600 mb-1 text-truncate'>{k.label}</div>
+                    <div className='fs-4 fw-bold' style={{ color: k.color }}>{k.value}</div>
+                    <div className='fs-9 text-muted text-truncate'>{k.sub}</div>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* ── Dashboard tiến độ CĐS / R&D / Sandbox (IV.12) ─────────────────── */}
-        <div className='row g-2 mb-6'>
+        {dashboardLayout.visible.cds !== false && (
+        <div className='row g-2 mb-5'>
           {/* Gantt */}
           <div className='col-xl-7'>
             <div className='card h-100'>
@@ -919,86 +973,10 @@ export const DashboardDoiMoiPage: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
 
-        {/* Main two-column layout */}
+        {/* Main two-column layout: feed trái, biểu đồ phải */}
         <div className='row g-5'>
-
-          {/* ── Right: Sidebar ── */}
-          <div className='col-xl-4'>
-
-            {/* Quick actions */}
-            <div style={{
-              background: `linear-gradient(135deg, ${VNA_BLUE} 0%, #0046A6 100%)`,
-              borderRadius: 12, padding: '20px 20px', marginBottom: 16, color: '#fff',
-            }}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 14 }}>
-                <i className='fa-regular fa-plus-circle me-2' style={{ color: VNA_GOLD }} />
-                Hành động nhanh
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { icon: 'fa-lightbulb', label: 'Đăng ý tưởng mới', to: '/doi-moi-sang-tao/quan-ly-y-tuong/tao-moi' },
-                  { icon: 'fa-books', label: 'Kho tri thức', to: '/doi-moi-sang-tao/kho-tri-thuc' },
-                  { icon: 'fa-users', label: 'Cộng đồng', to: '/doi-moi-sang-tao/kho-tri-thuc/cong-dong' },
-                  { icon: 'fa-newspaper', label: 'News Feed', to: '/doi-moi-sang-tao/kho-tri-thuc/news-feed' },
-                ].map((item, i) => (
-                  <Link
-                    key={i}
-                    to={item.to}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '9px 14px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
-                      color: '#fff', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500,
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.2)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.1)'; }}
-                  >
-                    <i className={`fa-regular ${item.icon}`} style={{ fontSize: 14, color: VNA_GOLD, width: 18 }} />
-                    {item.label}
-                    <i className='fa-regular fa-chevron-right' style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.6 }} />
-                  </Link>
-                ))}
-                <Button
-                  onClick={() => setLayoutModalOpen(true)}
-                  style={{
-                    marginTop: 4,
-                    borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.20)',
-                    background: 'rgba(255,255,255,0.12)',
-                    color: '#fff',
-                    textAlign: 'left',
-                    height: 42,
-                  }}
-                  icon={<i className='fa-regular fa-sliders' />}
-                >
-                  Tùy biến giao diện
-                </Button>
-              </div>
-            </div>
-
-            {/* Monthly mini chart */}
-            {visibleSidebarWidgets.map(widget => (
-              <div
-                key={widget}
-                draggable
-                onDragStart={() => setDraggingWidget(widget)}
-                onDragOver={e => e.preventDefault()}
-                onDrop={() => {
-                  if (draggingWidget) {
-                    reorderWidgetLayout(draggingWidget, widget);
-                  }
-                  handleWidgetDragEnd();
-                }}
-                onDragEnd={handleWidgetDragEnd}
-                style={{ cursor: 'move' }}
-              >
-                {renderSidebarWidget(widget)}
-              </div>
-            ))}
-
-          </div>
 
           {/* ── Left: Social Feed ── */}
           {feedVisible && (
@@ -1063,6 +1041,32 @@ export const DashboardDoiMoiPage: React.FC = () => {
             </div>
           )}
 
+          {/* ── Right: biểu đồ thống kê (kéo thả đổi vị trí) ── */}
+          {visibleSidebarWidgets.length > 0 && (
+            <div className={feedVisible ? 'col-xl-4' : 'col-12'}>
+              <div className={feedVisible ? '' : 'row g-4'}>
+                {visibleSidebarWidgets.map(widget => (
+                  <div
+                    key={widget}
+                    className={feedVisible ? '' : 'col-xl-4'}
+                    draggable
+                    onDragStart={() => setDraggingWidget(widget)}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={() => {
+                      if (draggingWidget) {
+                        reorderWidgetLayout(draggingWidget, widget);
+                      }
+                      handleWidgetDragEnd();
+                    }}
+                    onDragEnd={handleWidgetDragEnd}
+                    style={{ cursor: 'move' }}
+                  >
+                    {renderSidebarWidget(widget)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
 
@@ -1080,7 +1084,7 @@ export const DashboardDoiMoiPage: React.FC = () => {
         >
           <div className='d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4'>
             <div className='text-muted fs-7'>Chọn các ô cần hiển thị. Bạn có thể kéo thả trực tiếp các card trên dashboard để đổi vị trí.</div>
-            <Button size='small' onClick={() => setDashboardLayout(readDashboardLayout())}>
+            <Button size='small' onClick={() => setDashboardLayout(DEFAULT_DASHBOARD_LAYOUT())}>
               Khôi phục mặc định
             </Button>
           </div>
