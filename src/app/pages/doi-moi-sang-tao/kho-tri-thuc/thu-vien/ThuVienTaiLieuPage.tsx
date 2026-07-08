@@ -53,7 +53,7 @@ import type {
   ITag,
 } from '@/app/models/knowledge-hub';
 import { TrangThaiTaiLieu, LoaiTaiLieu, LoaiNguonThamChieu } from '@/app/models/knowledge-hub';
-import { requestPOST } from '@/utils/baseAPI';
+import { requestGET, requestPOST } from '@/utils/baseAPI';
 import { IPaginationResponse, IUserDetails } from '@/models';
 
 const { Option } = Select;
@@ -451,15 +451,28 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   ];
 
   useEffect(() => {
-    requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 200 })
+    // Đúng 10 lĩnh vực hàng không (BE ensure-on-read); fallback danh mục chung nếu BE cũ
+    requestGET<any>('NewsFeed/linh-vuc')
       .then(res => {
-        const all = safeList<any>(res).map((x: any) => ({ id: x.id, ten: (x.ten ?? x.name ?? '').trim() }));
-        const hk = all
-          .filter(x => LINH_VUC_HANG_KHONG.includes(x.ten))
-          .sort((a, b) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
-        setLinhVucOptions(hk.length > 0 ? hk : all);
+        const d = (res as any)?.data;
+        const list = d?.data ?? d;
+        if (Array.isArray(list) && list.length > 0) {
+          setLinhVucOptions(list.map((x: any) => ({ id: x.id, ten: x.ten })));
+          return;
+        }
+        throw new Error('empty');
       })
-      .catch(() => { });
+      .catch(() => {
+        requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 500 })
+          .then(res => {
+            const all = safeList<any>(res).map((x: any) => ({ id: x.id, ten: (x.ten ?? x.name ?? '').trim() }));
+            const hk = all
+              .filter(x => LINH_VUC_HANG_KHONG.includes(x.ten))
+              .sort((a, b) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
+            setLinhVucOptions(hk.length > 0 ? hk : all);
+          })
+          .catch(() => { });
+      });
     searchOrganizationUnits({ pageNumber: 1, pageSize: 200 } as any)
       .then(res => setDonViOptions(safeList<any>(res).map((x: any) => ({ id: x.id, name: x.name ?? x.ten ?? '' }))))
       .catch(() => { });

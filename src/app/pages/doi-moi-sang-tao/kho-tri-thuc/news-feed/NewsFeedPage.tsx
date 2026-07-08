@@ -15,7 +15,7 @@ import { Content } from '@/_metronic/layout/components/content';
 import { PageTitle } from '@/_metronic/layout/core';
 import {
   getNewsFeed, toggleThich, ghiNhanHanhVi, searchChuyenGias, LoaiHanhVi,
-  getLinhVucQuanTam, capNhatLinhVucQuanTam,
+  getLinhVucQuanTam, capNhatLinhVucQuanTam, getLinhVucHangKhong,
 } from '@/app/services/khoTriThucApi';
 import { requestPOST } from '@/utils/baseAPI';
 import { LoaiDoiTuong, LoaiNewsFeedItem } from '@/app/models/knowledge-hub';
@@ -97,36 +97,53 @@ export const NewsFeedPage: React.FC = () => {
   const [hasMore, setHasMore]   = useState(false);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
-  // ── Danh mục lĩnh vực (bộ lọc + đăng ký quan tâm) ──────────────────────────
+  // ── Lĩnh vực: hiển thị theo danh sách cứng như form khởi tạo ý tưởng ───────
+  // (value = tên; `linhVucs` chỉ là bảng tra tên → id danh mục khi gọi API)
   const [linhVucs, setLinhVucs]           = useState<{ id: string; ten: string }[]>([]);
-  const [linhVucFilter, setLinhVucFilter] = useState<string | undefined>(undefined);
-  const [quanTamIds, setQuanTamIds]       = useState<string[]>([]);
+  const [linhVucFilter, setLinhVucFilter] = useState<string | undefined>(undefined); // tên lĩnh vực
+  const [quanTamTens, setQuanTamTens]     = useState<string[]>([]);                  // tên lĩnh vực
+  const [quanTamIdsRaw, setQuanTamIdsRaw] = useState<string[]>([]);                  // id BE trả về
   const [savingQuanTam, setSavingQuanTam] = useState(false);
+
+  const LINH_VUC_OPTIONS = LINH_VUC_HANG_KHONG.map(v => ({ value: v, label: v }));
+  const idTheoTen = (ten?: string) => (ten ? linhVucs.find(x => x.ten === ten)?.id : undefined);
 
   // ── Gợi ý: chuyên gia có thể quan tâm ──────────────────────────────────────
   const [goiYChuyenGia, setGoiYChuyenGia] = useState<IChuyenGia[]>([]);
 
   useEffect(() => {
-    // Lĩnh vực: cùng danh sách hàng không như form nộp ý tưởng (danh mục được BE seed);
-    // fallback toàn bộ danh mục nếu chưa seed.
-    requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 200 })
+    // Lĩnh vực: đúng 10 lĩnh vực hàng không như form nộp ý tưởng — BE đảm bảo tồn tại
+    // trong danh mục (ensure-on-read). Fallback danh mục chung nếu endpoint chưa có (BE cũ).
+    getLinhVucHangKhong()
       .then(res => {
-        const d = res?.data;
-        const list = Array.isArray(d?.data) ? d.data : [];
-        const all = list.map((x: any) => ({ id: x.id, ten: (x.ten ?? x.name ?? '').trim() }));
-        const hk = all
-          .filter((x: any) => LINH_VUC_HANG_KHONG.includes(x.ten))
-          .sort((a: any, b: any) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
-        setLinhVucs(hk.length > 0 ? hk : all);
+        const d = (res as any)?.data;
+        const list = d?.data ?? d;
+        if (Array.isArray(list) && list.length > 0) {
+          setLinhVucs(list.map((x: any) => ({ id: x.id, ten: x.ten })));
+          return;
+        }
+        throw new Error('empty');
       })
-      .catch(() => { /* ignore */ });
+      .catch(() => {
+        requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 500 })
+          .then(res => {
+            const d = res?.data;
+            const list = Array.isArray(d?.data) ? d.data : [];
+            const all = list.map((x: any) => ({ id: x.id, ten: (x.ten ?? x.name ?? '').trim() }));
+            const hk = all
+              .filter((x: any) => LINH_VUC_HANG_KHONG.includes(x.ten))
+              .sort((a: any, b: any) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
+            setLinhVucs(hk.length > 0 ? hk : all);
+          })
+          .catch(() => { /* ignore */ });
+      });
 
-    // Lĩnh vực quan tâm mặc định đã đăng ký
+    // Lĩnh vực quan tâm mặc định đã đăng ký (id — quy đổi sang tên khi có bảng tra)
     getLinhVucQuanTam()
       .then(res => {
         const d = (res as any)?.data;
         const ids = d?.data ?? d;
-        if (Array.isArray(ids)) setQuanTamIds(ids);
+        if (Array.isArray(ids)) setQuanTamIdsRaw(ids);
       })
       .catch(() => { /* ignore */ });
 
@@ -138,11 +155,20 @@ export const NewsFeedPage: React.FC = () => {
       .catch(() => { /* ignore */ });
   }, []);
 
+  // Quy đổi id đã đăng ký → tên hiển thị (khi cả hai nguồn đã tải xong)
+  useEffect(() => {
+    if (linhVucs.length === 0 || quanTamIdsRaw.length === 0) return;
+    const tens = quanTamIdsRaw
+      .map(id => linhVucs.find(x => x.id === id)?.ten)
+      .filter((t): t is string => !!t);
+    if (tens.length > 0) setQuanTamTens(tens);
+  }, [linhVucs, quanTamIdsRaw]);
+
   // ── Tải bảng tin + ghi nhận hiển thị (impression cho CTR) ──────────────────
   const loadFeed = useCallback(async (p = 1, reset = false, mode = cheDo, lv = linhVucFilter) => {
     setLoading(true);
     try {
-      const res = await getNewsFeed(p, PAGE_SIZE, undefined, lv, mode);
+      const res = await getNewsFeed(p, PAGE_SIZE, undefined, idTheoTen(lv), mode);
       const d = (res as any)?.data;
       const data: INewsFeedItem[] = d?.data ?? [];
       const tot: number = d?.totalCount ?? 0;
@@ -159,7 +185,7 @@ export const NewsFeedPage: React.FC = () => {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cheDo, linhVucFilter, items.length]);
+  }, [cheDo, linhVucFilter, items.length, linhVucs]);
 
   useEffect(() => {
     setPage(1);
@@ -209,9 +235,15 @@ export const NewsFeedPage: React.FC = () => {
 
   // ── Cấu hình lĩnh vực theo dõi mặc định (đồng bộ: bỏ chọn = hủy theo dõi) ──
   const luuQuanTam = async () => {
+    // Quy đổi tên đã chọn → id danh mục (BE đảm bảo đủ 10 mục qua NewsFeed/linh-vuc)
+    const ids = quanTamTens.map(t => idTheoTen(t)).filter((x): x is string => !!x);
+    if (quanTamTens.length > 0 && ids.length === 0) {
+      message.error('Chưa tra được mã lĩnh vực — kiểm tra BE đã cập nhật bản mới chưa');
+      return;
+    }
     setSavingQuanTam(true);
     try {
-      const res = await capNhatLinhVucQuanTam(quanTamIds);
+      const res = await capNhatLinhVucQuanTam(ids);
       const ok = (res as any)?.status < 400 && (res as any)?.data?.succeeded !== false;
       if (!ok) { message.error('Không lưu được lĩnh vực quan tâm'); return; }
       message.success('Đã lưu lĩnh vực theo dõi mặc định — feed "Dành cho bạn" sẽ ưu tiên các lĩnh vực này');
@@ -248,11 +280,10 @@ export const NewsFeedPage: React.FC = () => {
                     onChange={v => {
                       setLinhVucFilter(v);
                       if (v) {
-                        const ten = linhVucs.find(x => x.id === v)?.ten;
-                        ghiNhanHanhVi({ loaiHanhVi: LoaiHanhVi.TimKiem, linhVucKHCNId: v, tuKhoa: ten });
+                        ghiNhanHanhVi({ loaiHanhVi: LoaiHanhVi.TimKiem, linhVucKHCNId: idTheoTen(v), tuKhoa: v });
                       }
                     }}
-                    options={linhVucs.map(lv => ({ value: lv.id, label: lv.ten }))}
+                    options={LINH_VUC_OPTIONS}
                   />
                   {isAdmin && (
                     <Tooltip title="Cấu hình thuật toán & hiệu quả News Feed">
@@ -409,9 +440,9 @@ export const NewsFeedPage: React.FC = () => {
                 allowClear
                 className="w-100 mb-2"
                 placeholder="Chọn lĩnh vực theo dõi"
-                value={quanTamIds}
-                onChange={setQuanTamIds}
-                options={linhVucs.map(lv => ({ value: lv.id, label: lv.ten }))}
+                value={quanTamTens}
+                onChange={setQuanTamTens}
+                options={LINH_VUC_OPTIONS}
               />
               <button className="btn btn-sm btn-primary w-100" onClick={luuQuanTam} disabled={savingQuanTam}>
                 {savingQuanTam ? <Spin size="small" /> : (<><i className="fa-regular fa-floppy-disk me-1" />Lưu cấu hình theo dõi</>)}

@@ -383,6 +383,10 @@ export interface IGhiNhanHanhVi {
 export const ghiNhanHanhVi = (req: IGhiNhanHanhVi) =>
   requestPOST<IResult<string>>('NewsFeed/hanh-vi', req).catch(() => null);
 
+/** Danh sách 10 lĩnh vực hàng không chuẩn — BE tự bổ sung vào danh mục nếu thiếu */
+export const getLinhVucHangKhong = () =>
+  requestGET<IResult<{ id: string; ten: string }[]>>('NewsFeed/linh-vuc');
+
 /** Lĩnh vực quan tâm mặc định người dùng đã đăng ký */
 export const getLinhVucQuanTam = () =>
   requestGET<IResult<string[]>>('NewsFeed/quan-tam');
