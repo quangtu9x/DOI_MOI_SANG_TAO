@@ -778,8 +778,17 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     nopForm.setFieldsValue({
       nguoiKiemDuyetId: defaultReviewerId,
     });
+    // Đã cấu hình danh sách người kiểm duyệt → cần tên hiển thị cho các lựa chọn
+    if (workflowConfig.nguoiKiemDuyetMacDinhUserIds.length > 0 && workflowReviewerOptions.length === 0) {
+      loadWorkflowReviewerOptions();
+    }
     setNopOpen(true);
   };
+
+  /** Lựa chọn người kiểm duyệt khi nộp: nếu đã cấu hình danh sách thì CHỈ được chọn trong danh sách */
+  const nopReviewerOptions = workflowConfig.nguoiKiemDuyetMacDinhUserIds.length > 0
+    ? workflowReviewerOptions.filter(o => workflowConfig.nguoiKiemDuyetMacDinhUserIds.includes(o.value))
+    : [];
   const handleNop = async () => {
     try {
       const { nguoiKiemDuyetId } = await nopForm.validateFields();
@@ -1946,7 +1955,9 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       >
         <div className="alert alert-info py-2 px-3 mb-3 fs-8">
           <i className="fa-regular fa-circle-info me-1" />
-          Bắt buộc chỉ định người kiểm duyệt trước khi nộp.
+          {workflowConfig.nguoiKiemDuyetMacDinhUserIds.length > 0
+            ? 'Chỉ được chọn người kiểm duyệt trong danh sách đã cấu hình của quy trình.'
+            : 'Bắt buộc chỉ định người kiểm duyệt trước khi nộp.'}
         </div>
         <Form form={nopForm} layout="vertical">
           <Form.Item
@@ -1954,11 +1965,24 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             label="Người kiểm duyệt"
             rules={[{ required: true, message: 'Vui lòng chỉ định người kiểm duyệt.' }]}
           >
-            <UserSelect
-              placeholder="Chỉ định người kiểm duyệt"
-              allowClear
-              onChange={(val: any) => nopForm.setFieldValue('nguoiKiemDuyetId', val?.value ?? val)}
-            />
+            {workflowConfig.nguoiKiemDuyetMacDinhUserIds.length > 0 ? (
+              // Đã cấu hình → CHỈ hiển thị những người trong danh sách
+              <Select
+                placeholder="Chọn người kiểm duyệt (theo cấu hình)"
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                loading={workflowReviewerLoading}
+                options={nopReviewerOptions}
+              />
+            ) : (
+              // Chưa cấu hình → cho phép tìm mọi người dùng như trước
+              <UserSelect
+                placeholder="Chỉ định người kiểm duyệt"
+                allowClear
+                onChange={(val: any) => nopForm.setFieldValue('nguoiKiemDuyetId', val?.value ?? val)}
+              />
+            )}
           </Form.Item>
         </Form>
       </Modal>

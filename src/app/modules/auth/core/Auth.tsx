@@ -28,9 +28,20 @@ const useAuth = () => {
   return useContext(AuthContext)
 }
 
+const USER_CACHE_KEY = 'cached_user_profile';
+
 const AuthProvider: FC<WithChildren> = ({ children }) => {
   const [auth, setAuth] = useState<AuthModel | undefined>(authHelper.getAuth())
-  const [currentUser, setCurrentUser] = useState<UserModel | undefined>()
+  const [currentUser, setCurrentUser] = useState<UserModel | undefined>(() => {
+    // Khôi phục user từ cache để tránh flash loading khi F5
+    try {
+      const cached = sessionStorage.getItem(USER_CACHE_KEY);
+      return cached ? JSON.parse(cached) : undefined;
+    } catch {
+      return undefined;
+    }
+  })
+
   const saveAuth = (auth: AuthModel | undefined) => {
     setAuth(auth)
     if (auth) {
@@ -50,6 +61,7 @@ const AuthProvider: FC<WithChildren> = ({ children }) => {
     }
     saveAuth(undefined)
     setCurrentUser(undefined)
+    sessionStorage.removeItem(USER_CACHE_KEY);
   }
 
   return (
@@ -63,7 +75,6 @@ const AuthInit: FC<WithChildren> = ({ children }) => {
   const { auth, currentUser, logout, setCurrentUser } = useAuth()
   const [showSplashScreen, setShowSplashScreen] = useState(true)
 
-  // We should request user by authToken (IN OUR EXAMPLE IT'S API_TOKEN) before rendering the application
   useEffect(() => {
     let mounted = true;
 
@@ -73,6 +84,10 @@ const AuthInit: FC<WithChildren> = ({ children }) => {
           const { data } = await getUserByToken()
           if (mounted && data) {
             setCurrentUser(data)
+            // Cache user để lần F5 sau không cần gọi API
+            try {
+              sessionStorage.setItem(USER_CACHE_KEY, JSON.stringify(data));
+            } catch {}
           }
         }
       } catch (error) {
@@ -84,9 +99,11 @@ const AuthInit: FC<WithChildren> = ({ children }) => {
     }
 
     if (auth && auth.token) {
-      // Khi có token, không chặn UI ở splash; tải profile nền để tránh treo lâu khi F5.
       setShowSplashScreen(false)
-      requestUser()
+      // Chỉ gọi API lấy user nếu chưa có cache
+      if (!currentUser) {
+        requestUser()
+      }
     } else {
       logout()
       setShowSplashScreen(false)

@@ -15,6 +15,46 @@ const VNA_GOLD = '#C5A028';
 
 const LV_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16'];
 
+// ── Dashboard tiến độ CĐS/R&D/Sandbox (IV.12) ────────────────────────────────
+// Mock — chờ module quản lý chương trình CĐS/R&D; số liệu đồng bộ với trang Báo cáo.
+interface ICdsProgram {
+  ten: string;
+  loai: 'CĐS' | 'R&D' | 'Sandbox';
+  trangThai: 'Đúng hạn' | 'Trễ tiến độ' | 'Rủi ro';
+  tienDo: number;    // % hoàn thành
+  nganSach: number;  // % ngân sách đã dùng
+  batDau: string;
+  ketThuc: string;
+  mocHoanThanh: number;
+  mocTong: number;
+}
+
+const CDS_DASHBOARD: ICdsProgram[] = [
+  { ten: 'Nền tảng dữ liệu hành khách 360°', loai: 'CĐS', trangThai: 'Đúng hạn', tienDo: 72, nganSach: 65, batDau: '2026-01-15', ketThuc: '2026-10-30', mocHoanThanh: 6, mocTong: 8 },
+  { ten: 'Sandbox AI dự báo bảo trì động cơ', loai: 'Sandbox', trangThai: 'Rủi ro', tienDo: 45, nganSach: 80, batDau: '2026-02-01', ketThuc: '2026-09-15', mocHoanThanh: 3, mocTong: 6 },
+  { ten: 'Ứng dụng di động cho phi hành đoàn', loai: 'CĐS', trangThai: 'Trễ tiến độ', tienDo: 30, nganSach: 55, batDau: '2026-03-10', ketThuc: '2026-08-31', mocHoanThanh: 2, mocTong: 5 },
+  { ten: 'Tự động hóa quy trình kế toán (RPA)', loai: 'CĐS', trangThai: 'Đúng hạn', tienDo: 90, nganSach: 88, batDau: '2025-11-01', ketThuc: '2026-07-31', mocHoanThanh: 4, mocTong: 4 },
+  { ten: 'R&D vật liệu tiết kiệm nhiên liệu', loai: 'R&D', trangThai: 'Đúng hạn', tienDo: 55, nganSach: 40, batDau: '2026-01-01', ketThuc: '2026-12-31', mocHoanThanh: 4, mocTong: 7 },
+];
+
+const CDS_STATUS_HEX: Record<ICdsProgram['trangThai'], string> = {
+  'Đúng hạn': '#22c55e',
+  'Trễ tiến độ': '#ef4444',
+  'Rủi ro': '#f59e0b',
+};
+
+/** Cảnh báo: trễ tiến độ / rủi ro / ngân sách vượt xa tiến độ (>15 điểm %) */
+const CDS_ALERTS = CDS_DASHBOARD.flatMap(p => {
+  const alerts: { ten: string; noiDung: string; mau: string; icon: string }[] = [];
+  if (p.trangThai === 'Trễ tiến độ')
+    alerts.push({ ten: p.ten, noiDung: `Trễ tiến độ — mới đạt ${p.tienDo}%, hoàn thành ${p.mocHoanThanh}/${p.mocTong} mốc`, mau: '#ef4444', icon: 'fa-clock-rotate-left' });
+  if (p.trangThai === 'Rủi ro')
+    alerts.push({ ten: p.ten, noiDung: `Có rủi ro — cần rà soát kế hoạch các mốc còn lại (${p.mocHoanThanh}/${p.mocTong})`, mau: '#f59e0b', icon: 'fa-triangle-exclamation' });
+  if (p.nganSach - p.tienDo > 15)
+    alerts.push({ ten: p.ten, noiDung: `Ngân sách đã dùng ${p.nganSach}% trong khi tiến độ mới ${p.tienDo}% — nguy cơ vượt ngân sách`, mau: '#b5179e', icon: 'fa-sack-dollar' });
+  return alerts;
+});
+
 const STATUS_COLORS: Record<string, string> = {
   'Bản nháp': 'default',
   'Đã nộp': 'processing',
@@ -741,6 +781,144 @@ export const DashboardDoiMoiPage: React.FC = () => {
             </div>
           </>
         )}
+
+        {/* ── Dashboard tiến độ CĐS / R&D / Sandbox (IV.12) ─────────────────── */}
+        <div className='row g-2 mb-6'>
+          {/* Gantt */}
+          <div className='col-xl-7'>
+            <div className='card h-100'>
+              <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
+                <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
+                  <i className='fa-regular fa-chart-gantt me-2' />
+                  Tiến độ chương trình CĐS / R&D / Sandbox (Gantt)
+                </h4>
+                <span className='badge badge-light fs-9'>Dữ liệu minh họa — chờ module chương trình</span>
+              </div>
+              <div className='card-body pt-0 pb-2'>
+                <ReactApexChart
+                  type='rangeBar'
+                  height={260}
+                  series={[{
+                    data: CDS_DASHBOARD.map(p => ({
+                      x: p.ten,
+                      y: [new Date(p.batDau).getTime(), new Date(p.ketThuc).getTime()],
+                      fillColor: CDS_STATUS_HEX[p.trangThai],
+                    })),
+                  }]}
+                  options={{
+                    chart: { toolbar: { show: false }, fontFamily: 'inherit' },
+                    plotOptions: { bar: { horizontal: true, barHeight: '55%', borderRadius: 4 } },
+                    xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'MM/yyyy' } },
+                    yaxis: { labels: { maxWidth: 260, style: { fontSize: '11px' } } },
+                    grid: { strokeDashArray: 4 },
+                    dataLabels: {
+                      enabled: true,
+                      formatter: (_v: unknown, opts: any) => `${CDS_DASHBOARD[opts.dataPointIndex]?.tienDo ?? 0}%`,
+                      style: { fontSize: '10px' },
+                    },
+                    tooltip: {
+                      custom: ({ dataPointIndex }: any) => {
+                        const p = CDS_DASHBOARD[dataPointIndex];
+                        return `<div style="padding:8px 12px;font-size:12px">
+                          <b>${p.ten}</b><br/>Loại: ${p.loai} · ${p.trangThai}<br/>
+                          Tiến độ: ${p.tienDo}% · Ngân sách: ${p.nganSach}%<br/>
+                          Mốc: ${p.mocHoanThanh}/${p.mocTong}</div>`;
+                      },
+                    },
+                    annotations: {
+                      xaxis: [{
+                        x: Date.now(),
+                        borderColor: VNA_GOLD,
+                        strokeDashArray: 4,
+                        label: {
+                          text: 'Hôm nay',
+                          orientation: 'horizontal',
+                          style: { background: VNA_GOLD, color: '#fff', fontSize: '10px' },
+                        },
+                      }],
+                    },
+                  }}
+                />
+                <div className='d-flex gap-4 justify-content-center fs-9 text-muted pb-1'>
+                  {(Object.keys(CDS_STATUS_HEX) as Array<keyof typeof CDS_STATUS_HEX>).map(k => (
+                    <span key={k}>
+                      <span className='d-inline-block rounded-circle me-1' style={{ width: 8, height: 8, background: CDS_STATUS_HEX[k] }} />
+                      {k}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tiến độ vs ngân sách + cảnh báo */}
+          <div className='col-xl-5'>
+            <div className='card mb-2'>
+              <div className='card-header border-0 pt-4 pb-2'>
+                <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
+                  <i className='fa-regular fa-bars-progress me-2' />Tiến độ & ngân sách từng chương trình
+                </h4>
+              </div>
+              <div className='card-body pt-1 pb-3'>
+                {CDS_DASHBOARD.map((p, i) => (
+                  <div key={i} className='mb-3'>
+                    <div className='d-flex justify-content-between align-items-center mb-1'>
+                      <span className='fs-8 fw-semibold text-gray-700 text-truncate' style={{ maxWidth: '70%' }}>
+                        {p.ten}
+                      </span>
+                      <span className='fs-9 fw-semibold' style={{ color: CDS_STATUS_HEX[p.trangThai] }}>
+                        {p.trangThai}
+                      </span>
+                    </div>
+                    {/* Tiến độ */}
+                    <div className='d-flex align-items-center gap-2 mb-1'>
+                      <span className='fs-9 text-muted' style={{ width: 62, flexShrink: 0 }}>Tiến độ</span>
+                      <div className='bg-light rounded flex-grow-1' style={{ height: 6 }}>
+                        <div className='rounded' style={{ height: 6, width: `${p.tienDo}%`, background: CDS_STATUS_HEX[p.trangThai] }} />
+                      </div>
+                      <span className='fs-9 fw-semibold' style={{ width: 34, textAlign: 'right' }}>{p.tienDo}%</span>
+                    </div>
+                    {/* Ngân sách */}
+                    <div className='d-flex align-items-center gap-2'>
+                      <span className='fs-9 text-muted' style={{ width: 62, flexShrink: 0 }}>Ngân sách</span>
+                      <div className='bg-light rounded flex-grow-1' style={{ height: 6 }}>
+                        <div className='rounded' style={{
+                          height: 6, width: `${Math.min(p.nganSach, 100)}%`,
+                          background: p.nganSach - p.tienDo > 15 ? '#b5179e' : '#94a3b8',
+                        }} />
+                      </div>
+                      <span className='fs-9 fw-semibold' style={{ width: 34, textAlign: 'right' }}>{p.nganSach}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Cảnh báo mốc chậm / vượt ngân sách */}
+            <div className='card'>
+              <div className='card-header border-0 pt-4 pb-2'>
+                <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
+                  <i className='fa-regular fa-bell-exclamation me-2 text-danger' />
+                  Cảnh báo triển khai <span className='badge badge-light-danger ms-2'>{CDS_ALERTS.length}</span>
+                </h4>
+              </div>
+              <div className='card-body pt-1 pb-3'>
+                {CDS_ALERTS.length === 0 ? (
+                  <div className='text-muted fs-8'>Không có cảnh báo — các chương trình đang đúng tiến độ.</div>
+                ) : CDS_ALERTS.map((a, i) => (
+                  <div key={i} className='d-flex gap-2 align-items-start mb-2 p-2 rounded'
+                    style={{ background: `${a.mau}12`, borderLeft: `3px solid ${a.mau}` }}>
+                    <i className={`fa-regular ${a.icon} mt-1`} style={{ color: a.mau, flexShrink: 0 }} />
+                    <div className='min-w-0'>
+                      <div className='fs-8 fw-semibold text-gray-800 text-truncate'>{a.ten}</div>
+                      <div className='fs-9 text-muted'>{a.noiDung}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Main two-column layout */}
         <div className='row g-5'>

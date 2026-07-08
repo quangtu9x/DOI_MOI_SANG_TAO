@@ -74,6 +74,14 @@ const LichSuSuDungHeThongPage = lazy(() => import('@/app/pages/ke-hoach-von/lich
 const QLEformPage = lazy(() => import('@/app/pages/ke-hoach-von/eform/ql-eform/QLEformPage').then(m => ({ default: m.QLEformPage })));
 const ThietKePage = lazy(() => import('@/app/pages/ke-hoach-von/eform/thiet-ke/ThietKePage').then(m => ({ default: m.ThietKePage })));
 
+// Cấu hình TopBarProgress một lần duy nhất ở module level
+const baseColor = getCSSVariableValue('--bs-primary');
+TopBarProgress.config({
+  barColors: { '0': baseColor },
+  barThickness: 1,
+  shadowBlur: 5,
+});
+
 // Reusable ProtectedSuspenseView
 interface ProtectedSuspenseViewProps {
   children: React.ReactNode;
@@ -83,12 +91,6 @@ const ProtectedSuspenseView: FC<ProtectedSuspenseViewProps> = ({ children, permi
   const { currentUser } = useAuth();
 
   const userPerms = new Set(currentUser?.permissions ?? []);
-  const baseColor = getCSSVariableValue('--bs-primary');
-  TopBarProgress.config({
-    barColors: { '0': baseColor },
-    barThickness: 1,
-    shadowBlur: 5,
-  });
 
   if (permissions && !hasAll(userPerms, permissions)) {
     return <Navigate to="/error/403" replace />;

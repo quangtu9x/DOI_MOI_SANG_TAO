@@ -20,8 +20,8 @@ const NAV_ITEM_DESC: Record<string, string> = {
   'thu-vien': 'Tìm kiếm, xem và quản lý tài liệu nội bộ',
   'chuyen-gia': 'Tìm chuyên gia, gửi yêu cầu tư vấn',
   'cong-dong':  'Tham gia thảo luận, chia sẻ kinh nghiệm',
-  'news-feed':    'Nội dung mới nhất được cá nhân hóa',
-  'news-feed': 'Bảng tin nội bộ (API trực tiếp, đang phát triển)',
+  'news-feed': 'Nội dung mới nhất được cá nhân hóa',
+  'news-feed-notification': 'Bảng tin nội bộ (API trực tiếp, đang phát triển)',
   'tim-kiem':   'Tìm kiếm xuyên suốt tài liệu và chuyên gia',
   'bao-cao':    'Báo cáo chỉ số, đóng góp và xuất Excel/PDF',
 };
