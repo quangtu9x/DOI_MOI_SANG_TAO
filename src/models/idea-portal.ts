@@ -110,10 +110,13 @@ export interface ICauHinhXuLyYTuong {
 export interface IIdeaContribution {
   ten: string;
   donVi?: string | null;
+  userId?: string | null;
   soNop: number;
   soDuocDuyet: number;
   soDuocCongNhan: number;
   xepHang: number;
+  diemThuong: number;
+  huyHieu?: string | null;
 }
 
 export interface IIdeaContributionReport {

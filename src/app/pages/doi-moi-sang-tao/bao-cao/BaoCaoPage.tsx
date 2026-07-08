@@ -99,59 +99,59 @@ const HIEU_QUA_DATA = [
 
 // ── Mock: Ngân sách & ROI (so sánh chi phí quỹ khen thưởng với giá trị mang lại) ──
 const NGAN_SACH_ROI = [
-  { ten: 'AI dự đoán nhu cầu nhiên liệu', chiPhi: 45000000, tietKiem: 6800000000, doanhThu: 0, nhanRong: 4, chatLuong: 'Cao' },
-  { ten: 'Số hóa check-in nội địa', chiPhi: 30000000, tietKiem: 1200000000, doanhThu: 350000000, nhanRong: 8, chatLuong: 'Cao' },
-  { ten: 'Blended learning đào tạo phi công', chiPhi: 25000000, tietKiem: 900000000, doanhThu: 0, nhanRong: 2, chatLuong: 'Trung bình' },
-  { ten: 'Hệ thống phản hồi hành khách QR', chiPhi: 20000000, tietKiem: 250000000, doanhThu: 180000000, nhanRong: 12, chatLuong: 'Cao' },
-  { ten: 'Cải tiến An toàn bay 2025', chiPhi: 60000000, tietKiem: 500000000, doanhThu: 0, nhanRong: 6, chatLuong: 'Cao' },
-  { ten: 'Chuyển đổi số Mặt đất', chiPhi: 35000000, tietKiem: 800000000, doanhThu: 120000000, nhanRong: 10, chatLuong: 'Cao' },
+  { ten: 'AI dự đoán nhu cầu nhiên liệu', chiPhi: 45000000, tietKiem: 6800000000, doanhThu: 0, nhanRong: 4, chatLuong: 'Cao', donVi: 'Ban Kế hoạch phát triển', linhVuc: 'Khai thác bay', ngayGhiNhan: '2026-01-20' },
+  { ten: 'Số hóa check-in nội địa', chiPhi: 30000000, tietKiem: 1200000000, doanhThu: 350000000, nhanRong: 8, chatLuong: 'Cao', donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ hành khách', ngayGhiNhan: '2026-02-10' },
+  { ten: 'Blended learning đào tạo phi công', chiPhi: 25000000, tietKiem: 900000000, doanhThu: 0, nhanRong: 2, chatLuong: 'Trung bình', donVi: 'Ban Tổ chức và Nhân lực', linhVuc: 'Đào tạo nhân lực', ngayGhiNhan: '2026-03-05' },
+  { ten: 'Hệ thống phản hồi hành khách QR', chiPhi: 20000000, tietKiem: 250000000, doanhThu: 180000000, nhanRong: 12, chatLuong: 'Cao', donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Công nghệ thông tin', ngayGhiNhan: '2026-03-22' },
+  { ten: 'Cải tiến An toàn bay 2025', chiPhi: 60000000, tietKiem: 500000000, doanhThu: 0, nhanRong: 6, chatLuong: 'Cao', donVi: 'Ban An toàn Chất lượng', linhVuc: 'An toàn hàng không', ngayGhiNhan: '2025-11-15' },
+  { ten: 'Chuyển đổi số Mặt đất', chiPhi: 35000000, tietKiem: 800000000, doanhThu: 120000000, nhanRong: 10, chatLuong: 'Cao', donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ mặt đất', ngayGhiNhan: '2026-04-18' },
 ];
 
 // ── Mock: Chiến dịch ĐMST (IV.10) ────────────────────────────────────────────
 const CAMPAIGNS = [
-  { ten: 'Sáng kiến Xanh 2026', trangThai: 'Đang diễn ra', ngUoiThamGia: 218, soNop: 64, tyLeHoanThanh: 58, tongThuong: 45000000, huyHieu: 12 },
-  { ten: 'Ngày hội Đổi mới sáng tạo Quý II', trangThai: 'Đã kết thúc', ngUoiThamGia: 340, soNop: 91, tyLeHoanThanh: 100, tongThuong: 72000000, huyHieu: 28 },
-  { ten: 'Chuyển đổi số Dịch vụ Mặt đất', trangThai: 'Đang diễn ra', ngUoiThamGia: 156, soNop: 39, tyLeHoanThanh: 41, tongThuong: 30000000, huyHieu: 6 },
-  { ten: 'Cải tiến An toàn bay 2025', trangThai: 'Đã kết thúc', ngUoiThamGia: 275, soNop: 80, tyLeHoanThanh: 100, tongThuong: 60000000, huyHieu: 20 },
+  { ten: 'Sáng kiến Xanh 2026', trangThai: 'Đang diễn ra', ngUoiThamGia: 218, soNop: 64, tyLeHoanThanh: 58, tongThuong: 45000000, huyHieu: 12, donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Chuyển đổi số', ngayGhiNhan: '2026-03-01' },
+  { ten: 'Ngày hội Đổi mới sáng tạo Quý II', trangThai: 'Đã kết thúc', ngUoiThamGia: 340, soNop: 91, tyLeHoanThanh: 100, tongThuong: 72000000, huyHieu: 28, donVi: 'Ban Kế hoạch phát triển', linhVuc: 'Cải cách hành chính', ngayGhiNhan: '2026-04-15' },
+  { ten: 'Chuyển đổi số Dịch vụ Mặt đất', trangThai: 'Đang diễn ra', ngUoiThamGia: 156, soNop: 39, tyLeHoanThanh: 41, tongThuong: 30000000, huyHieu: 6, donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ mặt đất', ngayGhiNhan: '2026-05-20' },
+  { ten: 'Cải tiến An toàn bay 2025', trangThai: 'Đã kết thúc', ngUoiThamGia: 275, soNop: 80, tyLeHoanThanh: 100, tongThuong: 60000000, huyHieu: 20, donVi: 'Ban An toàn Chất lượng', linhVuc: 'An toàn hàng không', ngayGhiNhan: '2026-01-10' },
 ];
 
 // ── Mock: Chương trình CĐS/R&D/Sandbox (IV.11, IV.12) ────────────────────────
 // Xuất (export) để DashboardDoiMoiPage.tsx tái sử dụng cho ô "Chương trình/dự án CĐS".
 export const CDS_PROGRAMS = [
-  { ten: 'Nền tảng dữ liệu hành khách 360°', trangThai: 'Đúng hạn', tienDo: 72, nganSach: 65, mocTong: 8, mocHoanThanh: 6 },
-  { ten: 'Sandbox AI dự báo bảo trì động cơ', trangThai: 'Rủi ro', tienDo: 45, nganSach: 80, mocTong: 6, mocHoanThanh: 3 },
-  { ten: 'Ứng dụng di động cho phi hành đoàn', trangThai: 'Trễ tiến độ', tienDo: 30, nganSach: 55, mocTong: 5, mocHoanThanh: 2 },
-  { ten: 'Tự động hóa quy trình kế toán (RPA)', trangThai: 'Đúng hạn', tienDo: 90, nganSach: 88, mocTong: 4, mocHoanThanh: 4 },
-  { ten: 'R&D vật liệu tiết kiệm nhiên liệu', trangThai: 'Đúng hạn', tienDo: 55, nganSach: 40, mocTong: 7, mocHoanThanh: 4 },
+  { ten: 'Nền tảng dữ liệu hành khách 360°', trangThai: 'Đúng hạn', tienDo: 72, nganSach: 65, mocTong: 8, mocHoanThanh: 6, donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Chuyển đổi số', ngayGhiNhan: '2026-01-15' },
+  { ten: 'Sandbox AI dự báo bảo trì động cơ', trangThai: 'Rủi ro', tienDo: 45, nganSach: 80, mocTong: 6, mocHoanThanh: 3, donVi: 'Ban Kỹ thuật', linhVuc: 'Kỹ thuật bảo dưỡng', ngayGhiNhan: '2026-02-01' },
+  { ten: 'Ứng dụng di động cho phi hành đoàn', trangThai: 'Trễ tiến độ', tienDo: 30, nganSach: 55, mocTong: 5, mocHoanThanh: 2, donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Chuyển đổi số', ngayGhiNhan: '2026-03-10' },
+  { ten: 'Tự động hóa quy trình kế toán (RPA)', trangThai: 'Đúng hạn', tienDo: 90, nganSach: 88, mocTong: 4, mocHoanThanh: 4, donVi: 'Ban Tài chính Kế toán', linhVuc: 'Chuyển đổi số', ngayGhiNhan: '2025-11-01' },
+  { ten: 'R&D vật liệu tiết kiệm nhiên liệu', trangThai: 'Đúng hạn', tienDo: 55, nganSach: 40, mocTong: 7, mocHoanThanh: 4, donVi: 'Ban Kỹ thuật', linhVuc: 'Kỹ thuật bảo dưỡng', ngayGhiNhan: '2026-01-01' },
 ];
 export const CDS_STATUS_COLOR: Record<string, string> = { 'Đúng hạn': '#22c55e', 'Trễ tiến độ': '#ef4444', 'Rủi ro': '#f59e0b' };
 
 // ── Mock: Quỹ phát triển KHCN (IV.13) ─────────────────────────────────────────
 export const QUY_KHCN = [
-  { loaiQuy: 'Quỹ phát triển KHCN Tổng công ty', nganSachDau: 20000000000, daChi: 8200000000 },
-  { loaiQuy: 'Quỹ ĐMST cấp đơn vị', nganSachDau: 6000000000, daChi: 3450000000 },
-  { loaiQuy: 'Quỹ khen thưởng sáng kiến', nganSachDau: 2500000000, daChi: 1780000000 },
+  { loaiQuy: 'Quỹ phát triển KHCN Tổng công ty', nganSachDau: 20000000000, daChi: 8200000000, donVi: 'Tổng công ty', ngayGhiNhan: '2026-01-01' },
+  { loaiQuy: 'Quỹ ĐMST cấp đơn vị', nganSachDau: 6000000000, daChi: 3450000000, donVi: 'Ban Chuyển đổi số công nghệ', ngayGhiNhan: '2026-02-01' },
+  { loaiQuy: 'Quỹ khen thưởng sáng kiến', nganSachDau: 2500000000, daChi: 1780000000, donVi: 'Ban Tổ chức và Nhân lực', ngayGhiNhan: '2026-03-01' },
 ];
 
 // ── Mock: Chi thưởng (IV.14) ──────────────────────────────────────────────────
 export const CHI_THUONG = [
-  { doiTuong: 'Trần Minh Hoàng', donVi: 'Ban Kỹ thuật Bay', tienThuong: 25000000, diemThuong: 500, kyThuong: 'Q1/2026' },
-  { doiTuong: 'Nguyễn Văn An', donVi: 'Ban Dịch vụ Mặt đất', tienThuong: 12000000, diemThuong: 300, kyThuong: 'Q1/2026' },
-  { doiTuong: 'Ban Khai thác Bay', donVi: '—', tienThuong: 40000000, diemThuong: 0, kyThuong: 'Năm 2025' },
+  { doiTuong: 'Trần Minh Hoàng', donVi: 'Ban Kỹ thuật Bay', tienThuong: 25000000, diemThuong: 500, kyThuong: 'Q1/2026', ngayGhiNhan: '2026-03-15' },
+  { doiTuong: 'Nguyễn Văn An', donVi: 'Ban Dịch vụ Mặt đất', tienThuong: 12000000, diemThuong: 300, kyThuong: 'Q1/2026', ngayGhiNhan: '2026-03-20' },
+  { doiTuong: 'Ban Khai thác Bay', donVi: 'Ban Khai thác Bay', tienThuong: 40000000, diemThuong: 0, kyThuong: 'Năm 2025', ngayGhiNhan: '2025-12-20' },
 ];
 
 // ── Mock: Ví và giao dịch (IV.15) — số dư hiện tại theo loại ví (Cánh sen/Bông sen) ──
 export const VI_GIAO_DICH = [
-  { thoiGian: '05/07/2026 09:12', loai: 'Nhận thưởng sáng kiến', vi: 'Cánh sen', soTien: '+500', soDu: 2150 },
-  { thoiGian: '02/07/2026 14:30', loai: 'Quy đổi quà tặng', vi: 'Bông sen', soTien: '-1200', soDu: 3400 },
-  { thoiGian: '28/06/2026 08:05', loai: 'Nhận thưởng chiến dịch', vi: 'Cánh sen', soTien: '+300', soDu: 1650 },
+  { thoiGian: '05/07/2026 09:12', loai: 'Nhận thưởng sáng kiến', vi: 'Cánh sen', soTien: '+500', soDu: 2150, donVi: 'Ban Kỹ thuật', ngayGhiNhan: '2026-07-05' },
+  { thoiGian: '02/07/2026 14:30', loai: 'Quy đổi quà tặng', vi: 'Bông sen', soTien: '-1200', soDu: 3400, donVi: 'Ban Dịch vụ Hành khách', ngayGhiNhan: '2026-07-02' },
+  { thoiGian: '28/06/2026 08:05', loai: 'Nhận thưởng chiến dịch', vi: 'Cánh sen', soTien: '+300', soDu: 1650, donVi: 'Ban Chuyển đổi số công nghệ', ngayGhiNhan: '2026-06-28' },
 ];
 
 // ── Mock: Quy đổi quà tặng (IV.16) ────────────────────────────────────────────
 const QUA_TANG = [
-  { ten: 'Voucher nghỉ dưỡng 2N1Đ', daQuyDoi: 34, tonKho: 6, chiPhi: 200 },
-  { ten: 'Tai nghe không dây', daQuyDoi: 58, tonKho: 12, chiPhi: 80 },
-  { ten: 'Vé máy bay khứ hồi nội địa', daQuyDoi: 15, tonKho: 3, chiPhi: 600 },
+  { ten: 'Voucher nghỉ dưỡng 2N1Đ', daQuyDoi: 34, tonKho: 6, chiPhi: 200, donVi: 'Ban Tổ chức và Nhân lực', ngayGhiNhan: '2026-04-10' },
+  { ten: 'Tai nghe không dây', daQuyDoi: 58, tonKho: 12, chiPhi: 80, donVi: 'Ban Chuyển đổi số công nghệ', ngayGhiNhan: '2026-05-05' },
+  { ten: 'Vé máy bay khứ hồi nội địa', daQuyDoi: 15, tonKho: 3, chiPhi: 600, donVi: 'Ban Dịch vụ Hành khách', ngayGhiNhan: '2026-06-01' },
 ];
 
 // ── Danh sách phòng ban (đã ghi nhớ) ──────────────────────────────────────────
@@ -584,19 +584,39 @@ export const BaoCaoPage: React.FC = () => {
         return data;
       }
       case 'chien-dich':
-        return CAMPAIGNS;
+        return filterByRange(filterByLinhVuc(filterByDonVi(CAMPAIGNS)));
       case 'chuong-trinh':
-        return CDS_PROGRAMS;
+        return filterByRange(filterByLinhVuc(filterByDonVi(CDS_PROGRAMS)));
       case 'quy':
-        return QUY_KHCN;
-      case 'chi-thuong':
-        return CHI_THUONG.map(x => ({ ten: x.doiTuong, soLuong: x.tienThuong, ghiChu: `${x.donVi} • ${x.kyThuong}` }));
+        return filterByRange(filterByDonVi(QUY_KHCN.map(x => ({ ...x, ten: x.loaiQuy }))));
+      case 'chi-thuong': {
+        let data = CHI_THUONG.map(x => ({
+          ten: x.doiTuong,
+          soLuong: x.tienThuong,
+          ghiChu: `${x.donVi} • ${x.kyThuong}`,
+          donVi: x.donVi,
+          ngayGhiNhan: x.ngayGhiNhan,
+        }));
+        data = filterByDonVi(data);
+        data = filterByRange(data);
+        return data;
+      }
       case 'vi-giao-dich':
-        return VI_GIAO_DICH;
-      case 'qua-tang':
-        return QUA_TANG.map(x => ({ ten: x.ten, soLuong: x.daQuyDoi, ghiChu: `${x.tonKho} quà còn lại • ${fmtNum(x.chiPhi)} đ` }));
+        return filterByRange(filterByDonVi(VI_GIAO_DICH.map(x => ({ ...x, ten: x.loai }))));
+      case 'qua-tang': {
+        let data = QUA_TANG.map(x => ({
+          ten: x.ten,
+          soLuong: x.daQuyDoi,
+          ghiChu: `${x.tonKho} quà còn lại • ${fmtNum(x.chiPhi)} đ`,
+          donVi: x.donVi,
+          ngayGhiNhan: x.ngayGhiNhan,
+        }));
+        data = filterByDonVi(data);
+        data = filterByRange(data);
+        return data;
+      }
       case 'roi': {
-        const data = NGAN_SACH_ROI.map(x => {
+        let data = NGAN_SACH_ROI.map(x => {
           const giaTri = x.tietKiem + x.doanhThu;
           const roi = x.chiPhi > 0 ? ((giaTri - x.chiPhi) / x.chiPhi) * 100 : 0;
           return {
@@ -608,8 +628,15 @@ export const BaoCaoPage: React.FC = () => {
             roi,
             nhanRong: x.nhanRong,
             chatLuong: x.chatLuong,
+            donVi: x.donVi,
+            linhVuc: x.linhVuc,
+            ngayGhiNhan: x.ngayGhiNhan,
           };
         });
+        data = filterByDonVi(data);
+        data = filterByLinhVuc(data);
+        data = filterByHieuQua(data);
+        data = filterByRange(data);
         return data;
       }
       case 'usage': {
@@ -619,13 +646,14 @@ export const BaoCaoPage: React.FC = () => {
           ghiChu: `${x.tanSuatDangNhap} lần/tuần • ${x.tyLeSuDungTinhNang}% sử dụng • ${x.mucDoTuongTac}`,
           linhVuc: '',
           donVi: x.donVi,
-          chatLuong: '',
+          chatLuong: x.mucDoTuongTac,
           tanSuatDangNhap: x.tanSuatDangNhap,
           tyLeSuDungTinhNang: x.tyLeSuDungTinhNang,
           mucDoTuongTac: x.mucDoTuongTac,
           soYTuongDaNop: x.soYTuongDaNop,
         }));
         data = filterByDonVi(data);
+        data = filterByHieuQua(data);
         return data;
       }
       default:
@@ -1042,6 +1070,9 @@ export const BaoCaoPage: React.FC = () => {
     },
   ];
 
+  // Ghép lượt tương tác (lượt xem + thích + bình luận + hành vi) từ Báo cáo tương tác hệ thống theo userId
+  const tuongTacByUser = new Map((tuongTac?.theoNguoiDung ?? []).map(u => [u.userId, u]));
+
   const lbColumns = (isUnit: boolean) => [
     {
       title: '#', dataIndex: 'xepHang', key: 'xepHang', width: 56, className: 'text-center',
@@ -1065,6 +1096,24 @@ export const BaoCaoPage: React.FC = () => {
     {
       title: 'Công nhận', dataIndex: 'soDuocCongNhan', key: 'soDuocCongNhan', width: 100, className: 'text-center',
       render: (v: number) => v > 0 ? <Tag color="purple">{v}</Tag> : <span className="text-muted">0</span>,
+    },
+    {
+      title: 'Điểm thưởng', dataIndex: 'diemThuong', key: 'diemThuong', width: 110, align: 'right' as const,
+      render: (v: number) => <span style={{ fontWeight: 700, color: '#003087' }}>{fmtNum(v ?? 0)}</span>,
+    },
+    ...(!isUnit ? [{
+      title: 'Lượt tương tác', key: 'luotTuongTac', width: 120, align: 'center' as const,
+      render: (_: unknown, r: IIdeaContribution) => {
+        const tt = r.userId ? tuongTacByUser.get(r.userId) : undefined;
+        if (!tt) return <span className="text-muted">—</span>;
+        return <span className="fw-semibold">{fmtNum(tt.luotXem + tt.luotThich + tt.binhLuan)}</span>;
+      },
+    }] : []),
+    {
+      title: 'Huy hiệu', dataIndex: 'huyHieu', key: 'huyHieu', width: 130, align: 'center' as const,
+      render: (v?: string | null) => v
+        ? <Tag color={v.includes('Vàng') ? 'gold' : v.includes('Bạc') ? 'default' : 'orange'}>{v}</Tag>
+        : <span className="text-muted">—</span>,
     },
   ];
 
@@ -1222,8 +1271,8 @@ export const BaoCaoPage: React.FC = () => {
                 </div>
               </div>
 
-              {reportTemplate === 'leaderboard' ? (
-                /* ── Mẫu "Bảng xếp hạng": kỳ tháng/quý/năm + Top nhanh + Cá nhân/Đơn vị ── */
+              {(reportTemplate === 'leaderboard' || reportTemplate === 'dong-gop') ? (
+                /* ── Mẫu "Bảng xếp hạng" / "Đóng góp cá nhân/đơn vị": kỳ tháng/quý/năm + Top nhanh + Cá nhân/Đơn vị ── */
                 <>
                   <div className="d-flex gap-2 flex-wrap align-items-center mb-4">
                     <Segmented
@@ -1266,7 +1315,9 @@ export const BaoCaoPage: React.FC = () => {
                         </div>
                         <Table
                           columns={lbColumns(false) as any}
-                          dataSource={lb?.caNhan ?? []}
+                          dataSource={(lb?.caNhan ?? []).filter(r => !filterDonVi
+                            || (r.donVi || '').toLowerCase().includes(filterDonVi.toLowerCase())
+                            || r.ten.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: IIdeaContribution) => `cn-${r.xepHang}-${r.ten}`}
                           size="small"
                           pagination={false}
@@ -1280,7 +1331,7 @@ export const BaoCaoPage: React.FC = () => {
                         </div>
                         <Table
                           columns={lbColumns(true) as any}
-                          dataSource={lb?.donVi ?? []}
+                          dataSource={(lb?.donVi ?? []).filter(r => !filterDonVi || r.ten.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: IIdeaContribution) => `dv-${r.xepHang}-${r.ten}`}
                           size="small"
                           pagination={false}
@@ -1311,7 +1362,9 @@ export const BaoCaoPage: React.FC = () => {
                             { title: 'Đăng nhập', dataIndex: 'soLanDangNhap', key: 'soLanDangNhap', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
                           ] as any}
-                          dataSource={tuongTac?.theoNguoiDung ?? []}
+                          dataSource={(tuongTac?.theoNguoiDung ?? []).filter(r => !filterDonVi
+                            || (r.donVi || '').toLowerCase().includes(filterDonVi.toLowerCase())
+                            || r.tenNguoiDung.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ITuongTacTheoNguoi) => r.userId}
                           size="small"
                           pagination={{ pageSize: 10 }}
@@ -1332,7 +1385,7 @@ export const BaoCaoPage: React.FC = () => {
                             { title: 'Bình luận', dataIndex: 'binhLuan', key: 'binhLuan', width: 90, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
                           ] as any}
-                          dataSource={tuongTac?.theoDonVi ?? []}
+                          dataSource={(tuongTac?.theoDonVi ?? []).filter(r => !filterDonVi || r.donViCode.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ITuongTacTheoDonVi) => r.donViCode}
                           size="small"
                           pagination={{ pageSize: 10 }}
@@ -1438,7 +1491,7 @@ export const BaoCaoPage: React.FC = () => {
                             { title: 'Đúng hạn', dataIndex: 'tyLeDungHan', key: 'tyLeDungHan', width: 100, align: 'center' as const, render: (v: number) => <span style={{ color: v != null && v < 70 ? '#F1416C' : '#17C653', fontWeight: 700 }}>{v != null ? `${v}%` : '—'}</span> },
                             { title: 'Tồn đọng', dataIndex: 'soTonDongQuaHan', key: 'soTonDongQuaHan', width: 90, align: 'center' as const, render: (v: number) => v > 0 ? <Tag color="error">{v}</Tag> : 0 },
                           ] as any}
-                          dataSource={slaReport?.theoDonVi ?? []}
+                          dataSource={(slaReport?.theoDonVi ?? []).filter(r => !filterDonVi || r.donVi.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ISlaTheoDonVi) => r.donVi}
                           size="small"
                           pagination={{ pageSize: 8 }}
@@ -1458,7 +1511,7 @@ export const BaoCaoPage: React.FC = () => {
                             { title: 'Bước', dataIndex: 'buoc', key: 'buoc', width: 120 },
                             { title: 'Tồn đọng (giờ)', dataIndex: 'soGioTonDong', key: 'soGioTonDong', width: 110, align: 'center' as const, render: (v: number) => <Tag color="error">{fmtNum(v)}</Tag> },
                           ] as any}
-                          dataSource={slaReport?.canhBaoTonDong ?? []}
+                          dataSource={(slaReport?.canhBaoTonDong ?? []).filter(r => !filterDonVi || (r.donVi || '').toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ISlaCanhBao) => r.ideaId}
                           size="small"
                           pagination={{ pageSize: 8 }}
