@@ -40,19 +40,20 @@ import {
   deleteThuMuc,
   chiaSeTaiLieu,
   getTaiLieuShareLink,
-  searchTags,
 } from '@/app/services/khoTriThucApi';
 import { UserSelect } from '@/app/components/UserSelect';
-import { searchOrganizationUnits } from '@/services/organizationUnit.service';
 import type {
   ITaiLieu,
   IKhoTriThucWorkflowConfig,
   ISearchTaiLieuRequest,
   ITaiLieuDinhKem,
   IThuMucTaiLieu,
+  ICreateDinhKemRequest,
+  ICreateTaiLieuAttachment,
+  ICreateTaiLieuRequest,
 } from '@/app/models/knowledge-hub';
 import { TrangThaiTaiLieu, LoaiTaiLieu, LoaiNguonThamChieu } from '@/app/models/knowledge-hub';
-import { requestPOST } from '@/utils/baseAPI';
+import { requestPOST, API_URL } from '@/utils/baseAPI';
 import { IPaginationResponse, IUserDetails } from '@/models';
 
 const { Option } = Select;
@@ -96,51 +97,51 @@ const getApiError = (res: any): string | null => {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const LOAI_LABEL: Record<LoaiTaiLieu, string> = {
-  [LoaiTaiLieu.HuongDan]: 'Hướng dẫn',
-  [LoaiTaiLieu.Playbook]: 'Playbook',
-  [LoaiTaiLieu.Template]: 'Mẫu biểu',
-  [LoaiTaiLieu.NghienCuu]: 'Nghiên cứu',
-  [LoaiTaiLieu.TinhHuong]: 'Tình huống',
+  [LoaiTaiLieu.HuongDan]:         'Hướng dẫn',
+  [LoaiTaiLieu.Playbook]:         'Playbook',
+  [LoaiTaiLieu.Template]:         'Mẫu biểu',
+  [LoaiTaiLieu.NghienCuu]:        'Nghiên cứu',
+  [LoaiTaiLieu.TinhHuong]:        'Tình huống',
   [LoaiTaiLieu.BaiHocKinhNghiem]: 'Bài học KN',
 };
 
 const LOAI_COLOR: Record<LoaiTaiLieu, string> = {
-  [LoaiTaiLieu.HuongDan]: 'blue',
-  [LoaiTaiLieu.Playbook]: 'purple',
-  [LoaiTaiLieu.Template]: 'cyan',
-  [LoaiTaiLieu.NghienCuu]: 'geekblue',
-  [LoaiTaiLieu.TinhHuong]: 'orange',
+  [LoaiTaiLieu.HuongDan]:         'blue',
+  [LoaiTaiLieu.Playbook]:         'purple',
+  [LoaiTaiLieu.Template]:         'cyan',
+  [LoaiTaiLieu.NghienCuu]:        'geekblue',
+  [LoaiTaiLieu.TinhHuong]:        'orange',
   [LoaiTaiLieu.BaiHocKinhNghiem]: 'green',
 };
 
 const TRANG_THAI_LABEL: Record<TrangThaiTaiLieu, string> = {
-  [TrangThaiTaiLieu.NhapLieu]: 'Nháp',
+  [TrangThaiTaiLieu.NhapLieu]:    'Nháp',
   [TrangThaiTaiLieu.ChoXetDuyet]: 'Chờ duyệt',
-  [TrangThaiTaiLieu.DaXuatBan]: 'Đã xuất bản',
-  [TrangThaiTaiLieu.TuChoi]: 'Từ chối',
+  [TrangThaiTaiLieu.DaXuatBan]:   'Đã xuất bản',
+  [TrangThaiTaiLieu.TuChoi]:      'Từ chối',
 };
 
 const TRANG_THAI_COLOR: Record<TrangThaiTaiLieu, string> = {
-  [TrangThaiTaiLieu.NhapLieu]: 'default',
+  [TrangThaiTaiLieu.NhapLieu]:    'default',
   [TrangThaiTaiLieu.ChoXetDuyet]: 'processing',
-  [TrangThaiTaiLieu.DaXuatBan]: 'success',
-  [TrangThaiTaiLieu.TuChoi]: 'error',
+  [TrangThaiTaiLieu.DaXuatBan]:   'success',
+  [TrangThaiTaiLieu.TuChoi]:      'error',
 };
 
 const NGUON_LABEL: Record<LoaiNguonThamChieu, string> = {
-  [LoaiNguonThamChieu.DuAn]: 'Dự án',
+  [LoaiNguonThamChieu.DuAn]:     'Dự án',
   [LoaiNguonThamChieu.SangKien]: 'Sáng kiến',
-  [LoaiNguonThamChieu.YTuong]: 'Ý tưởng',
-  [LoaiNguonThamChieu.NhiemVu]: 'Nhiệm vụ',
+  [LoaiNguonThamChieu.YTuong]:   'Ý tưởng',
+  [LoaiNguonThamChieu.NhiemVu]:  'Nhiệm vụ',
 };
 
 const MIME_ICON: Record<string, string> = {
-  'application/pdf': 'fa-file-pdf text-danger',
-  'application/msword': 'fa-file-word text-primary',
+  'application/pdf':                                             'fa-file-pdf text-danger',
+  'application/msword':                                          'fa-file-word text-primary',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'fa-file-word text-primary',
-  'application/vnd.ms-excel': 'fa-file-excel text-success',
+  'application/vnd.ms-excel':                                    'fa-file-excel text-success',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'fa-file-excel text-success',
-  'application/vnd.ms-powerpoint': 'fa-file-powerpoint text-warning',
+  'application/vnd.ms-powerpoint':                               'fa-file-powerpoint text-warning',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'fa-file-powerpoint text-warning',
 };
 
@@ -159,28 +160,35 @@ const getMinioFileUrl = (duongDanLuuTru?: string | null): string =>
   duongDanLuuTru ? `${API_URL}/api/v1/attachments/${duongDanLuuTru}` : '';
 
 /** Normalize raw API item → flat ITaiLieu expected by the UI */
-const normalizeTL = (item: any): ITaiLieu => ({
-  ...item,
-  // Flatten thongTinFile into top-level fields
-  duongDanLuuTru: item.thongTinFile?.duongDanLuuTru ?? item.duongDanLuuTru ?? null,
-  tenGoc:         item.thongTinFile?.tenGoc         ?? item.tenGoc         ?? null,
-  kichThuocBytes: item.thongTinFile?.kichThuocBytes  ?? item.kichThuocBytes  ?? null,
-  mimeType:       item.thongTinFile?.mimeType        ?? item.mimeType        ?? null,
-  // tags: BE gửi [{id, ten, soLanDung}] → cần string[]
-  tags: (item.tags ?? []).map((t: any) =>
-    typeof t === 'string' ? t : (t?.ten ?? '')
-  ).filter(Boolean),
-});
+const normalizeTL = (item: any): ITaiLieu => {
+  // API "search" gộp file chính vào attachments (phần tử không có id) thay vì trả thongTinFile riêng
+  const attachments = (item.attachments ?? []).map(normalizeDinhKem);
+  const mainAttachment = attachments.find((a: any) => !a.id);
+  const tf = item.thongTinFile ?? mainAttachment?.thongTinFile ?? null;
+  return {
+    ...item,
+    attachments,
+    // Flatten thongTinFile into top-level fields
+    duongDanLuuTru: tf?.duongDanLuuTru ?? item.duongDanLuuTru ?? null,
+    tenGoc:         tf?.tenGoc         ?? item.tenGoc         ?? null,
+    kichThuocBytes: tf?.kichThuocBytes  ?? item.kichThuocBytes  ?? null,
+    mimeType:       tf?.mimeType        ?? item.mimeType        ?? null,
+    // tags: BE gửi [{id, ten, soLanDung}] → cần string[]
+    tags: (item.tags ?? []).map((t: any) =>
+      typeof t === 'string' ? t : (t?.ten ?? '')
+    ).filter(Boolean),
+  };
+};
 
 const normalizeDinhKem = (item: any): ITaiLieuDinhKem => {
   const thongTinFile = item.thongTinFile ?? (
     item.filePath || item.fileName || item.originalName || item.fileSize
       ? {
-        duongDanLuuTru: item.filePath ?? item.duongDanLuuTru ?? '',
-        tenGoc: item.fileName ?? item.originalName ?? item.tenGoc ?? '',
-        kichThuocBytes: item.fileSize ?? item.kichThuocBytes ?? 0,
-        mimeType: item.mimeType ?? item.fileExt ?? 'application/octet-stream',
-      }
+          duongDanLuuTru: item.filePath ?? item.duongDanLuuTru ?? '',
+          tenGoc: item.fileName ?? item.originalName ?? item.tenGoc ?? '',
+          kichThuocBytes: item.fileSize ?? item.kichThuocBytes ?? 0,
+          mimeType: item.mimeType ?? item.fileExt ?? 'application/octet-stream',
+        }
       : null
   );
 
@@ -223,29 +231,29 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const isAdmin = canApprove;
 
   // ── State
-  const [activeTab, setActiveTab] = useState('danh-sach');
-  const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState<ITaiLieu[]>([]);
-  const [total, setTotal] = useState(0);
-  const [searchReq, setSearchReq] = useState<ISearchTaiLieuRequest>(DEFAULT_SEARCH);
-  const [ranking, setRanking] = useState<ITaiLieu[]>([]);
-  const [rankLoading, setRankLoading] = useState(false);
+  const [activeTab, setActiveTab]       = useState('danh-sach');
+  const [loading, setLoading]           = useState(false);
+  const [items, setItems]               = useState<ITaiLieu[]>([]);
+  const [total, setTotal]               = useState(0);
+  const [searchReq, setSearchReq]       = useState<ISearchTaiLieuRequest>(DEFAULT_SEARCH);
+  const [ranking, setRanking]           = useState<ITaiLieu[]>([]);
+  const [rankLoading, setRankLoading]   = useState(false);
 
   // detail
-  const [detail, setDetail] = useState<ITaiLieu | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [detail, setDetail]             = useState<ITaiLieu | null>(null);
+  const [detailOpen, setDetailOpen]     = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [versions, setVersions] = useState<any[]>([]);
-  const [dinhKems, setDinhKems] = useState<ITaiLieuDinhKem[]>([]);
+  const [versions, setVersions]         = useState<any[]>([]);
+  const [dinhKems, setDinhKems]         = useState<ITaiLieuDinhKem[]>([]);
 
   // form
-  const [formOpen, setFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  const [formLoading, setFormLoading] = useState(false);
+  const [formOpen, setFormOpen]         = useState(false);
+  const [formMode, setFormMode]         = useState<'create' | 'edit'>('create');
+  const [formLoading, setFormLoading]   = useState(false);
   const [form] = Form.useForm();
 
   // trường "Thuộc ý tưởng nào" — tìm kiếm bất đồng bộ, không bắt buộc
-  const [ideaOptions, setIdeaOptions] = useState<{ value: string; label: string }[]>([]);
+  const [ideaOptions, setIdeaOptions]   = useState<{ value: string; label: string }[]>([]);
   const [ideaSearching, setIdeaSearching] = useState(false);
   const searchIdeaOptions = useMemo(
     () => debounce((keyword: string) => {
@@ -258,26 +266,53 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             label: it.code ? `${it.code} - ${it.title}` : it.title,
           })));
         })
-        .catch(() => { })
+        .catch(() => {})
         .finally(() => setIdeaSearching(false));
     }, 500),
     []
   );
 
   // file upload
-  const [uploadFile, setUploadFile] = useState<RcFile | null>(null);
+  const [uploadFile, setUploadFile]     = useState<RcFile | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading]       = useState(false);
   const [extraFiles, setExtraFiles]     = useState<RcFile[]>([]);
+  const [mainFileCleared, setMainFileCleared] = useState(false);
+  const extraFilesRef = useRef<RcFile[]>([]);
+  /** Đồng bộ extraFiles state + ref để tránh stale closure */
+  const setExtraFilesSafe = useCallback((files: RcFile[] | ((prev: RcFile[]) => RcFile[])) => {
+    if (typeof files === 'function') {
+      setExtraFiles(prev => {
+        const next = files(prev);
+        extraFilesRef.current = next;
+        return next;
+      });
+    } else {
+      extraFilesRef.current = files;
+      setExtraFiles(files);
+    }
+  }, []);
+  /** Helper: thêm file vào extraFiles */
+  const addExtraFile = useCallback((file: RcFile) => {
+    setExtraFilesSafe(prev => [...prev, file]);
+  }, [setExtraFilesSafe]);
+  /** Helper: xoá file khỏi extraFiles */
+  const removeExtraFile = useCallback((file: UploadFile | RcFile) => {
+    setExtraFilesSafe(prev => prev.filter(f => f.uid !== file.uid));
+  }, [setExtraFilesSafe]);
+  /** Helper: reset extraFiles */
+  const resetExtraFiles = useCallback(() => {
+    setExtraFilesSafe([]);
+  }, [setExtraFilesSafe]);
 
   // từ chối
-  const [tuChoiOpen, setTuChoiOpen] = useState(false);
-  const [tuChoiId, setTuChoiId] = useState('');
+  const [tuChoiOpen, setTuChoiOpen]     = useState(false);
+  const [tuChoiId, setTuChoiId]         = useState('');
   const [tuChoiForm] = Form.useForm();
 
   // nộp kiểm duyệt
-  const [nopOpen, setNopOpen] = useState(false);
-  const [nopId, setNopId] = useState('');
+  const [nopOpen, setNopOpen]           = useState(false);
+  const [nopId, setNopId]               = useState('');
   const [nopForm] = Form.useForm();
 
   // cấu hình quy trình kiểm duyệt/phê duyệt
@@ -290,8 +325,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
   const [workflowForm] = Form.useForm();
 
   // chia sẻ
-  const [shareOpen, setShareOpen] = useState(false);
-  const [shareTarget, setShareTarget] = useState<ITaiLieu | null>(null);
+  const [shareOpen, setShareOpen]       = useState(false);
+  const [shareTarget, setShareTarget]   = useState<ITaiLieu | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareForm] = Form.useForm();
 
@@ -354,7 +389,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     try {
       const res = await getRankingTaiLieus(1, 10);
       setRanking(safeList<ITaiLieu>(res));
-    } catch { }
+    } catch {}
     finally { setRankLoading(false); }
   }, []);
 
@@ -438,51 +473,6 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       setWorkflowSaving(false);
     }
   };
-
-  // ── Dữ liệu cho các ô lọc bổ sung (Lĩnh vực, Đơn vị, Tags) ─────────────
-  const [linhVucOptions, setLinhVucOptions] = useState<{ id: string; ten: string }[]>([]);
-  const [donViOptions, setDonViOptions] = useState<{ id: string; name: string }[]>([]);
-  const [tagOptions, setTagOptions] = useState<ITag[]>([]);
-
-  // Danh sách lĩnh vực hàng không chuẩn — cùng thứ tự với LINH_VUC_OPTIONS ở form nộp ý tưởng.
-  // Danh mục LinhVucKHCNs được BE seed các mục này; nếu danh mục có mục hàng không thì chỉ
-  // hiển thị đúng danh sách đó (theo thứ tự chuẩn), ngược lại fallback toàn bộ danh mục.
-  const LINH_VUC_HANG_KHONG = [
-    'Khai thác bay', 'Kỹ thuật bảo dưỡng', 'Dịch vụ hành khách', 'Dịch vụ mặt đất',
-    'Đào tạo nhân lực', 'Chuyển đổi số', 'Cải cách hành chính', 'An toàn hàng không',
-    'Thương mại & Doanh thu', 'Công nghệ thông tin',
-  ];
-
-  useEffect(() => {
-    // Đúng 10 lĩnh vực hàng không (BE ensure-on-read); fallback danh mục chung nếu BE cũ
-    requestGET<any>('NewsFeed/linh-vuc')
-      .then(res => {
-        const d = (res as any)?.data;
-        const list = d?.data ?? d;
-        if (Array.isArray(list) && list.length > 0) {
-          setLinhVucOptions(list.map((x: any) => ({ id: x.id, ten: x.ten })));
-          return;
-        }
-        throw new Error('empty');
-      })
-      .catch(() => {
-        requestPOST<any>('LinhVucKHCNs/search', { pageNumber: 1, pageSize: 500 })
-          .then(res => {
-            const all = safeList<any>(res).map((x: any) => ({ id: x.id, ten: (x.ten ?? x.name ?? '').trim() }));
-            const hk = all
-              .filter(x => LINH_VUC_HANG_KHONG.includes(x.ten))
-              .sort((a, b) => LINH_VUC_HANG_KHONG.indexOf(a.ten) - LINH_VUC_HANG_KHONG.indexOf(b.ten));
-            setLinhVucOptions(hk.length > 0 ? hk : all);
-          })
-          .catch(() => { });
-      });
-    searchOrganizationUnits({ pageNumber: 1, pageSize: 200 } as any)
-      .then(res => setDonViOptions(safeList<any>(res).map((x: any) => ({ id: x.id, name: x.name ?? x.ten ?? '' }))))
-      .catch(() => { });
-    searchTags({ pageNumber: 1, pageSize: 200 })
-      .then(res => setTagOptions(safeList<ITag>(res)))
-      .catch(() => { });
-  }, []);
 
   // ── Cây thư mục tri thức ────────────────────────────────────────────────────
   const [folders, setFolders] = useState<IThuMucTaiLieu[]>([]);
@@ -628,39 +618,6 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     const req = { ...searchReq, nguoiKiemDuyetId: checked ? currentUser?.id : null, pageNumber: 1 };
     setSearchReq(req); loadItems(req);
   };
-  const onTacGiaChange = (v: any) => {
-    const req = { ...searchReq, tacGiaId: v ?? null, pageNumber: 1 };
-    setSearchReq(req); loadItems(req);
-  };
-  const onLinhVucChange = (v: any) => {
-    const req = { ...searchReq, linhVucKHCNId: v ?? null, pageNumber: 1 };
-    setSearchReq(req); loadItems(req);
-  };
-  const onDonViFilterChange = (v: any) => {
-    const req = { ...searchReq, donViId: v ?? null, pageNumber: 1 };
-    setSearchReq(req); loadItems(req);
-  };
-  const onNguonChange = (v: any) => {
-    const req = { ...searchReq, loaiNguonThamChieu: v ?? null, pageNumber: 1 };
-    setSearchReq(req); loadItems(req);
-  };
-  const onTagsFilterChange = (v: string[]) => {
-    const req = { ...searchReq, tagIds: v ?? [], pageNumber: 1 };
-    setSearchReq(req); loadItems(req);
-  };
-  const onQuaHanChange = (checked: boolean) => {
-    const req = { ...searchReq, quaHan: checked ? true : null, pageNumber: 1 };
-    setSearchReq(req); loadItems(req);
-  };
-  const [filterResetKey, setFilterResetKey] = useState(0);
-  const onClearFilters = () => {
-    const req: ISearchTaiLieuRequest = { ...DEFAULT_SEARCH, thuMucId: searchReq.thuMucId, chuaPhanLoai: searchReq.chuaPhanLoai };
-    setSearchReq(req); loadItems(req);
-    setFilterResetKey(k => k + 1); // remount UserSelect (bỏ chọn tác giả)
-  };
-  const hasExtraFilters = !!(searchReq.keyword || searchReq.loaiTaiLieu || searchReq.trangThai
-    || searchReq.tacGiaId || searchReq.linhVucKHCNId || searchReq.donViId || searchReq.loaiNguonThamChieu
-    || (searchReq.tagIds && searchReq.tagIds.length > 0) || searchReq.nguoiKiemDuyetId || searchReq.quaHan);
   const onPageChange = (pg: number) => {
     const req = { ...searchReq, pageNumber: pg };
     setSearchReq(req); loadItems(req);
@@ -712,10 +669,6 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     form.setFieldsValue({
       ...item,
       tags: item.tags?.join(', '),
-      // Lĩnh vực hiển thị theo tên (giống form ý tưởng)
-      linhVuc: item.tenLinhVuc
-        || linhVucOptions.find(o => o.id === item.linhVucKHCNId)?.ten
-        || undefined,
     });
     setFormOpen(true);
     searchTaiLieuDinhKems({ taiLieuId: item.id, pageNumber: 1, pageSize: 50 })
@@ -759,10 +712,6 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         tieuDe: values.tieuDe,
         moTa: values.moTa,
         loaiTaiLieu: values.loaiTaiLieu,
-        // Lĩnh vực chọn theo tên (giống form ý tưởng) -> quy đổi sang id danh mục khi lưu
-        linhVucKHCNId: values.linhVuc
-          ? (linhVucOptions.find(o => o.ten === values.linhVuc)?.id ?? null)
-          : null,
         urlNgoai: values.urlNgoai || null,
         loaiNguonThamChieu: values.loaiNguonThamChieu ?? null,
         tenNguonThamChieu: values.loaiNguonThamChieu ? (values.tenNguonThamChieu || null) : null,
@@ -776,20 +725,10 @@ export const ThuVienTaiLieuPage: React.FC = () => {
         mimeType: mimeType || null,
       };
 
-      let taiLieuId: string | null = null;
-      if (formMode === 'create') {
-        const res = await createTaiLieu(payload);
-        taiLieuId = safeItem<string>(res);
-        message.success('Tạo tài liệu thành công');
-      } else {
-        const editId = form.getFieldValue('id');
-        await updateTaiLieu(editId, { ...payload, id: editId, capNhatNguonThamChieu: true, capNhatThuMuc: true, capNhatIdea: true });
-        taiLieuId = editId;
-        message.success('Cập nhật thành công');
-      }
-
-      // Upload các file đính kèm bổ sung (IV.1.4 — nhiều định dạng cho một tài liệu)
-      if (taiLieuId && extraFiles.length > 0) {
+      // Upload extra files trước. Khi tạo mới gửi kèm payload tài liệu; khi cập nhật gọi API đính kèm riêng.
+      const currentExtraFiles = extraFilesRef.current;
+      const uploadedAttachments: ICreateTaiLieuAttachment[] = [];
+      if (currentExtraFiles.length > 0) {
         let failed = 0;
         for (const f of currentExtraFiles) {
           try {
@@ -882,17 +821,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
     nopForm.setFieldsValue({
       nguoiKiemDuyetId: defaultReviewerId,
     });
-    // Đã cấu hình danh sách người kiểm duyệt → cần tên hiển thị cho các lựa chọn
-    if (workflowConfig.nguoiKiemDuyetMacDinhUserIds.length > 0 && workflowReviewerOptions.length === 0) {
-      loadWorkflowReviewerOptions();
-    }
     setNopOpen(true);
   };
-
-  /** Lựa chọn người kiểm duyệt khi nộp: nếu đã cấu hình danh sách thì CHỈ được chọn trong danh sách */
-  const nopReviewerOptions = workflowConfig.nguoiKiemDuyetMacDinhUserIds.length > 0
-    ? workflowReviewerOptions.filter(o => workflowConfig.nguoiKiemDuyetMacDinhUserIds.includes(o.value))
-    : [];
   const handleNop = async () => {
     try {
       const { nguoiKiemDuyetId } = await nopForm.validateFields();
@@ -922,7 +852,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       if (err) { message.error(err); return; }
       message.success('Đã từ chối tài liệu'); setTuChoiOpen(false);
       loadItems(); if (detail?.id === tuChoiId) openDetail(tuChoiId);
-    } catch { }
+    } catch {}
   };
   const handleDelete = async (id: string) => {
     try {
@@ -991,8 +921,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
           height: 4, borderRadius: '8px 8px 0 0',
           background: item.trangThai === TrangThaiTaiLieu.DaXuatBan ? '#52c41a'
             : item.trangThai === TrangThaiTaiLieu.ChoXetDuyet ? '#1677ff'
-              : item.trangThai === TrangThaiTaiLieu.TuChoi ? '#ff4d4f'
-                : '#d9d9d9',
+            : item.trangThai === TrangThaiTaiLieu.TuChoi ? '#ff4d4f'
+            : '#d9d9d9',
         }} />
         <div className="card-body d-flex flex-column p-4">
           {/* Header row */}
@@ -1003,8 +933,8 @@ export const ThuVienTaiLieuPage: React.FC = () => {
                 {item.duongDanLuuTru || item.tenGoc
                   ? <i className={`fa-regular ${getFileIcon(item.mimeType)} fs-4`} />
                   : item.urlNgoai
-                    ? <i className="fa-regular fa-link text-info fs-4" />
-                    : <i className="fa-regular fa-file-lines text-muted fs-4" />
+                  ? <i className="fa-regular fa-link text-info fs-4" />
+                  : <i className="fa-regular fa-file-lines text-muted fs-4" />
                 }
               </div>
               <div className="d-flex flex-column gap-1">
@@ -1272,122 +1202,63 @@ export const ThuVienTaiLieuPage: React.FC = () => {
 
             {/* ── Danh sách tài liệu ── */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              {/* Toolbar */}
-              <div className="card border-0 shadow-sm mb-5">
-                <div className="card-body py-4">
-                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-                    <div className="d-flex gap-2 flex-wrap">
-                      <Input.Search key={filterResetKey} placeholder="Tìm kiếm tài liệu..." onSearch={onSearch} style={{ width: 260 }} allowClear defaultValue={searchReq.keyword ?? ''} />
-                      <Select placeholder="Loại tài liệu" allowClear value={searchReq.loaiTaiLieu ?? undefined} onChange={onLoaiChange} style={{ width: 170 }}>
-                        {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
-                      </Select>
-                      <Select placeholder="Trạng thái" allowClear value={searchReq.trangThai ?? undefined} onChange={onTrangThaiChange} style={{ width: 150 }}>
-                        {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
-                      </Select>
-                    </div>
-                    <div className="text-muted fs-8">
-                      <span className="badge badge-light-primary me-2">{total} tài liệu</span>
-                      Trang {searchReq.pageNumber}/{Math.max(1, totalPages)}
-                    </div>
-                  </div>
-
-                  <div className="d-flex gap-2 flex-wrap align-items-center">
-                    <Select
-                      placeholder="Đơn vị"
-                      allowClear showSearch optionFilterProp="children"
-                      style={{ width: 190 }}
-                      value={searchReq.donViId ?? undefined}
-                      onChange={onDonViFilterChange}
+            {/* Toolbar */}
+            <div className="card border-0 shadow-sm mb-5">
+              <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 py-4">
+                <div className="d-flex gap-2 flex-wrap">
+                  <Input.Search placeholder="Tìm kiếm tài liệu..." onSearch={onSearch} style={{ width: 260 }} allowClear />
+                  <Select placeholder="Loại tài liệu" allowClear onChange={onLoaiChange} style={{ width: 180 }}>
+                    {Object.entries(LOAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                  </Select>
+                  <Select placeholder="Trạng thái" allowClear onChange={onTrangThaiChange} style={{ width: 160 }}>
+                    {Object.entries(TRANG_THAI_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
+                  </Select>
+                  {canApprove && (
+                    <Checkbox
+                      checked={!!searchReq.nguoiKiemDuyetId}
+                      onChange={e => onChiGiaoChoToiChange(e.target.checked)}
                     >
-                      {donViOptions.map(dv => <Option key={dv.id} value={dv.id}>{dv.name}</Option>)}
-                    </Select>
-                    <UserSelect
-                      key={filterResetKey}
-                      placeholder="Cá nhân"
-                      allowClear
-                      style={{ width: 190 }}
-                      onUserIdChange={onTacGiaChange}
-                    />
-                    <Select
-                      placeholder="Lĩnh vực"
-                      allowClear showSearch optionFilterProp="children"
-                      style={{ width: 190 }}
-                      value={searchReq.linhVucKHCNId ?? undefined}
-                      onChange={onLinhVucChange}
-                    >
-                      {linhVucOptions.map(lv => <Option key={lv.id} value={lv.id}>{lv.ten}</Option>)}
-                    </Select>
-
-                    <Select
-                      placeholder="Nguồn tham chiếu"
-                      allowClear
-                      style={{ width: 170 }}
-                      value={searchReq.loaiNguonThamChieu ?? undefined}
-                      onChange={onNguonChange}
-                    >
-                      {Object.entries(NGUON_LABEL).map(([k, v]) => <Option key={k} value={Number(k)}>{v}</Option>)}
-                    </Select>
-                    <Select
-                      mode="multiple"
-                      placeholder="Tags"
-                      allowClear showSearch optionFilterProp="children"
-                      style={{ minWidth: 190, maxWidth: 320 }}
-                      value={searchReq.tagIds ?? []}
-                      onChange={onTagsFilterChange}
-                      maxTagCount="responsive"
-                    >
-                      {tagOptions.map(t => <Option key={t.id} value={t.id}>{t.ten}</Option>)}
-                    </Select>
-                    <Checkbox checked={!!searchReq.quaHan} onChange={e => onQuaHanChange(e.target.checked)}>
-                      Quá hạn kiểm duyệt
+                      Chỉ giao cho tôi
                     </Checkbox>
-                    {canApprove && (
-                      <Checkbox
-                        checked={!!searchReq.nguoiKiemDuyetId}
-                        onChange={e => onChiGiaoChoToiChange(e.target.checked)}
-                      >
-                        Chỉ giao cho tôi
-                      </Checkbox>
-                    )}
-                    {hasExtraFilters && (
-                      <Button size="small" type="link" onClick={onClearFilters}>
-                        <i className="fa-regular fa-filter-circle-xmark me-1" />Xóa lọc
-                      </Button>
-                    )}
-                  </div>
+                  )}
+                </div>
+                <div className="text-muted fs-8">
+                  <span className="badge badge-light-primary me-2">{total} tài liệu</span>
+                  Trang {searchReq.pageNumber}/{Math.max(1, totalPages)}
                 </div>
               </div>
+            </div>
 
-              {/* Grid */}
-              <Spin spinning={loading}>
-                {items.length === 0 && !loading ? (
-                  <div className="text-center py-10">
-                    <Empty description={
-                      <div>
-                        <div className="text-gray-600 mb-3">Chưa có tài liệu nào. Hãy là người đầu tiên chia sẻ tri thức!</div>
-                        <Button type="primary" icon={<i className="fa-regular fa-plus me-1" />} onClick={openCreate}>
-                          Thêm tài liệu ngay
-                        </Button>
-                      </div>
-                    } />
-                  </div>
-                ) : (
-                  <div className="row g-0">{items.map(renderCard)}</div>
-                )}
-              </Spin>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="d-flex justify-content-center mt-5 gap-2">
-                  <Button size="small" disabled={searchReq.pageNumber <= 1} onClick={() => onPageChange(searchReq.pageNumber - 1)}>
-                    <i className="fa-regular fa-chevron-left" />
-                  </Button>
-                  <span className="align-self-center fs-7">Trang {searchReq.pageNumber} / {totalPages}</span>
-                  <Button size="small" disabled={searchReq.pageNumber >= totalPages} onClick={() => onPageChange(searchReq.pageNumber + 1)}>
-                    <i className="fa-regular fa-chevron-right" />
-                  </Button>
+            {/* Grid */}
+            <Spin spinning={loading}>
+              {items.length === 0 && !loading ? (
+                <div className="text-center py-10">
+                  <Empty description={
+                    <div>
+                      <div className="text-gray-600 mb-3">Chưa có tài liệu nào. Hãy là người đầu tiên chia sẻ tri thức!</div>
+                      <Button type="primary" icon={<i className="fa-regular fa-plus me-1" />} onClick={openCreate}>
+                        Thêm tài liệu ngay
+                      </Button>
+                    </div>
+                  } />
                 </div>
+              ) : (
+                <div className="row g-0">{items.map(renderCard)}</div>
               )}
+            </Spin>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="d-flex justify-content-center mt-5 gap-2">
+                <Button size="small" disabled={searchReq.pageNumber <= 1} onClick={() => onPageChange(searchReq.pageNumber - 1)}>
+                  <i className="fa-regular fa-chevron-left" />
+                </Button>
+                <span className="align-self-center fs-7">Trang {searchReq.pageNumber} / {totalPages}</span>
+                <Button size="small" disabled={searchReq.pageNumber >= totalPages} onClick={() => onPageChange(searchReq.pageNumber + 1)}>
+                  <i className="fa-regular fa-chevron-right" />
+                </Button>
+              </div>
+            )}
             </div>
           </div>
         )}
@@ -1776,22 +1647,11 @@ export const ThuVienTaiLieuPage: React.FC = () => {
               </Form.Item>
             </div>
             <div className="col-6">
-              {/* Giống form nộp ý tưởng: danh sách lĩnh vực hàng không cố định, giá trị là tên */}
-              <Form.Item name="linhVuc" label="Lĩnh vực">
-                <Select
-                  size="large"
-                  allowClear
-                  showSearch
-                  placeholder="Chọn hoặc nhập lĩnh vực"
-                  options={LINH_VUC_HANG_KHONG.map(v => ({ value: v, label: v }))}
-                />
+              <Form.Item name="tags" label="Tags (cách nhau bởi dấu phẩy)">
+                <Input placeholder="doi-moi, sang-tao, quy-trinh" />
               </Form.Item>
             </div>
           </div>
-
-          <Form.Item name="tags" label="Tags (cách nhau bởi dấu phẩy)">
-            <Input placeholder="doi-moi, sang-tao, quy-trinh" />
-          </Form.Item>
 
           <Form.Item name="thuMucId" label="Thư mục lưu trữ">
             <TreeSelect
@@ -2135,9 +1995,7 @@ export const ThuVienTaiLieuPage: React.FC = () => {
       >
         <div className="alert alert-info py-2 px-3 mb-3 fs-8">
           <i className="fa-regular fa-circle-info me-1" />
-          {workflowConfig.nguoiKiemDuyetMacDinhUserIds.length > 0
-            ? 'Chỉ được chọn người kiểm duyệt trong danh sách đã cấu hình của quy trình.'
-            : 'Bắt buộc chỉ định người kiểm duyệt trước khi nộp.'}
+          Bắt buộc chỉ định người kiểm duyệt trước khi nộp.
         </div>
         <Form form={nopForm} layout="vertical">
           <Form.Item
@@ -2145,24 +2003,11 @@ export const ThuVienTaiLieuPage: React.FC = () => {
             label="Người kiểm duyệt"
             rules={[{ required: true, message: 'Vui lòng chỉ định người kiểm duyệt.' }]}
           >
-            {workflowConfig.nguoiKiemDuyetMacDinhUserIds.length > 0 ? (
-              // Đã cấu hình → CHỈ hiển thị những người trong danh sách
-              <Select
-                placeholder="Chọn người kiểm duyệt (theo cấu hình)"
-                allowClear
-                showSearch
-                optionFilterProp="label"
-                loading={workflowReviewerLoading}
-                options={nopReviewerOptions}
-              />
-            ) : (
-              // Chưa cấu hình → cho phép tìm mọi người dùng như trước
-              <UserSelect
-                placeholder="Chỉ định người kiểm duyệt"
-                allowClear
-                onChange={(val: any) => nopForm.setFieldValue('nguoiKiemDuyetId', val?.value ?? val)}
-              />
-            )}
+            <UserSelect
+              placeholder="Chỉ định người kiểm duyệt"
+              allowClear
+              onChange={(val: any) => nopForm.setFieldValue('nguoiKiemDuyetId', val?.value ?? val)}
+            />
           </Form.Item>
         </Form>
       </Modal>

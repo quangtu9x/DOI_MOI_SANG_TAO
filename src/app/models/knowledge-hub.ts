@@ -214,6 +214,8 @@ export interface IUpdateTaiLieuRequest extends ICreateTaiLieuRequest {
   capNhatThuMuc?: boolean;
   /** true → BE cập nhật lại ý tưởng liên quan theo ideaId (cho phép bỏ liên kết bằng null) */
   capNhatIdea?: boolean;
+  /** true → gỡ file chính khỏi tài liệu (khi không kèm duongDanLuuTru mới); file cũ được lưu lại làm đính kèm */
+  xoaFile?: boolean;
 }
 
 export interface ITuChoiRequest {
@@ -539,7 +541,6 @@ export interface IThichRequest {
 export enum LoaiNewsFeedItem {
   TaiLieu = 0,
   BaiViet = 1,
-  YTuong = 2,
 }
 
 export interface INewsFeedItem {
@@ -549,19 +550,12 @@ export interface INewsFeedItem {
   moTa?:           string;
   tacGiaId?:       string;
   linhVucKHCNId?:  string;
-  tenLinhVuc?:     string | null;
   donViId?:        string;
   congDongId?:     string;
   soLuotThich?:    number;
   soBinhLuan?:     number;
-  luotXem?:        number;
-  daThich?:        boolean;
   createdOn?:      string;
   tacGia?:         ITacGia;
-  /** Điểm phù hợp (Relevance Score) do BE tính theo trọng số cấu hình */
-  diemPhuHop?:     number;
-  /** Lý do gợi ý: "Cùng đơn vị", "Lĩnh vực bạn quan tâm", "Đang thịnh hành"... */
-  lyDoGoiY?:       string[];
 }
 
 // ── Analytics (Phase 2A) ──────────────────────────────────────────────────────
