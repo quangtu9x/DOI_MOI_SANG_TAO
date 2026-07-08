@@ -8,8 +8,8 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     include: [
-      'react', 
-      'react-dom', 
+      'react',
+      'react-dom',
       'react-router-dom',
       'antd',
       '@ant-design/icons',
@@ -18,6 +18,11 @@ export default defineConfig({
       'dayjs',
       'react-redux',
       '@reduxjs/toolkit',
+      // Xuất báo cáo (dynamic import) — pre-bundle để tránh lỗi Outdated Optimize Dep ở lần bấm đầu
+      'exceljs',
+      'docx',
+      'pdfmake/build/pdfmake',
+      'pdfmake/build/vfs_fonts',
     ],
   },
   resolve: {
