@@ -110,10 +110,15 @@ export interface ICauHinhXuLyYTuong {
 export interface IIdeaContribution {
   ten: string;
   donVi?: string | null;
+  userId?: string | null;
   soNop: number;
   soDuocDuyet: number;
   soDuocCongNhan: number;
   xepHang: number;
+  diemThuong: number;
+  huyHieu?: string | null;
+  /** Lượt tương tác nhận được (lượt xem + lượt thích + bình luận) trên các ý tưởng thuộc nhóm này. */
+  luotTuongTac: number;
 }
 
 export interface IIdeaContributionReport {

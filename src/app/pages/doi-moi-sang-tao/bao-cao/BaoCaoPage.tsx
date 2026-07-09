@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Select, DatePicker, message, Table, Tag, Spin, Empty, Tabs, Tooltip, Row, Col, Statistic, Segmented, AutoComplete } from 'antd';
+import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
@@ -20,6 +21,9 @@ const { RangePicker } = DatePicker;
 type DateRange = [Dayjs, Dayjs] | null;
 const toRangeParam = (r: DateRange): IKhoangThoiGian | undefined =>
   r ? { tuNgay: r[0].format('YYYY-MM-DD'), denNgay: r[1].format('YYYY-MM-DD') } : undefined;
+// Báo cáo tương tác hệ thống & SLA chỉ nhận khoảng ngày (không nhận tham số "năm") — quy đổi năm sang khoảng ngày Jan 1 - Dec 31
+const yearToRange = (y: number): DateRange =>
+  y ? [dayjs(`${y}-01-01`), dayjs(`${y}-12-31`)] : null;
 
 const THIS_YEAR = new Date().getFullYear();
 const YEARS = [THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2];
@@ -99,59 +103,76 @@ const HIEU_QUA_DATA = [
 
 // ── Mock: Ngân sách & ROI (so sánh chi phí quỹ khen thưởng với giá trị mang lại) ──
 const NGAN_SACH_ROI = [
-  { ten: 'AI dự đoán nhu cầu nhiên liệu', chiPhi: 45000000, tietKiem: 6800000000, doanhThu: 0, nhanRong: 4, chatLuong: 'Cao' },
-  { ten: 'Số hóa check-in nội địa', chiPhi: 30000000, tietKiem: 1200000000, doanhThu: 350000000, nhanRong: 8, chatLuong: 'Cao' },
-  { ten: 'Blended learning đào tạo phi công', chiPhi: 25000000, tietKiem: 900000000, doanhThu: 0, nhanRong: 2, chatLuong: 'Trung bình' },
-  { ten: 'Hệ thống phản hồi hành khách QR', chiPhi: 20000000, tietKiem: 250000000, doanhThu: 180000000, nhanRong: 12, chatLuong: 'Cao' },
-  { ten: 'Cải tiến An toàn bay 2025', chiPhi: 60000000, tietKiem: 500000000, doanhThu: 0, nhanRong: 6, chatLuong: 'Cao' },
-  { ten: 'Chuyển đổi số Mặt đất', chiPhi: 35000000, tietKiem: 800000000, doanhThu: 120000000, nhanRong: 10, chatLuong: 'Cao' },
+  { ten: 'AI dự đoán nhu cầu nhiên liệu', chiPhi: 45000000, tietKiem: 6800000000, doanhThu: 0, nhanRong: 4, chatLuong: 'Cao', donVi: 'Ban Kế hoạch phát triển', linhVuc: 'Khai thác bay', ngayGhiNhan: '2026-01-20' },
+  { ten: 'Số hóa check-in nội địa', chiPhi: 30000000, tietKiem: 1200000000, doanhThu: 350000000, nhanRong: 8, chatLuong: 'Cao', donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ hành khách', ngayGhiNhan: '2026-02-10' },
+  { ten: 'Blended learning đào tạo phi công', chiPhi: 25000000, tietKiem: 900000000, doanhThu: 0, nhanRong: 2, chatLuong: 'Trung bình', donVi: 'Ban Tổ chức và Nhân lực', linhVuc: 'Đào tạo nhân lực', ngayGhiNhan: '2026-03-05' },
+  { ten: 'Hệ thống phản hồi hành khách QR', chiPhi: 20000000, tietKiem: 250000000, doanhThu: 180000000, nhanRong: 12, chatLuong: 'Cao', donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Công nghệ thông tin', ngayGhiNhan: '2026-03-22' },
+  { ten: 'Cải tiến An toàn bay 2025', chiPhi: 60000000, tietKiem: 500000000, doanhThu: 0, nhanRong: 6, chatLuong: 'Cao', donVi: 'Ban An toàn Chất lượng', linhVuc: 'An toàn hàng không', ngayGhiNhan: '2025-11-15' },
+  { ten: 'Chuyển đổi số Mặt đất', chiPhi: 35000000, tietKiem: 800000000, doanhThu: 120000000, nhanRong: 10, chatLuong: 'Cao', donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ mặt đất', ngayGhiNhan: '2026-04-18' },
 ];
 
 // ── Mock: Chiến dịch ĐMST (IV.10) ────────────────────────────────────────────
 const CAMPAIGNS = [
-  { ten: 'Sáng kiến Xanh 2026', trangThai: 'Đang diễn ra', ngUoiThamGia: 218, soNop: 64, tyLeHoanThanh: 58, tongThuong: 45000000, huyHieu: 12 },
-  { ten: 'Ngày hội Đổi mới sáng tạo Quý II', trangThai: 'Đã kết thúc', ngUoiThamGia: 340, soNop: 91, tyLeHoanThanh: 100, tongThuong: 72000000, huyHieu: 28 },
-  { ten: 'Chuyển đổi số Dịch vụ Mặt đất', trangThai: 'Đang diễn ra', ngUoiThamGia: 156, soNop: 39, tyLeHoanThanh: 41, tongThuong: 30000000, huyHieu: 6 },
-  { ten: 'Cải tiến An toàn bay 2025', trangThai: 'Đã kết thúc', ngUoiThamGia: 275, soNop: 80, tyLeHoanThanh: 100, tongThuong: 60000000, huyHieu: 20 },
+  { ten: 'Sáng kiến Xanh 2026', trangThai: 'Đang diễn ra', ngUoiThamGia: 218, soNop: 64, tyLeHoanThanh: 58, tongThuong: 45000000, huyHieu: 12, donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Chuyển đổi số', ngayGhiNhan: '2026-03-01' },
+  { ten: 'Ngày hội Đổi mới sáng tạo Quý II', trangThai: 'Đã kết thúc', ngUoiThamGia: 340, soNop: 91, tyLeHoanThanh: 100, tongThuong: 72000000, huyHieu: 28, donVi: 'Ban Kế hoạch phát triển', linhVuc: 'Cải cách hành chính', ngayGhiNhan: '2026-04-15' },
+  { ten: 'Chuyển đổi số Dịch vụ Mặt đất', trangThai: 'Đang diễn ra', ngUoiThamGia: 156, soNop: 39, tyLeHoanThanh: 41, tongThuong: 30000000, huyHieu: 6, donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ mặt đất', ngayGhiNhan: '2026-05-20' },
+  { ten: 'Cải tiến An toàn bay 2025', trangThai: 'Đã kết thúc', ngUoiThamGia: 275, soNop: 80, tyLeHoanThanh: 100, tongThuong: 60000000, huyHieu: 20, donVi: 'Ban An toàn Chất lượng', linhVuc: 'An toàn hàng không', ngayGhiNhan: '2026-01-10' },
 ];
 
 // ── Mock: Chương trình CĐS/R&D/Sandbox (IV.11, IV.12) ────────────────────────
 // Xuất (export) để DashboardDoiMoiPage.tsx tái sử dụng cho ô "Chương trình/dự án CĐS".
 export const CDS_PROGRAMS = [
-  { ten: 'Nền tảng dữ liệu hành khách 360°', trangThai: 'Đúng hạn', tienDo: 72, nganSach: 65, mocTong: 8, mocHoanThanh: 6 },
-  { ten: 'Sandbox AI dự báo bảo trì động cơ', trangThai: 'Rủi ro', tienDo: 45, nganSach: 80, mocTong: 6, mocHoanThanh: 3 },
-  { ten: 'Ứng dụng di động cho phi hành đoàn', trangThai: 'Trễ tiến độ', tienDo: 30, nganSach: 55, mocTong: 5, mocHoanThanh: 2 },
-  { ten: 'Tự động hóa quy trình kế toán (RPA)', trangThai: 'Đúng hạn', tienDo: 90, nganSach: 88, mocTong: 4, mocHoanThanh: 4 },
-  { ten: 'R&D vật liệu tiết kiệm nhiên liệu', trangThai: 'Đúng hạn', tienDo: 55, nganSach: 40, mocTong: 7, mocHoanThanh: 4 },
+  { ten: 'Nền tảng dữ liệu hành khách 360°', trangThai: 'Đúng hạn', tienDo: 72, nganSach: 65, mocTong: 8, mocHoanThanh: 6, donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Chuyển đổi số', ngayGhiNhan: '2026-01-15', tietKiem: 2400000000, chatLuong: 'Cao', hieuQuaMoTa: 'Rút ngắn 40% thời gian tổng hợp dữ liệu khách hàng, hỗ trợ cá nhân hóa dịch vụ' },
+  { ten: 'Sandbox AI dự báo bảo trì động cơ', trangThai: 'Rủi ro', tienDo: 45, nganSach: 80, mocTong: 6, mocHoanThanh: 3, donVi: 'Ban Kỹ thuật', linhVuc: 'Kỹ thuật bảo dưỡng', ngayGhiNhan: '2026-02-01', tietKiem: 800000000, chatLuong: 'Trung bình', hieuQuaMoTa: 'Đang thử nghiệm mô hình dự báo, chưa đủ dữ liệu để đánh giá đầy đủ hiệu quả' },
+  { ten: 'Ứng dụng di động cho phi hành đoàn', trangThai: 'Trễ tiến độ', tienDo: 30, nganSach: 55, mocTong: 5, mocHoanThanh: 2, donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Chuyển đổi số', ngayGhiNhan: '2026-03-10', tietKiem: 150000000, chatLuong: 'Thấp', hieuQuaMoTa: 'Chậm tiến độ ảnh hưởng đến hiệu quả sử dụng, cần rà soát lại phạm vi triển khai' },
+  { ten: 'Tự động hóa quy trình kế toán (RPA)', trangThai: 'Đúng hạn', tienDo: 90, nganSach: 88, mocTong: 4, mocHoanThanh: 4, donVi: 'Ban Tài chính Kế toán', linhVuc: 'Chuyển đổi số', ngayGhiNhan: '2025-11-01', tietKiem: 1800000000, chatLuong: 'Cao', hieuQuaMoTa: 'Giảm 65% thời gian đối soát công nợ, hạn chế sai sót thủ công' },
+  { ten: 'R&D vật liệu tiết kiệm nhiên liệu', trangThai: 'Đúng hạn', tienDo: 55, nganSach: 40, mocTong: 7, mocHoanThanh: 4, donVi: 'Ban Kỹ thuật', linhVuc: 'Kỹ thuật bảo dưỡng', ngayGhiNhan: '2026-01-01', tietKiem: 3500000000, chatLuong: 'Cao', hieuQuaMoTa: 'Giảm tiêu hao nhiên liệu ước tính 1.2% trên các chuyến bay thử nghiệm' },
 ];
 export const CDS_STATUS_COLOR: Record<string, string> = { 'Đúng hạn': '#22c55e', 'Trễ tiến độ': '#ef4444', 'Rủi ro': '#f59e0b' };
 
 // ── Mock: Quỹ phát triển KHCN (IV.13) ─────────────────────────────────────────
 export const QUY_KHCN = [
-  { loaiQuy: 'Quỹ phát triển KHCN Tổng công ty', nganSachDau: 20000000000, daChi: 8200000000 },
-  { loaiQuy: 'Quỹ ĐMST cấp đơn vị', nganSachDau: 6000000000, daChi: 3450000000 },
-  { loaiQuy: 'Quỹ khen thưởng sáng kiến', nganSachDau: 2500000000, daChi: 1780000000 },
+  { loaiQuy: 'Quỹ phát triển KHCN Tổng công ty', nganSachDau: 20000000000, daChi: 8200000000, donVi: 'Tổng công ty', ngayGhiNhan: '2026-01-01' },
+  { loaiQuy: 'Quỹ ĐMST cấp đơn vị', nganSachDau: 6000000000, daChi: 3450000000, donVi: 'Ban Chuyển đổi số công nghệ', ngayGhiNhan: '2026-02-01' },
+  { loaiQuy: 'Quỹ khen thưởng sáng kiến', nganSachDau: 2500000000, daChi: 1780000000, donVi: 'Ban Tổ chức và Nhân lực', ngayGhiNhan: '2026-03-01' },
 ];
 
-// ── Mock: Chi thưởng (IV.14) ──────────────────────────────────────────────────
+// ── Mock: Chi thưởng (IV.14) — chi tiết theo cá nhân/đơn vị/chiến dịch/sáng kiến/thời gian ──
 export const CHI_THUONG = [
-  { doiTuong: 'Trần Minh Hoàng', donVi: 'Ban Kỹ thuật Bay', tienThuong: 25000000, diemThuong: 500, kyThuong: 'Q1/2026' },
-  { doiTuong: 'Nguyễn Văn An', donVi: 'Ban Dịch vụ Mặt đất', tienThuong: 12000000, diemThuong: 300, kyThuong: 'Q1/2026' },
-  { doiTuong: 'Ban Khai thác Bay', donVi: '—', tienThuong: 40000000, diemThuong: 0, kyThuong: 'Năm 2025' },
+  { doiTuong: 'Trần Minh Hoàng', loaiDoiTuong: 'Cá nhân', donVi: 'Ban Kỹ thuật Bay', chienDich: 'Sáng kiến Xanh 2026', sangKien: 'Tối ưu lịch bảo dưỡng định kỳ động cơ', tienThuong: 25000000, diemThuong: 500, kyThuong: 'Q1/2026', ngayGhiNhan: '2026-03-15' },
+  { doiTuong: 'Nguyễn Văn An', loaiDoiTuong: 'Cá nhân', donVi: 'Ban Dịch vụ Mặt đất', chienDich: 'Chuyển đổi số Dịch vụ Mặt đất', sangKien: 'Chuẩn hóa quy trình xử lý hành lý thất lạc', tienThuong: 12000000, diemThuong: 300, kyThuong: 'Q1/2026', ngayGhiNhan: '2026-03-20' },
+  { doiTuong: 'Ban Khai thác Bay', loaiDoiTuong: 'Đơn vị', donVi: 'Ban Khai thác Bay', chienDich: null, sangKien: 'AI dự đoán nhu cầu nhiên liệu tối ưu theo tuyến bay', tienThuong: 40000000, diemThuong: 0, kyThuong: 'Năm 2025', ngayGhiNhan: '2025-12-20' },
+  { doiTuong: 'Lê Thị Hồng', loaiDoiTuong: 'Cá nhân', donVi: 'Ban Dịch vụ Hành khách', chienDich: 'Ngày hội Đổi mới sáng tạo Quý II', sangKien: 'Số hóa check-in nội địa', tienThuong: 18000000, diemThuong: 400, kyThuong: 'Q2/2026', ngayGhiNhan: '2026-04-18' },
+  { doiTuong: 'Phạm Quốc Bảo', loaiDoiTuong: 'Cá nhân', donVi: 'Ban Chuyển đổi số công nghệ', chienDich: 'Sáng kiến Xanh 2026', sangKien: 'Hệ thống phản hồi hành khách qua QR', tienThuong: 15000000, diemThuong: 350, kyThuong: 'Q1/2026', ngayGhiNhan: '2026-03-25' },
+  { doiTuong: 'Ban An toàn Chất lượng', loaiDoiTuong: 'Đơn vị', donVi: 'Ban An toàn Chất lượng', chienDich: 'Cải tiến An toàn bay 2025', sangKien: 'Sổ tay an toàn khai thác điện tử', tienThuong: 22000000, diemThuong: 0, kyThuong: 'Năm 2025', ngayGhiNhan: '2025-11-20' },
+  { doiTuong: 'Đỗ Thị Lan', loaiDoiTuong: 'Cá nhân', donVi: 'Ban Tài chính Kế toán', chienDich: null, sangKien: 'Tự động hóa đối soát công nợ đại lý', tienThuong: 10000000, diemThuong: 250, kyThuong: 'Q2/2026', ngayGhiNhan: '2026-04-28' },
+  { doiTuong: 'Ban Dịch vụ Hành khách', loaiDoiTuong: 'Đơn vị', donVi: 'Ban Dịch vụ Hành khách', chienDich: 'Chuyển đổi số Dịch vụ Mặt đất', sangKien: null, tienThuong: 30000000, diemThuong: 0, kyThuong: 'Q2/2026', ngayGhiNhan: '2026-05-20' },
+  { doiTuong: 'Vũ Đình Khang', loaiDoiTuong: 'Cá nhân', donVi: 'Ban Kỹ thuật', chienDich: null, sangKien: 'R&D vật liệu tiết kiệm nhiên liệu', tienThuong: 20000000, diemThuong: 450, kyThuong: 'Q1/2026', ngayGhiNhan: '2026-02-10' },
+  { doiTuong: 'Ban Tổ chức và Nhân lực', loaiDoiTuong: 'Đơn vị', donVi: 'Ban Tổ chức và Nhân lực', chienDich: null, sangKien: 'Blended learning đào tạo phi công & tiếp viên', tienThuong: 8000000, diemThuong: 0, kyThuong: 'Q1/2026', ngayGhiNhan: '2026-03-05' },
+];
+export const CHI_THUONG_GROUP_OPTIONS: { value: 'ca-nhan' | 'don-vi' | 'chien-dich' | 'sang-kien' | 'thoi-gian'; label: string }[] = [
+  { value: 'ca-nhan', label: 'Cá nhân' },
+  { value: 'don-vi', label: 'Đơn vị' },
+  { value: 'chien-dich', label: 'Chiến dịch' },
+  { value: 'sang-kien', label: 'Sáng kiến' },
+  { value: 'thoi-gian', label: 'Thời gian' },
 ];
 
 // ── Mock: Ví và giao dịch (IV.15) — số dư hiện tại theo loại ví (Cánh sen/Bông sen) ──
 export const VI_GIAO_DICH = [
-  { thoiGian: '05/07/2026 09:12', loai: 'Nhận thưởng sáng kiến', vi: 'Cánh sen', soTien: '+500', soDu: 2150 },
-  { thoiGian: '02/07/2026 14:30', loai: 'Quy đổi quà tặng', vi: 'Bông sen', soTien: '-1200', soDu: 3400 },
-  { thoiGian: '28/06/2026 08:05', loai: 'Nhận thưởng chiến dịch', vi: 'Cánh sen', soTien: '+300', soDu: 1650 },
+  { thoiGian: '05/07/2026 09:12', loai: 'Nhận thưởng sáng kiến', vi: 'Cánh sen', soTien: '+500', soDu: 2150, donVi: 'Ban Kỹ thuật', ngayGhiNhan: '2026-07-05' },
+  { thoiGian: '02/07/2026 14:30', loai: 'Quy đổi quà tặng', vi: 'Bông sen', soTien: '-1200', soDu: 3400, donVi: 'Ban Dịch vụ Hành khách', ngayGhiNhan: '2026-07-02' },
+  { thoiGian: '28/06/2026 08:05', loai: 'Nhận thưởng chiến dịch', vi: 'Cánh sen', soTien: '+300', soDu: 1650, donVi: 'Ban Chuyển đổi số công nghệ', ngayGhiNhan: '2026-06-28' },
 ];
 
 // ── Mock: Quy đổi quà tặng (IV.16) ────────────────────────────────────────────
 const QUA_TANG = [
-  { ten: 'Voucher nghỉ dưỡng 2N1Đ', daQuyDoi: 34, tonKho: 6, chiPhi: 200 },
-  { ten: 'Tai nghe không dây', daQuyDoi: 58, tonKho: 12, chiPhi: 80 },
-  { ten: 'Vé máy bay khứ hồi nội địa', daQuyDoi: 15, tonKho: 3, chiPhi: 600 },
+  { ten: 'Voucher nghỉ dưỡng 2N1Đ', loaiQua: 'Trải nghiệm & Du lịch', daQuyDoi: 34, tonKho: 6, chiPhi: 200, donVi: 'Ban Tổ chức và Nhân lực', ngayGhiNhan: '2026-04-10' },
+  { ten: 'Tai nghe không dây', loaiQua: 'Thiết bị công nghệ', daQuyDoi: 58, tonKho: 12, chiPhi: 80, donVi: 'Ban Chuyển đổi số công nghệ', ngayGhiNhan: '2026-05-05' },
+  { ten: 'Vé máy bay khứ hồi nội địa', loaiQua: 'Di chuyển', daQuyDoi: 15, tonKho: 3, chiPhi: 600, donVi: 'Ban Dịch vụ Hành khách', ngayGhiNhan: '2026-06-01' },
+  { ten: 'Đồng hồ thông minh', loaiQua: 'Thiết bị công nghệ', daQuyDoi: 22, tonKho: 5, chiPhi: 450, donVi: 'Ban Kỹ thuật', ngayGhiNhan: '2026-05-18' },
+  { ten: 'Voucher ăn uống nhà hàng', loaiQua: 'Ẩm thực', daQuyDoi: 71, tonKho: 20, chiPhi: 60, donVi: 'Ban Truyền thông', ngayGhiNhan: '2026-06-10' },
+  { ten: 'Balo du lịch cao cấp', loaiQua: 'Trải nghiệm & Du lịch', daQuyDoi: 41, tonKho: 9, chiPhi: 120, donVi: 'Ban Tổ chức và Nhân lực', ngayGhiNhan: '2026-06-20' },
 ];
 
 // ── Danh sách phòng ban (đã ghi nhớ) ──────────────────────────────────────────
@@ -340,6 +361,8 @@ export const BaoCaoPage: React.FC = () => {
   const [filterLinhVuc, setFilterLinhVuc] = useState<string>('');
   const [filterHieuQua, setFilterHieuQua] = useState<string>('');
   const [orgUnitOptions, setOrgUnitOptions] = useState<{ value: string; label: string }[]>([]);
+  // Nhóm thống kê cho Báo cáo chi thưởng: cá nhân/đơn vị/chiến dịch/sáng kiến/thời gian
+  const [chiThuongGroupBy, setChiThuongGroupBy] = useState<'ca-nhan' | 'don-vi' | 'chien-dich' | 'sang-kien' | 'thoi-gian'>('ca-nhan');
 
   // Tải danh sách đơn vị thật từ API
   useEffect(() => {
@@ -414,9 +437,16 @@ export const BaoCaoPage: React.FC = () => {
 
   // ── Điều khiển bảng xếp hạng: kỳ (năm/quý/tháng) + Top nhanh ──────────────
   const changeLbPeriod = (period: 'nam' | 'quy' | 'thang') => {
+    // Quý/Tháng cần chọn 1 năm cụ thể và không dùng khoảng ngày tùy chỉnh (không lọc được khi đang ở "Tất cả"
+    // hoặc đang chọn khoảng ngày) → tự động chuyển sang năm hiện tại, bỏ khoảng ngày, để xem được ngay
+    // thay vì disable im lặng.
+    const needYear = period !== 'nam' && (year === ALL_TIME || !!range);
+    const y = needYear ? THIS_YEAR : year;
+    const r = needYear ? null : range;
     setLbPeriod(period);
     setLbValue(1);
-    loadLb(year, period, 1, range, lbTop);
+    if (needYear) { setYear(y); setRange(null); }
+    loadLb(y, period, 1, r, lbTop);
   };
   const changeLbValue = (value: number) => {
     setLbValue(value);
@@ -437,13 +467,21 @@ export const BaoCaoPage: React.FC = () => {
     if (period !== lbPeriod) { setLbPeriod(period); setLbValue(1); }
     loadDash(y, null);
     loadLb(y, period, period === lbPeriod ? lbValue : 1, null);
+    // Báo cáo tương tác hệ thống & SLA không nhận tham số "năm" trực tiếp → quy đổi năm sang khoảng ngày
+    const yRange = y === ALL_TIME ? null : yearToRange(y);
+    loadTuongTac(yRange);
+    loadSlaReport(yRange);
   };
 
   const changeRange = (dates: any) => {
     const r: DateRange = dates && dates[0] && dates[1] ? [dates[0], dates[1]] : null;
     setRange(r);
+    // Khoảng ngày tùy chỉnh được ưu tiên hơn Quý/Tháng ở backend — về lại chế độ theo năm
+    // để tránh chọn Quý/Tháng mà không thấy có tác dụng (dễ gây hiểu nhầm là lỗi).
+    const period = r ? 'nam' : lbPeriod;
+    if (period !== lbPeriod) { setLbPeriod(period); setLbValue(1); }
     loadDash(year, r);
-    loadLb(year, lbPeriod, lbValue, r);
+    loadLb(year, period, period === lbPeriod ? lbValue : 1, r);
     loadTuongTac(r);
     loadSlaReport(r);
   };
@@ -576,21 +614,16 @@ export const BaoCaoPage: React.FC = () => {
         data = filterByDonVi(data);
         return data;
       }
-      case 'dong-gop': {
-        let data = (lb?.caNhan ?? []).map(x => ({
-          ...x,
-          linhVuc: '',
-          donVi: x.donVi || '',
-          chatLuong: '',
-        }));
-        data = filterByDonVi(data);
-        return data;
-      }
+      case 'dong-gop':
       case 'leaderboard': {
-        let data = [...(lb?.caNhan ?? []), ...(lb?.donVi ?? [])].map(x => ({
+        // Gộp cả 2 bảng "Cá nhân tiêu biểu" + "Đơn vị tiêu biểu" để xuất file đầy đủ (trước đây 'dong-gop' chỉ có cá nhân)
+        let data = [
+          ...(lb?.caNhan ?? []).map(x => ({ ...x, loai: 'Cá nhân', donVi: x.donVi || '' })),
+          ...(lb?.donVi ?? []).map(x => ({ ...x, loai: 'Đơn vị', donVi: x.ten })),
+        ].map(x => ({
           ...x,
+          diem: x.diemThuong,
           linhVuc: '',
-          donVi: (x as any).donVi || '',
           chatLuong: '',
         }));
         data = filterByDonVi(data);
@@ -625,19 +658,78 @@ export const BaoCaoPage: React.FC = () => {
         return data;
       }
       case 'chien-dich':
-        return CAMPAIGNS;
+        return filterByRange(filterByLinhVuc(filterByDonVi(CAMPAIGNS)));
       case 'chuong-trinh':
-        return CDS_PROGRAMS;
+        return filterByHieuQua(filterByRange(filterByLinhVuc(filterByDonVi(CDS_PROGRAMS))));
       case 'quy':
-        return QUY_KHCN;
-      case 'chi-thuong':
-        return CHI_THUONG.map(x => ({ ten: x.doiTuong, soLuong: x.tienThuong, ghiChu: `${x.donVi} • ${x.kyThuong}` }));
+        return filterByRange(filterByDonVi(QUY_KHCN.map(x => ({ ...x, ten: x.loaiQuy }))));
+      case 'chi-thuong': {
+        // Thống kê chi tiết các khoản chi tiền thưởng/điểm thưởng, nhóm theo cá nhân/đơn vị/chiến dịch/sáng kiến/thời gian
+        let base = filterByRange(filterByDonVi(CHI_THUONG));
+        if (chiThuongGroupBy === 'ca-nhan') base = base.filter(x => x.loaiDoiTuong === 'Cá nhân');
+
+        const keyOf = (x: typeof CHI_THUONG[number]): string => {
+          switch (chiThuongGroupBy) {
+            case 'ca-nhan': return x.doiTuong;
+            case 'don-vi': return x.donVi;
+            case 'chien-dich': return x.chienDich || 'Không thuộc chiến dịch';
+            case 'sang-kien': return x.sangKien || 'Không gắn sáng kiến';
+            case 'thoi-gian': return x.kyThuong;
+            default: return x.doiTuong;
+          }
+        };
+
+        const groups = new Map<string, { ten: string; soLuong: number; diemThuong: number; soLuot: number; donVi: Set<string>; ky: Set<string> }>();
+        base.forEach(x => {
+          const key = keyOf(x);
+          if (!groups.has(key)) groups.set(key, { ten: key, soLuong: 0, diemThuong: 0, soLuot: 0, donVi: new Set(), ky: new Set() });
+          const g = groups.get(key)!;
+          g.soLuong += x.tienThuong;
+          g.diemThuong += x.diemThuong;
+          g.soLuot += 1;
+          g.donVi.add(x.donVi);
+          g.ky.add(x.kyThuong);
+        });
+
+        return Array.from(groups.values())
+          .sort((a, b) => b.soLuong - a.soLuong)
+          .map(g => ({
+            ten: g.ten,
+            soLuong: g.soLuong,
+            diemThuong: g.diemThuong,
+            soLuot: g.soLuot,
+            donVi: Array.from(g.donVi).join(', '),
+            ghiChu: `${g.soLuot} lượt chi • Kỳ: ${Array.from(g.ky).join(', ')}`,
+          }));
+      }
       case 'vi-giao-dich':
-        return VI_GIAO_DICH;
-      case 'qua-tang':
-        return QUA_TANG.map(x => ({ ten: x.ten, soLuong: x.daQuyDoi, ghiChu: `${x.tonKho} quà còn lại • ${fmtNum(x.chiPhi)} đ` }));
+        return filterByRange(filterByDonVi(VI_GIAO_DICH.map(x => ({ ...x, ten: x.loai }))));
+      case 'qua-tang': {
+        let data = QUA_TANG.map(x => ({
+          ten: x.ten,
+          loaiQua: x.loaiQua,
+          daQuyDoi: x.daQuyDoi,
+          tonKho: x.tonKho,
+          chiPhi: x.chiPhi,
+          soLuong: x.daQuyDoi,
+          ghiChu: `${x.loaiQua} • ${x.tonKho} quà còn lại • ${fmtNum(x.chiPhi)} đ/lượt`,
+          donVi: x.donVi,
+          ngayGhiNhan: x.ngayGhiNhan,
+        }));
+        data = filterByDonVi(data);
+        data = filterByRange(data);
+
+        // Xác định loại quà phổ biến nhất (tổng số lượt quy đổi cao nhất) trong tập đang hiển thị
+        const tongTheoLoai = new Map<string, number>();
+        data.forEach(x => tongTheoLoai.set(x.loaiQua, (tongTheoLoai.get(x.loaiQua) ?? 0) + x.daQuyDoi));
+        let loaiPhoBienNhat = '';
+        let maxSoLuong = -1;
+        tongTheoLoai.forEach((soLuong, loai) => { if (soLuong > maxSoLuong) { maxSoLuong = soLuong; loaiPhoBienNhat = loai; } });
+
+        return data.map(x => ({ ...x, laLoaiPhoBien: x.loaiQua === loaiPhoBienNhat }));
+      }
       case 'roi': {
-        const data = NGAN_SACH_ROI.map(x => {
+        let data = NGAN_SACH_ROI.map(x => {
           const giaTri = x.tietKiem + x.doanhThu;
           const roi = x.chiPhi > 0 ? ((giaTri - x.chiPhi) / x.chiPhi) * 100 : 0;
           return {
@@ -649,8 +741,15 @@ export const BaoCaoPage: React.FC = () => {
             roi,
             nhanRong: x.nhanRong,
             chatLuong: x.chatLuong,
+            donVi: x.donVi,
+            linhVuc: x.linhVuc,
+            ngayGhiNhan: x.ngayGhiNhan,
           };
         });
+        data = filterByDonVi(data);
+        data = filterByLinhVuc(data);
+        data = filterByHieuQua(data);
+        data = filterByRange(data);
         return data;
       }
       case 'usage': {
@@ -660,13 +759,14 @@ export const BaoCaoPage: React.FC = () => {
           ghiChu: `${x.tanSuatDangNhap} lần/tuần • ${x.tyLeSuDungTinhNang}% sử dụng • ${x.mucDoTuongTac}`,
           linhVuc: '',
           donVi: x.donVi,
-          chatLuong: '',
+          chatLuong: x.mucDoTuongTac,
           tanSuatDangNhap: x.tanSuatDangNhap,
           tyLeSuDungTinhNang: x.tyLeSuDungTinhNang,
           mucDoTuongTac: x.mucDoTuongTac,
           soYTuongDaNop: x.soYTuongDaNop,
         }));
         data = filterByDonVi(data);
+        data = filterByHieuQua(data);
         return data;
       }
       case 'y-tuong-giai-phap-sang-kien': {
@@ -713,7 +813,7 @@ export const BaoCaoPage: React.FC = () => {
       default:
         return [];
     }
-  }, [reportTemplate, dash, lb, tuongTac, slaReport, filterDonVi, filterLinhVuc, filterHieuQua, range]);
+  }, [reportTemplate, dash, lb, tuongTac, slaReport, filterDonVi, filterLinhVuc, filterHieuQua, range, chiThuongGroupBy]);
 
   const mucDoTuongTacColor = (v: string) => {
     if (v === 'Cao') return 'green';
@@ -738,6 +838,7 @@ export const BaoCaoPage: React.FC = () => {
                 : v === 3 ? <i className="fa-solid fa-trophy" style={{ color: '#cd7f32', fontSize: 20 }} />
                   : <span style={{ fontWeight: 800, fontSize: 15 }}>{v}</span>,
         },
+        { title: 'Loại', dataIndex: 'loai', key: 'loai', width: 100, render: (value: string) => <Tag color={value === 'Đơn vị' ? 'purple' : 'blue'}>{value}</Tag> },
         { title: 'Họ tên / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
         { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 200, ellipsis: true, render: (value: string) => <span style={{ fontSize: 14, color: '#333' }}>{value || '—'}</span> },
         { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', width: 95, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v ?? 0}</span> },
@@ -747,6 +848,8 @@ export const BaoCaoPage: React.FC = () => {
           render: (v: number) => v > 0 ? <Tag color="purple" style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{v}</Tag> : <span style={{ fontSize: 14, color: '#888' }}>0</span>
         },
         { title: 'Điểm', dataIndex: 'diem', key: 'diem', width: 110, align: 'right' as const, render: (value: any) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
+        { title: 'Lượt tương tác', dataIndex: 'luotTuongTac', key: 'luotTuongTac', width: 120, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 600, fontSize: 14 }}>{fmtNum(v ?? 0)}</span> },
+        { title: 'Huy hiệu', dataIndex: 'huyHieu', key: 'huyHieu', width: 130, render: (v?: string | null) => v || '—' },
       ];
     }
 
@@ -754,7 +857,7 @@ export const BaoCaoPage: React.FC = () => {
       return [
         { title: 'Chiến dịch', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
         { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', width: 135, render: (value: string) => <Tag color={value === 'Đang diễn ra' ? 'blue' : 'green'} style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{value}</Tag> },
-        { title: 'Tham gia', dataIndex: 'ngUoiThamGia', key: 'ngUoiThamGia', width: 105, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v ?? 0}</span> },
+        { title: 'Số người tham gia', dataIndex: 'ngUoiThamGia', key: 'ngUoiThamGia', width: 130, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 700, fontSize: 14, color: '#003087' }}>{fmtNum(v ?? 0)}</span> },
         { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', width: 95, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v ?? 0}</span> },
         { title: 'Hoàn thành', dataIndex: 'tyLeHoanThanh', key: 'tyLeHoanThanh', width: 115, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}%</span> },
         { title: 'Thưởng', dataIndex: 'tongThuong', key: 'tongThuong', width: 140, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 700, fontSize: 14, color: '#17a2b8' }}>{fmtNum(v)}</span> },
@@ -772,6 +875,30 @@ export const BaoCaoPage: React.FC = () => {
         { title: 'Tiến độ', dataIndex: 'tienDo', key: 'tienDo', width: 95, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}%</span> },
         { title: 'Ngân sách', dataIndex: 'nganSach', key: 'nganSach', width: 105, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}%</span> },
         { title: 'Milestone', key: 'moc', width: 105, align: 'center' as const, render: (_: unknown, r: typeof CDS_PROGRAMS[number]) => <span style={{ fontWeight: 600, fontSize: 14 }}>{r.mocHoanThanh}/{r.mocTong}</span> },
+        {
+          title: 'Hiệu quả đạt được', key: 'hieuQua', width: 260,
+          render: (_: unknown, r: typeof CDS_PROGRAMS[number]) => (
+            <div>
+              <div style={{ marginBottom: 4 }}>
+                <Tag color={r.chatLuong === 'Cao' ? 'green' : r.chatLuong === 'Trung bình' ? 'gold' : 'red'} style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{r.chatLuong}</Tag>
+                <span style={{ fontWeight: 800, fontSize: 14, color: '#16a34a', marginLeft: 6 }}>{fmtNum(r.tietKiem)}</span>
+              </div>
+              <div style={{ fontSize: 12.5, color: '#5e6278' }}>{r.hieuQuaMoTa}</div>
+            </div>
+          ),
+        },
+      ];
+    }
+
+    if (reportTemplate === 'chi-thuong') {
+      const groupLabel = CHI_THUONG_GROUP_OPTIONS.find(o => o.value === chiThuongGroupBy)?.label || 'Đối tượng';
+      return [
+        { title: groupLabel, dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
+        { title: 'Đơn vị liên quan', dataIndex: 'donVi', key: 'donVi', ellipsis: true, render: (value: string) => <span style={{ fontSize: 13 }}>{value || '—'}</span> },
+        { title: 'Tổng tiền thưởng', dataIndex: 'soLuong', key: 'soLuong', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#16a34a' }}>{fmtNum(value)}</span> },
+        { title: 'Tổng điểm thưởng', dataIndex: 'diemThuong', key: 'diemThuong', width: 150, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14, color: '#7239EA' }}>{fmtNum(value)}</span> },
+        { title: 'Số lượt chi', dataIndex: 'soLuot', key: 'soLuot', width: 110, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
+        { title: 'Ghi chú', dataIndex: 'ghiChu', key: 'ghiChu', ellipsis: true },
       ];
     }
 
@@ -781,6 +908,24 @@ export const BaoCaoPage: React.FC = () => {
         { title: 'Ngân sách đầu', dataIndex: 'nganSachDau', key: 'nganSachDau', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{fmtNum(value)}</span> },
         { title: 'Đã chi', dataIndex: 'daChi', key: 'daChi', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{fmtNum(value)}</span> },
         { title: 'Còn lại', key: 'conLai', width: 160, align: 'right' as const, render: (_: unknown, row: any) => <span style={{ fontWeight: 800, fontSize: 16, color: '#16a34a' }}>{fmtNum(row.nganSachDau - row.daChi)}</span> },
+      ];
+    }
+
+    if (reportTemplate === 'qua-tang') {
+      return [
+        {
+          title: 'Quà tặng', dataIndex: 'ten', key: 'ten', ellipsis: true,
+          render: (value: string, r: any) => (
+            <div>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span>
+              {r.laLoaiPhoBien && <Tag color="gold" className="ms-2">Loại phổ biến nhất</Tag>}
+            </div>
+          ),
+        },
+        { title: 'Loại quà', dataIndex: 'loaiQua', key: 'loaiQua', width: 180, render: (v: string) => <Tag color="blue">{v}</Tag> },
+        { title: 'Số lượng quy đổi', dataIndex: 'daQuyDoi', key: 'daQuyDoi', width: 140, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(v)}</span> },
+        { title: 'Tồn kho', dataIndex: 'tonKho', key: 'tonKho', width: 110, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 700, fontSize: 14, color: v <= 5 ? '#dc2626' : '#333' }}>{fmtNum(v)}</span> },
+        { title: 'Chi phí quy đổi (điểm)', dataIndex: 'chiPhi', key: 'chiPhi', width: 160, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{fmtNum(v)}</span> },
       ];
     }
 
@@ -875,7 +1020,12 @@ export const BaoCaoPage: React.FC = () => {
     }
 
     return baseColumns;
-  }, [reportTemplate]);
+  }, [reportTemplate, chiThuongGroupBy]);
+
+  // Chỉ các mẫu báo cáo có dữ liệu lĩnh vực/mức độ hiệu quả mới nên bật 2 bộ lọc này —
+  // tránh trường hợp người dùng đổi bộ lọc nhưng chỉ số không đổi vì mẫu báo cáo không có dữ liệu tương ứng.
+  const supportsLinhVuc = ['hieu-qua', 'chien-dich', 'chuong-trinh', 'roi'].includes(reportTemplate);
+  const supportsHieuQua = ['hieu-qua', 'chuong-trinh', 'roi', 'usage'].includes(reportTemplate);
 
   const EXPORT_CONFIG = {
     csv: { fn: exportIdeaReport, ext: 'csv', label: 'CSV — mở bằng Excel' },
@@ -1174,6 +1324,20 @@ export const BaoCaoPage: React.FC = () => {
       title: 'Công nhận', dataIndex: 'soDuocCongNhan', key: 'soDuocCongNhan', width: 100, className: 'text-center',
       render: (v: number) => v > 0 ? <Tag color="purple">{v}</Tag> : <span className="text-muted">0</span>,
     },
+    {
+      title: 'Điểm thưởng', dataIndex: 'diemThuong', key: 'diemThuong', width: 110, align: 'right' as const,
+      render: (v: number) => <span style={{ fontWeight: 700, color: '#003087' }}>{fmtNum(v ?? 0)}</span>,
+    },
+    {
+      title: 'Lượt tương tác', dataIndex: 'luotTuongTac', key: 'luotTuongTac', width: 120, align: 'center' as const,
+      render: (v?: number) => <span className="fw-semibold">{fmtNum(v ?? 0)}</span>,
+    },
+    {
+      title: 'Huy hiệu', dataIndex: 'huyHieu', key: 'huyHieu', width: 130, align: 'center' as const,
+      render: (v?: string | null) => v
+        ? <Tag color={v.includes('Vàng') ? 'gold' : v.includes('Bạc') ? 'default' : 'orange'}>{v}</Tag>
+        : <span className="text-muted">—</span>,
+    },
   ];
 
   return (
@@ -1268,35 +1432,56 @@ export const BaoCaoPage: React.FC = () => {
                 </div>
                 <div className="col-md-4">
                   <div className="fs-8 text-muted mb-1">Lĩnh vực</div>
-                  <AutoComplete
-                    value={filterLinhVuc}
-                    onChange={setFilterLinhVuc}
-                    onSelect={setFilterLinhVuc}
-                    options={LINH_VUC_OPTIONS}
-                    placeholder="Chọn hoặc nhập lĩnh vực"
-                    filterOption={(input, option) =>
-                      (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
-                    }
-                    allowClear
-                    className="w-100"
-                  />
+                  <Tooltip title={!supportsLinhVuc ? 'Mẫu báo cáo này không có dữ liệu theo lĩnh vực' : undefined}>
+                    <AutoComplete
+                      value={filterLinhVuc}
+                      onChange={setFilterLinhVuc}
+                      onSelect={setFilterLinhVuc}
+                      options={LINH_VUC_OPTIONS}
+                      placeholder="Chọn hoặc nhập lĩnh vực"
+                      filterOption={(input, option) =>
+                        (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                      allowClear
+                      disabled={!supportsLinhVuc}
+                      className="w-100"
+                    />
+                  </Tooltip>
                 </div>
                 <div className="col-md-4">
                   <div className="fs-8 text-muted mb-1">Mức độ hiệu quả</div>
-                  <Select
-                    value={filterHieuQua}
-                    onChange={setFilterHieuQua}
-                    className="w-100"
-                    allowClear
-                    placeholder="Tất cả"
-                  >
-                    <Option value="">Tất cả</Option>
-                    <Option value="Cao">Cao</Option>
-                    <Option value="Trung bình">Trung bình</Option>
-                    <Option value="Thấp">Thấp</Option>
-                  </Select>
+                  <Tooltip title={!supportsHieuQua ? 'Mẫu báo cáo này không có dữ liệu theo mức độ hiệu quả' : undefined}>
+                    <Select
+                      value={filterHieuQua}
+                      onChange={setFilterHieuQua}
+                      className="w-100"
+                      allowClear
+                      disabled={!supportsHieuQua}
+                      placeholder="Tất cả"
+                    >
+                      <Option value="">Tất cả</Option>
+                      <Option value="Cao">Cao</Option>
+                      <Option value="Trung bình">Trung bình</Option>
+                      <Option value="Thấp">Thấp</Option>
+                    </Select>
+                  </Tooltip>
                 </div>
               </div>
+
+              {reportTemplate === 'chi-thuong' && (
+                <div className="row g-3 mb-4 p-3 rounded-3" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
+                  <div className="col-12">
+                    <div className="fs-8 fw-semibold text-muted mb-2">
+                      <i className="fa-regular fa-layer-group me-1" />Thống kê chi thưởng theo
+                    </div>
+                    <Segmented
+                      value={chiThuongGroupBy}
+                      onChange={v => setChiThuongGroupBy(v as typeof chiThuongGroupBy)}
+                      options={CHI_THUONG_GROUP_OPTIONS.map(o => ({ label: o.label, value: o.value }))}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="row g-3 mb-4">
                 <div className="col-md-4">
@@ -1320,6 +1505,34 @@ export const BaoCaoPage: React.FC = () => {
                 </div>
               </div>
 
+              {reportTemplate === 'chien-dich' && (
+                <div className="row g-2 mb-4">
+                  {[
+                    { label: 'Tổng chiến dịch', value: fmtNum(reportRows.length), color: '#003087' },
+                    { label: 'Tổng người tham gia', value: fmtNum(reportRows.reduce((s: number, r: any) => s + (r.ngUoiThamGia ?? 0), 0)), color: '#7239EA' },
+                    { label: 'Tổng số nộp', value: fmtNum(reportRows.reduce((s: number, r: any) => s + (r.soNop ?? 0), 0)), color: '#F59F00' },
+                    {
+                      label: 'Tỷ lệ hoàn thành TB',
+                      value: reportRows.length > 0
+                        ? `${Math.round(reportRows.reduce((s: number, r: any) => s + (r.tyLeHoanThanh ?? 0), 0) / reportRows.length)}%`
+                        : '—',
+                      color: '#17C653',
+                    },
+                    { label: 'Tổng thưởng đã chi', value: fmtNum(reportRows.reduce((s: number, r: any) => s + (r.tongThuong ?? 0), 0)), color: '#F1416C' },
+                    { label: 'Tổng huy hiệu đã trao', value: fmtNum(reportRows.reduce((s: number, r: any) => s + (r.huyHieu ?? 0), 0)), color: '#B5179E' },
+                  ].map((k, i) => (
+                    <div key={i} className="col-6 col-md-4 col-xl-2">
+                      <div className="card card-flush h-100" style={{ borderLeft: `3px solid ${k.color}` }}>
+                        <div className="card-body py-2 px-3">
+                          <div className="fs-9 fw-semibold text-gray-600 mb-1 text-truncate">{k.label}</div>
+                          <div className="fs-4 fw-bold" style={{ color: k.color }}>{k.value}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div className="fw-bold text-gray-800">
                   <i className="fa-regular fa-table me-2 text-primary" />Bảng kết quả
@@ -1330,8 +1543,8 @@ export const BaoCaoPage: React.FC = () => {
                 </div>
               </div>
 
-              {reportTemplate === 'leaderboard' ? (
-                /* ── Mẫu "Bảng xếp hạng": kỳ tháng/quý/năm + Top nhanh + Cá nhân/Đơn vị ── */
+              {(reportTemplate === 'leaderboard' || reportTemplate === 'dong-gop') ? (
+                /* ── Mẫu "Bảng xếp hạng" / "Đóng góp cá nhân/đơn vị": kỳ tháng/quý/năm + Top nhanh + Cá nhân/Đơn vị ── */
                 <>
                   <div className="d-flex gap-2 flex-wrap align-items-center mb-4">
                     <Segmented
@@ -1339,8 +1552,8 @@ export const BaoCaoPage: React.FC = () => {
                       onChange={v => changeLbPeriod(v as 'nam' | 'quy' | 'thang')}
                       options={[
                         { label: 'Năm', value: 'nam' },
-                        { label: 'Quý', value: 'quy', disabled: year === ALL_TIME },
-                        { label: 'Tháng', value: 'thang', disabled: year === ALL_TIME },
+                        { label: 'Quý', value: 'quy' },
+                        { label: 'Tháng', value: 'thang' },
                       ]}
                     />
                     {lbPeriod === 'quy' && (
@@ -1368,13 +1581,15 @@ export const BaoCaoPage: React.FC = () => {
 
                   <Spin spinning={lbLoading}>
                     <div className="row g-4">
-                      <div className="col-xl-6">
+                      <div className="col-12 mb-4">
                         <div className="fw-bold text-gray-700 fs-7 mb-2">
                           <i className="fa-regular fa-user me-2 text-primary" />Cá nhân tiêu biểu
                         </div>
                         <Table
                           columns={lbColumns(false) as any}
-                          dataSource={lb?.caNhan ?? []}
+                          dataSource={(lb?.caNhan ?? []).filter(r => !filterDonVi
+                            || (r.donVi || '').toLowerCase().includes(filterDonVi.toLowerCase())
+                            || r.ten.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: IIdeaContribution) => `cn-${r.xepHang}-${r.ten}`}
                           size="small"
                           pagination={false}
@@ -1382,13 +1597,13 @@ export const BaoCaoPage: React.FC = () => {
                           locale={{ emptyText: <Empty description="Chưa có dữ liệu xếp hạng cá nhân trong kỳ" /> }}
                         />
                       </div>
-                      <div className="col-xl-6">
+                      <div className="col-12">
                         <div className="fw-bold text-gray-700 fs-7 mb-2">
                           <i className="fa-regular fa-building me-2 text-info" />Đơn vị tiêu biểu
                         </div>
                         <Table
                           columns={lbColumns(true) as any}
-                          dataSource={lb?.donVi ?? []}
+                          dataSource={(lb?.donVi ?? []).filter(r => !filterDonVi || r.ten.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: IIdeaContribution) => `dv-${r.xepHang}-${r.ten}`}
                           size="small"
                           pagination={false}
@@ -1419,7 +1634,9 @@ export const BaoCaoPage: React.FC = () => {
                             { title: 'Đăng nhập', dataIndex: 'soLanDangNhap', key: 'soLanDangNhap', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
                           ] as any}
-                          dataSource={tuongTac?.theoNguoiDung ?? []}
+                          dataSource={(tuongTac?.theoNguoiDung ?? []).filter(r => !filterDonVi
+                            || (r.donVi || '').toLowerCase().includes(filterDonVi.toLowerCase())
+                            || r.tenNguoiDung.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ITuongTacTheoNguoi) => r.userId}
                           size="small"
                           pagination={{ pageSize: 10 }}
@@ -1440,7 +1657,7 @@ export const BaoCaoPage: React.FC = () => {
                             { title: 'Bình luận', dataIndex: 'binhLuan', key: 'binhLuan', width: 90, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
                           ] as any}
-                          dataSource={tuongTac?.theoDonVi ?? []}
+                          dataSource={(tuongTac?.theoDonVi ?? []).filter(r => !filterDonVi || r.donViCode.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ITuongTacTheoDonVi) => r.donViCode}
                           size="small"
                           pagination={{ pageSize: 10 }}
@@ -1582,7 +1799,7 @@ export const BaoCaoPage: React.FC = () => {
                             { title: 'Đúng hạn', dataIndex: 'tyLeDungHan', key: 'tyLeDungHan', width: 100, align: 'center' as const, render: (v: number) => <span style={{ color: v != null && v < 70 ? '#F1416C' : '#17C653', fontWeight: 700 }}>{v != null ? `${v}%` : '—'}</span> },
                             { title: 'Tồn đọng', dataIndex: 'soTonDongQuaHan', key: 'soTonDongQuaHan', width: 90, align: 'center' as const, render: (v: number) => v > 0 ? <Tag color="error">{v}</Tag> : 0 },
                           ] as any}
-                          dataSource={slaReport?.theoDonVi ?? []}
+                          dataSource={(slaReport?.theoDonVi ?? []).filter(r => !filterDonVi || r.donVi.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ISlaTheoDonVi) => r.donVi}
                           size="small"
                           pagination={{ pageSize: 8 }}
@@ -1602,7 +1819,7 @@ export const BaoCaoPage: React.FC = () => {
                             { title: 'Bước', dataIndex: 'buoc', key: 'buoc', width: 120 },
                             { title: 'Tồn đọng (giờ)', dataIndex: 'soGioTonDong', key: 'soGioTonDong', width: 110, align: 'center' as const, render: (v: number) => <Tag color="error">{fmtNum(v)}</Tag> },
                           ] as any}
-                          dataSource={slaReport?.canhBaoTonDong ?? []}
+                          dataSource={(slaReport?.canhBaoTonDong ?? []).filter(r => !filterDonVi || (r.donVi || '').toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ISlaCanhBao) => r.ideaId}
                           size="small"
                           pagination={{ pageSize: 8 }}
@@ -1828,6 +2045,7 @@ export const BaoCaoPage: React.FC = () => {
                           { title: 'Tiến độ', dataIndex: 'tienDo', width: 120, render: (v: number) => `${v}%` },
                           { title: 'Ngân sách', dataIndex: 'nganSach', width: 120, render: (v: number) => `${v}%` },
                           { title: 'Milestone', key: 'moc', width: 110, render: (_: unknown, r: typeof CDS_PROGRAMS[number]) => `${r.mocHoanThanh}/${r.mocTong}` },
+                          { title: 'Hiệu quả đạt được', dataIndex: 'chatLuong', width: 130, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : v === 'Trung bình' ? 'gold' : 'red'}>{v}</Tag> },
                         ]}
                       />
                     ),
@@ -1867,7 +2085,10 @@ export const BaoCaoPage: React.FC = () => {
                                 rowKey="doiTuong"
                                 columns={[
                                   { title: 'Đối tượng', dataIndex: 'doiTuong' },
+                                  { title: 'Loại', dataIndex: 'loaiDoiTuong', width: 100, render: (v: string) => <Tag color={v === 'Cá nhân' ? 'blue' : 'purple'}>{v}</Tag> },
                                   { title: 'Đơn vị', dataIndex: 'donVi', width: 180 },
+                                  { title: 'Chiến dịch', dataIndex: 'chienDich', width: 180, render: (v: string | null) => v || '—' },
+                                  { title: 'Sáng kiến', dataIndex: 'sangKien', width: 200, ellipsis: true, render: (v: string | null) => v || '—' },
                                   { title: 'Tiền thưởng', dataIndex: 'tienThuong', width: 150, render: fmtNum },
                                   { title: 'Điểm thưởng', dataIndex: 'diemThuong', width: 120 },
                                   { title: 'Kỳ thưởng', dataIndex: 'kyThuong', width: 120 },
