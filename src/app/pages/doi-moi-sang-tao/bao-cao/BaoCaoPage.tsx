@@ -823,8 +823,8 @@ export const BaoCaoPage: React.FC = () => {
 
   const reportColumns = useMemo(() => {
     const baseColumns = [
-      { title: 'Chỉ tiêu', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
-      { title: 'Giá trị', dataIndex: 'soLuong', key: 'soLuong', width: 150, align: 'center' as const, render: (value: any) => <span style={{ fontWeight: 800, fontSize: 18, color: '#003087' }}>{typeof value === 'number' ? fmtNum(value) : (value ?? '—')}</span> },
+      { title: 'Chỉ tiêu', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
+      { title: 'Giá trị', dataIndex: 'soLuong', key: 'soLuong', width: 150, align: 'center' as const, render: (value: any) => <span style={{ fontWeight: 400, fontSize: 18, color: '#003087' }}>{typeof value === 'number' ? fmtNum(value) : (value ?? '—')}</span> },
       { title: 'Ghi chú', dataIndex: 'ghiChu', key: 'ghiChu', width: 250, render: (value: string) => <span style={{ fontSize: 13, color: '#444' }}>{value || '—'}</span> },
     ];
 
@@ -836,52 +836,48 @@ export const BaoCaoPage: React.FC = () => {
             v === 1 ? <i className="fa-solid fa-trophy text-warning" style={{ fontSize: 20 }} />
               : v === 2 ? <i className="fa-solid fa-trophy text-secondary" style={{ fontSize: 20 }} />
                 : v === 3 ? <i className="fa-solid fa-trophy" style={{ color: '#cd7f32', fontSize: 20 }} />
-                  : <span style={{ fontWeight: 800, fontSize: 15 }}>{v}</span>,
+                  : <span style={{ fontWeight: 400, fontSize: 15 }}>{v}</span>,
         },
         { title: 'Loại', dataIndex: 'loai', key: 'loai', width: 100, render: (value: string) => <Tag color={value === 'Đơn vị' ? 'purple' : 'blue'}>{value}</Tag> },
-        { title: 'Họ tên / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
+        { title: 'Họ tên / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
         { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 200, ellipsis: true, render: (value: string) => <span style={{ fontSize: 14, color: '#333' }}>{value || '—'}</span> },
-        { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', width: 95, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v ?? 0}</span> },
-        { title: 'Duyệt', dataIndex: 'soDuocDuyet', key: 'soDuocDuyet', width: 85, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v ?? 0}</span> },
+        { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', width: 95, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v ?? 0}</span> },
+        { title: 'Duyệt', dataIndex: 'soDuocDuyet', key: 'soDuocDuyet', width: 85, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v ?? 0}</span> },
         {
           title: 'Công nhận', dataIndex: 'soDuocCongNhan', key: 'soDuocCongNhan', width: 105, align: 'center' as const,
-          render: (v: number) => v > 0 ? <Tag color="purple" style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{v}</Tag> : <span style={{ fontSize: 14, color: '#888' }}>0</span>
+          render: (v: number) => v > 0 ? <Tag color="purple" style={{ fontSize: 13, fontWeight: 400, padding: '2px 10px' }}>{v}</Tag> : <span style={{ fontSize: 14, color: '#888' }}>0</span>
         },
-        { title: 'Điểm', dataIndex: 'diem', key: 'diem', width: 110, align: 'right' as const, render: (value: any) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
-        { title: 'Lượt tương tác', dataIndex: 'luotTuongTac', key: 'luotTuongTac', width: 120, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 600, fontSize: 14 }}>{fmtNum(v ?? 0)}</span> },
+        { title: 'Điểm', dataIndex: 'diem', key: 'diem', width: 110, align: 'right' as const, render: (value: any) => <span style={{ fontWeight: 400, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
+        { title: 'Lượt tương tác', dataIndex: 'luotTuongTac', key: 'luotTuongTac', width: 120, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{fmtNum(v ?? 0)}</span> },
         { title: 'Huy hiệu', dataIndex: 'huyHieu', key: 'huyHieu', width: 130, render: (v?: string | null) => v || '—' },
       ];
     }
 
     if (reportTemplate === 'chien-dich') {
       return [
-        { title: 'Chiến dịch', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
-        { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', width: 135, render: (value: string) => <Tag color={value === 'Đang diễn ra' ? 'blue' : 'green'} style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{value}</Tag> },
-        { title: 'Số người tham gia', dataIndex: 'ngUoiThamGia', key: 'ngUoiThamGia', width: 130, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 700, fontSize: 14, color: '#003087' }}>{fmtNum(v ?? 0)}</span> },
-        { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', width: 95, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v ?? 0}</span> },
-        { title: 'Hoàn thành', dataIndex: 'tyLeHoanThanh', key: 'tyLeHoanThanh', width: 115, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}%</span> },
-        { title: 'Thưởng', dataIndex: 'tongThuong', key: 'tongThuong', width: 140, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 700, fontSize: 14, color: '#17a2b8' }}>{fmtNum(v)}</span> },
-        { title: 'Huy hiệu', dataIndex: 'huyHieu', key: 'huyHieu', width: 95, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v ?? 0}</span> },
+        { title: 'Chiến dịch', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
+        { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', width: 135, render: (value: string) => <Tag color={value === 'Đang diễn ra' ? 'blue' : 'green'} style={{ fontSize: 13, fontWeight: 400, padding: '2px 10px' }}>{value}</Tag> },
+        { title: 'Số người tham gia', dataIndex: 'ngUoiThamGia', key: 'ngUoiThamGia', width: 130, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 400, fontSize: 14, color: '#003087' }}>{fmtNum(v ?? 0)}</span> },
+        { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', width: 95, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v ?? 0}</span> },
+        { title: 'Hoàn thành', dataIndex: 'tyLeHoanThanh', key: 'tyLeHoanThanh', width: 115, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}%</span> },
+        { title: 'Thưởng', dataIndex: 'tongThuong', key: 'tongThuong', width: 140, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 400, fontSize: 14, color: '#17a2b8' }}>{fmtNum(v)}</span> },
+        { title: 'Huy hiệu', dataIndex: 'huyHieu', key: 'huyHieu', width: 95, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v ?? 0}</span> },
       ];
     }
-
-
-
-
     if (reportTemplate === 'chuong-trinh') {
       return [
-        { title: 'Chương trình / Dự án', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
-        { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', width: 130, render: (value: string) => <span style={{ color: CDS_STATUS_COLOR[value], fontWeight: 700, fontSize: 14 }}>{value}</span> },
-        { title: 'Tiến độ', dataIndex: 'tienDo', key: 'tienDo', width: 95, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}%</span> },
-        { title: 'Ngân sách', dataIndex: 'nganSach', key: 'nganSach', width: 105, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}%</span> },
-        { title: 'Milestone', key: 'moc', width: 105, align: 'center' as const, render: (_: unknown, r: typeof CDS_PROGRAMS[number]) => <span style={{ fontWeight: 600, fontSize: 14 }}>{r.mocHoanThanh}/{r.mocTong}</span> },
+        { title: 'Chương trình / Dự án', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
+        { title: 'Trạng thái', dataIndex: 'trangThai', key: 'trangThai', width: 130, render: (value: string) => <span style={{ color: CDS_STATUS_COLOR[value], fontWeight: 400, fontSize: 14 }}>{value}</span> },
+        { title: 'Tiến độ', dataIndex: 'tienDo', key: 'tienDo', width: 95, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}%</span> },
+        { title: 'Ngân sách', dataIndex: 'nganSach', key: 'nganSach', width: 105, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}%</span> },
+        { title: 'Milestone', key: 'moc', width: 105, align: 'center' as const, render: (_: unknown, r: typeof CDS_PROGRAMS[number]) => <span style={{ fontWeight: 400, fontSize: 14 }}>{r.mocHoanThanh}/{r.mocTong}</span> },
         {
-          title: 'Hiệu quả đạt được', key: 'hieuQua', width: 260,
+          title: 'Hiệu quả đạt được', key: 'hieuQua', width: 360,
           render: (_: unknown, r: typeof CDS_PROGRAMS[number]) => (
             <div>
               <div style={{ marginBottom: 4 }}>
-                <Tag color={r.chatLuong === 'Cao' ? 'green' : r.chatLuong === 'Trung bình' ? 'gold' : 'red'} style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{r.chatLuong}</Tag>
-                <span style={{ fontWeight: 800, fontSize: 14, color: '#16a34a', marginLeft: 6 }}>{fmtNum(r.tietKiem)}</span>
+                <Tag color={r.chatLuong === 'Cao' ? 'green' : r.chatLuong === 'Trung bình' ? 'gold' : 'red'} style={{ fontSize: 13, fontWeight: 400, padding: '2px 10px' }}>{r.chatLuong}</Tag>
+                <span style={{ fontWeight: 400, fontSize: 14, color: '#16a34a', marginLeft: 6 }}>{fmtNum(r.tietKiem)}</span>
               </div>
               <div style={{ fontSize: 12.5, color: '#5e6278' }}>{r.hieuQuaMoTa}</div>
             </div>
@@ -893,21 +889,21 @@ export const BaoCaoPage: React.FC = () => {
     if (reportTemplate === 'chi-thuong') {
       const groupLabel = CHI_THUONG_GROUP_OPTIONS.find(o => o.value === chiThuongGroupBy)?.label || 'Đối tượng';
       return [
-        { title: groupLabel, dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
+        { title: groupLabel, dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
         { title: 'Đơn vị liên quan', dataIndex: 'donVi', key: 'donVi', ellipsis: true, render: (value: string) => <span style={{ fontSize: 13 }}>{value || '—'}</span> },
-        { title: 'Tổng tiền thưởng', dataIndex: 'soLuong', key: 'soLuong', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#16a34a' }}>{fmtNum(value)}</span> },
-        { title: 'Tổng điểm thưởng', dataIndex: 'diemThuong', key: 'diemThuong', width: 150, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14, color: '#7239EA' }}>{fmtNum(value)}</span> },
-        { title: 'Số lượt chi', dataIndex: 'soLuot', key: 'soLuot', width: 110, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
+        { title: 'Tổng tiền thưởng', dataIndex: 'soLuong', key: 'soLuong', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 15, color: '#16a34a' }}>{fmtNum(value)}</span> },
+        { title: 'Tổng điểm thưởng', dataIndex: 'diemThuong', key: 'diemThuong', width: 150, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 14, color: '#7239EA' }}>{fmtNum(value)}</span> },
+        { title: 'Số lượt chi', dataIndex: 'soLuot', key: 'soLuot', width: 110, align: 'center' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
         { title: 'Ghi chú', dataIndex: 'ghiChu', key: 'ghiChu', ellipsis: true },
       ];
     }
 
     if (reportTemplate === 'quy') {
       return [
-        { title: 'Loại quỹ', dataIndex: 'loaiQuy', key: 'loaiQuy', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
-        { title: 'Ngân sách đầu', dataIndex: 'nganSachDau', key: 'nganSachDau', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{fmtNum(value)}</span> },
-        { title: 'Đã chi', dataIndex: 'daChi', key: 'daChi', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{fmtNum(value)}</span> },
-        { title: 'Còn lại', key: 'conLai', width: 160, align: 'right' as const, render: (_: unknown, row: any) => <span style={{ fontWeight: 800, fontSize: 16, color: '#16a34a' }}>{fmtNum(row.nganSachDau - row.daChi)}</span> },
+        { title: 'Loại quỹ', dataIndex: 'loaiQuy', key: 'loaiQuy', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
+        { title: 'Ngân sách đầu', dataIndex: 'nganSachDau', key: 'nganSachDau', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{fmtNum(value)}</span> },
+        { title: 'Đã chi', dataIndex: 'daChi', key: 'daChi', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{fmtNum(value)}</span> },
+        { title: 'Còn lại', key: 'conLai', width: 160, align: 'right' as const, render: (_: unknown, row: any) => <span style={{ fontWeight: 400, fontSize: 16, color: '#16a34a' }}>{fmtNum(row.nganSachDau - row.daChi)}</span> },
       ];
     }
 
@@ -917,74 +913,74 @@ export const BaoCaoPage: React.FC = () => {
           title: 'Quà tặng', dataIndex: 'ten', key: 'ten', ellipsis: true,
           render: (value: string, r: any) => (
             <div>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span>
+              <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span>
               {r.laLoaiPhoBien && <Tag color="gold" className="ms-2">Loại phổ biến nhất</Tag>}
             </div>
           ),
         },
         { title: 'Loại quà', dataIndex: 'loaiQua', key: 'loaiQua', width: 180, render: (v: string) => <Tag color="blue">{v}</Tag> },
-        { title: 'Số lượng quy đổi', dataIndex: 'daQuyDoi', key: 'daQuyDoi', width: 140, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(v)}</span> },
-        { title: 'Tồn kho', dataIndex: 'tonKho', key: 'tonKho', width: 110, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 700, fontSize: 14, color: v <= 5 ? '#dc2626' : '#333' }}>{fmtNum(v)}</span> },
-        { title: 'Chi phí quy đổi (điểm)', dataIndex: 'chiPhi', key: 'chiPhi', width: 160, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{fmtNum(v)}</span> },
+        { title: 'Số lượng quy đổi', dataIndex: 'daQuyDoi', key: 'daQuyDoi', width: 140, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 400, fontSize: 15, color: '#003087' }}>{fmtNum(v)}</span> },
+        { title: 'Tồn kho', dataIndex: 'tonKho', key: 'tonKho', width: 110, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 400, fontSize: 14, color: v <= 5 ? '#dc2626' : '#333' }}>{fmtNum(v)}</span> },
+        { title: 'Chi phí quy đổi (điểm)', dataIndex: 'chiPhi', key: 'chiPhi', width: 160, align: 'right' as const, render: (v: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{fmtNum(v)}</span> },
       ];
     }
 
     if (reportTemplate === 'vi-giao-dich') {
       return [
-        { title: 'Thời gian', dataIndex: 'thoiGian', key: 'thoiGian', width: 160, render: (v: string) => <span style={{ fontWeight: 600, fontSize: 13 }}>{v}</span> },
-        { title: 'Loại giao dịch', dataIndex: 'loai', key: 'loai', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v}</span> },
-        { title: 'Ví', dataIndex: 'vi', key: 'vi', width: 110, render: (v: string) => <span style={{ fontWeight: 600, fontSize: 14 }}>{v}</span> },
-        { title: 'Số tiền', dataIndex: 'soTien', key: 'soTien', width: 120, align: 'right' as const, render: (value: string) => <span style={{ fontWeight: 800, fontSize: 15, color: value.startsWith('+') ? '#16a34a' : '#dc2626' }}>{value}</span> },
-        { title: 'Số dư', dataIndex: 'soDu', key: 'soDu', width: 120, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15 }}>{fmtNum(value)}</span> },
+        { title: 'Thời gian', dataIndex: 'thoiGian', key: 'thoiGian', width: 160, render: (v: string) => <span style={{ fontWeight: 400, fontSize: 13 }}>{v}</span> },
+        { title: 'Loại giao dịch', dataIndex: 'loai', key: 'loai', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v}</span> },
+        { title: 'Ví', dataIndex: 'vi', key: 'vi', width: 110, render: (v: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v}</span> },
+        { title: 'Số tiền', dataIndex: 'soTien', key: 'soTien', width: 120, align: 'right' as const, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 15, color: value.startsWith('+') ? '#16a34a' : '#dc2626' }}>{value}</span> },
+        { title: 'Số dư', dataIndex: 'soDu', key: 'soDu', width: 120, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 15 }}>{fmtNum(value)}</span> },
       ];
     }
 
     if (reportTemplate === 'hieu-qua') {
       return [
-        { title: 'Sáng kiến / Ý tưởng', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
-        { title: 'Tiết kiệm chi phí', dataIndex: 'tietKiem', key: 'tietKiem', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#16a34a' }}>{fmtNum(value)}</span> },
-        { title: 'Tăng doanh thu', dataIndex: 'doanhThu', key: 'doanhThu', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
-        { title: 'Nhân rộng', dataIndex: 'nhanRong', key: 'nhanRong', width: 100, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v ?? 0}</span> },
-        { title: 'Chất lượng', dataIndex: 'chatLuong', key: 'chatLuong', width: 120, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : 'gold'} style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{v}</Tag> },
+        { title: 'Sáng kiến / Ý tưởng', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontSize: 14 }}>{value}</span> },
+        { title: 'Tiết kiệm chi phí', dataIndex: 'tietKiem', key: 'tietKiem', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontSize: 15, color: '#16a34a' }}>{fmtNum(value)}</span> },
+        { title: 'Tăng doanh thu', dataIndex: 'doanhThu', key: 'doanhThu', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
+        { title: 'Nhân rộng', dataIndex: 'nhanRong', key: 'nhanRong', width: 100, align: 'center' as const, render: (v: any) => <span style={{ fontSize: 14 }}>{v ?? 0}</span> },
+        { title: 'Chất lượng', dataIndex: 'chatLuong', key: 'chatLuong', width: 120, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : 'gold'} style={{ fontSize: 13, fontWeight: 400, padding: '2px 10px' }}>{v}</Tag> },
       ];
     }
 
     if (reportTemplate === 'roi') {
       return [
-        { title: 'Sáng kiến / Ý tưởng', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
-        { title: 'Chi phí quỹ', dataIndex: 'chiPhi', key: 'chiPhi', width: 140, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 700, fontSize: 14, color: '#dc2626' }}>{fmtNum(value)}</span> },
-        { title: 'Tiết kiệm chi phí', dataIndex: 'tietKiem', key: 'tietKiem', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#16a34a' }}>{fmtNum(value)}</span> },
-        { title: 'Tăng doanh thu', dataIndex: 'doanhThu', key: 'doanhThu', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
-        { title: 'Giá trị hiệu quả', dataIndex: 'giaTri', key: 'giaTri', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
-        { title: 'ROI', dataIndex: 'roi', key: 'roi', width: 110, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 16, color: value >= 180 ? '#16a34a' : value >= 100 ? '#f59e0b' : '#ef4444' }}>{value.toFixed(0)}%</span> },
-        { title: 'Nhân rộng', dataIndex: 'nhanRong', key: 'nhanRong', width: 100, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v ?? 0}</span> },
-        { title: 'Chất lượng', dataIndex: 'chatLuong', key: 'chatLuong', width: 120, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : 'gold'} style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{v}</Tag> },
+        { title: 'Sáng kiến / Ý tưởng', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
+        { title: 'Chi phí quỹ', dataIndex: 'chiPhi', key: 'chiPhi', width: 140, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 14, color: '#dc2626' }}>{fmtNum(value)}</span> },
+        { title: 'Tiết kiệm chi phí', dataIndex: 'tietKiem', key: 'tietKiem', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 15, color: '#16a34a' }}>{fmtNum(value)}</span> },
+        { title: 'Tăng doanh thu', dataIndex: 'doanhThu', key: 'doanhThu', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
+        { title: 'Giá trị hiệu quả', dataIndex: 'giaTri', key: 'giaTri', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
+        { title: 'ROI', dataIndex: 'roi', key: 'roi', width: 110, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 400, fontSize: 16, color: value >= 180 ? '#16a34a' : value >= 100 ? '#f59e0b' : '#ef4444' }}>{value.toFixed(0)}%</span> },
+        { title: 'Nhân rộng', dataIndex: 'nhanRong', key: 'nhanRong', width: 100, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v ?? 0}</span> },
+        { title: 'Chất lượng', dataIndex: 'chatLuong', key: 'chatLuong', width: 120, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : 'gold'} style={{ fontSize: 13, fontWeight: 400, padding: '2px 10px' }}>{v}</Tag> },
       ];
     }
 
     if (reportTemplate === 'y-tuong-giai-phap-sang-kien') {
       return [
-        { title: 'Lĩnh vực / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
-        { title: 'Tổng số', dataIndex: 'tongSo', key: 'tongSo', width: 100, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{fmtNum(v)}</span> },
+        { title: 'Lĩnh vực / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
+        { title: 'Tổng số', dataIndex: 'tongSo', key: 'tongSo', width: 100, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 400, fontSize: 14 }}>{fmtNum(v)}</span> },
         { title: 'Đã phê duyệt', dataIndex: 'daDuyet', key: 'daDuyet', width: 110, align: 'center' as const, render: (v: number) => <Tag color="success">{fmtNum(v)}</Tag> },
         { title: 'Được công nhận', dataIndex: 'congNhan', key: 'congNhan', width: 120, align: 'center' as const, render: (v: number) => <Tag color="purple">{fmtNum(v)}</Tag> },
         { title: 'Tỷ lệ duyệt', dataIndex: 'tyLeDuyet', key: 'tyLeDuyet', width: 100, align: 'center' as const, render: (v: number) => `${v}%` },
         { title: 'Tỷ lệ công nhận', dataIndex: 'tyLeCongNhan', key: 'tyLeCongNhan', width: 120, align: 'center' as const, render: (v: number) => `${v}%` },
-        { title: 'Mức độ hiệu quả', dataIndex: 'chatLuong', key: 'chatLuong', width: 130, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : v === 'Trung bình' ? 'gold' : 'red'} style={{ fontSize: 13, fontWeight: 700 }}>{v}</Tag> },
+        { title: 'Mức độ hiệu quả', dataIndex: 'chatLuong', key: 'chatLuong', width: 130, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : v === 'Trung bình' ? 'gold' : 'red'} style={{ fontSize: 13, fontWeight: 400 }}>{v}</Tag> },
       ];
     }
 
     if (reportTemplate === 'tuong-tac') {
       return [
-        { title: 'Tác nhân', dataIndex: 'nhom', key: 'nhom', width: 110, render: (v: string) => <Tag color={v === 'Đơn vị' ? 'blue' : 'default'} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
-        { title: 'Người dùng / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
+        { title: 'Tác nhân', dataIndex: 'nhom', key: 'nhom', width: 110, render: (v: string) => <Tag color={v === 'Đơn vị' ? 'blue' : 'default'} style={{ fontSize: 12, fontWeight: 400 }}>{v}</Tag> },
+        { title: 'Người dùng / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{value}</span> },
         { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 180, ellipsis: true, render: (v: string) => v || '—' },
         { title: 'Số người SD', dataIndex: 'soNguoiSuDung', key: 'soNguoiSuDung', width: 100, align: 'center' as const, render: (v: number | null) => v == null ? '—' : fmtNum(v) },
         { title: 'Lượt xem', dataIndex: 'luotXem', key: 'luotXem', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
         { title: 'Lượt thích', dataIndex: 'luotThich', key: 'luotThich', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
         { title: 'Bình luận', dataIndex: 'binhLuan', key: 'binhLuan', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
         { title: 'Đăng nhập', dataIndex: 'soLanDangNhap', key: 'soLanDangNhap', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
-        { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
+        { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 400 }}>{v}</Tag> },
       ];
     }
 
@@ -1010,7 +1006,7 @@ export const BaoCaoPage: React.FC = () => {
         },
         {
           title: 'Mức độ tương tác', dataIndex: 'mucDoTuongTac', key: 'mucDoTuongTac', width: 130, align: 'center' as const,
-          render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag>,
+          render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 400 }}>{v}</Tag>,
         },
         {
           title: 'Ý tưởng đã nộp', dataIndex: 'soYTuongDaNop', key: 'soYTuongDaNop', width: 120, align: 'center' as const,
@@ -1295,7 +1291,10 @@ export const BaoCaoPage: React.FC = () => {
     },
   ];
 
-  const lbColumns = (isUnit: boolean) => [
+  // compact = true cho mẫu "Bảng xếp hạng" — chỉ tập trung vào thứ hạng/thành tích nổi bật (điểm thưởng,
+  // huy hiệu), không lặp lại toàn bộ số liệu chi tiết (số nộp/duyệt/công nhận/lượt tương tác) đã có sẵn
+  // ở mẫu "Đóng góp cá nhân/đơn vị" — tránh 2 mẫu hiển thị trùng lặp nội dung.
+  const lbColumns = (isUnit: boolean, compact = false) => [
     {
       title: '#', dataIndex: 'xepHang', key: 'xepHang', width: 56, className: 'text-center',
       render: (v: number) =>
@@ -1313,20 +1312,22 @@ export const BaoCaoPage: React.FC = () => {
         </div>
       ),
     },
-    { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', width: 90, className: 'text-center' },
-    { title: 'Được duyệt', dataIndex: 'soDuocDuyet', key: 'soDuocDuyet', width: 110, className: 'text-center' },
+    ...(compact ? [] : [
+      { title: 'Số nộp', dataIndex: 'soNop', key: 'soNop', width: 90, className: 'text-center' },
+      { title: 'Được duyệt', dataIndex: 'soDuocDuyet', key: 'soDuocDuyet', width: 110, className: 'text-center' },
+      {
+        title: 'Công nhận', dataIndex: 'soDuocCongNhan', key: 'soDuocCongNhan', width: 100, className: 'text-center',
+        render: (v: number) => v > 0 ? <Tag color="purple">{v}</Tag> : <span className="text-muted">0</span>,
+      },
+    ]),
     {
-      title: 'Công nhận', dataIndex: 'soDuocCongNhan', key: 'soDuocCongNhan', width: 100, className: 'text-center',
-      render: (v: number) => v > 0 ? <Tag color="purple">{v}</Tag> : <span className="text-muted">0</span>,
+      title: compact ? 'Thành tích (điểm)' : 'Điểm thưởng', dataIndex: 'diemThuong', key: 'diemThuong', width: compact ? 140 : 110, align: 'right' as const,
+      render: (v: number) => <span style={{ fontWeight: compact ? 700 : 400, fontSize: compact ? 15 : undefined, color: '#003087' }}>{fmtNum(v ?? 0)}</span>,
     },
-    {
-      title: 'Điểm thưởng', dataIndex: 'diemThuong', key: 'diemThuong', width: 110, align: 'right' as const,
-      render: (v: number) => <span style={{ fontWeight: 700, color: '#003087' }}>{fmtNum(v ?? 0)}</span>,
-    },
-    {
+    ...(compact ? [] : [{
       title: 'Lượt tương tác', dataIndex: 'luotTuongTac', key: 'luotTuongTac', width: 120, align: 'center' as const,
       render: (v?: number) => <span className="fw-semibold">{fmtNum(v ?? 0)}</span>,
-    },
+    }]),
     {
       title: 'Huy hiệu', dataIndex: 'huyHieu', key: 'huyHieu', width: 130, align: 'center' as const,
       render: (v?: string | null) => v
@@ -1402,12 +1403,7 @@ export const BaoCaoPage: React.FC = () => {
               </div>
 
               {/* Bộ lọc bổ sung: đơn vị, lĩnh vực, mức độ hiệu quả */}
-              <div className="row g-3 mb-4 p-3 rounded-3" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
-                <div className="col-12">
-                  <div className="fs-8 fw-semibold text-muted mb-2">
-                    <i className="fa-regular fa-sliders me-1" />Bộ lọc bổ sung
-                  </div>
-                </div>
+              <div className="row g-3 p-3 mb-3 rounded-3" style={{ background: '#f8f9fa', border: '1px solid #e9ecef' }}>
                 <div className="col-md-4">
                   <div className="fs-8 text-muted mb-1">Đơn vị</div>
                   <Select
@@ -1471,7 +1467,7 @@ export const BaoCaoPage: React.FC = () => {
                   </div>
                 </div>
               )}
-
+{/* 
               <div className="row g-3 mb-4">
                 <div className="col-md-4">
                   <div className="p-3 rounded-3 bg-light-primary h-100">
@@ -1492,7 +1488,7 @@ export const BaoCaoPage: React.FC = () => {
                     <div className="fs-4 fw-bold">{reportRows.length}</div>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {reportTemplate === 'chien-dich' && (
                 <div className="row g-2 mb-4">
@@ -1568,14 +1564,21 @@ export const BaoCaoPage: React.FC = () => {
                     {lb?.ky && <Tag color="gold">{lb.ky}</Tag>}
                   </div>
 
+                  <div className="text-muted fs-8 mb-3">
+                    {reportTemplate === 'leaderboard'
+                      ? 'Chỉ hiển thị thứ hạng và thành tích nổi bật (điểm thưởng, huy hiệu) theo kỳ. Xem đầy đủ số nộp/duyệt/công nhận/lượt tương tác ở mẫu "Đóng góp cá nhân/đơn vị".'
+                      : 'Thống kê đầy đủ mức độ tham gia: số nộp, phê duyệt, công nhận, điểm thưởng, lượt tương tác và huy hiệu. Xem bảng xếp hạng rút gọn theo kỳ ở mẫu "Bảng xếp hạng".'}
+                  </div>
+
                   <Spin spinning={lbLoading}>
                     <div className="row g-4">
                       <div className="col-12 mb-4">
                         <div className="fw-bold text-gray-700 fs-7 mb-2">
-                          <i className="fa-regular fa-user me-2 text-primary" />Cá nhân tiêu biểu
+                          <i className={`fa-regular ${reportTemplate === 'leaderboard' ? 'fa-trophy' : 'fa-user'} me-2 text-primary`} />
+                          {reportTemplate === 'leaderboard' ? 'Cá nhân xuất sắc nhất' : 'Cá nhân tiêu biểu'}
                         </div>
                         <Table
-                          columns={lbColumns(false) as any}
+                          columns={lbColumns(false, reportTemplate === 'leaderboard') as any}
                           dataSource={(lb?.caNhan ?? []).filter(r => !filterDonVi
                             || (r.donVi || '').toLowerCase().includes(filterDonVi.toLowerCase())
                             || r.ten.toLowerCase().includes(filterDonVi.toLowerCase()))}
@@ -1588,10 +1591,11 @@ export const BaoCaoPage: React.FC = () => {
                       </div>
                       <div className="col-12">
                         <div className="fw-bold text-gray-700 fs-7 mb-2">
-                          <i className="fa-regular fa-building me-2 text-info" />Đơn vị tiêu biểu
+                          <i className={`fa-regular ${reportTemplate === 'leaderboard' ? 'fa-trophy' : 'fa-building'} me-2 text-info`} />
+                          {reportTemplate === 'leaderboard' ? 'Đơn vị xuất sắc nhất' : 'Đơn vị tiêu biểu'}
                         </div>
                         <Table
-                          columns={lbColumns(true) as any}
+                          columns={lbColumns(true, reportTemplate === 'leaderboard') as any}
                           dataSource={(lb?.donVi ?? []).filter(r => !filterDonVi || r.ten.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: IIdeaContribution) => `dv-${r.xepHang}-${r.ten}`}
                           size="small"
@@ -1609,19 +1613,19 @@ export const BaoCaoPage: React.FC = () => {
                   {tuongTac?.ky && <Tag color="gold" className="mb-3">{tuongTac.ky}</Tag>}
                   <Spin spinning={tuongTacLoading}>
                     <div className="row g-4">
-                      <div className="col-xl-7">
+                      <div className="col-12 mb-4">
                         <div className="fw-bold text-gray-700 fs-7 mb-2">
                           <i className="fa-regular fa-user me-2 text-primary" />Theo người dùng
                         </div>
                         <Table
                           columns={[
-                            { title: 'Người dùng', dataIndex: 'tenNguoiDung', key: 'tenNguoiDung', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v}</span> },
+                            { title: 'Người dùng', dataIndex: 'tenNguoiDung', key: 'tenNguoiDung', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v}</span> },
                             { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 180, ellipsis: true, render: (v: string) => v || '—' },
                             { title: 'Lượt xem', dataIndex: 'luotXem', key: 'luotXem', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Lượt thích', dataIndex: 'luotThich', key: 'luotThich', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Bình luận', dataIndex: 'binhLuan', key: 'binhLuan', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Đăng nhập', dataIndex: 'soLanDangNhap', key: 'soLanDangNhap', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
-                            { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
+                            { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 400 }}>{v}</Tag> },
                           ] as any}
                           dataSource={(tuongTac?.theoNguoiDung ?? []).filter(r => !filterDonVi
                             || (r.donVi || '').toLowerCase().includes(filterDonVi.toLowerCase())
@@ -1633,18 +1637,18 @@ export const BaoCaoPage: React.FC = () => {
                           locale={{ emptyText: <Empty description="Chưa có dữ liệu tương tác theo người dùng" /> }}
                         />
                       </div>
-                      <div className="col-xl-5">
+                      <div className="col-12">
                         <div className="fw-bold text-gray-700 fs-7 mb-2">
                           <i className="fa-regular fa-building me-2 text-info" />Theo đơn vị
                         </div>
                         <Table
                           columns={[
-                            { title: 'Đơn vị', dataIndex: 'donViCode', key: 'donViCode', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v}</span> },
+                            { title: 'Đơn vị', dataIndex: 'donViCode', key: 'donViCode', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v}</span> },
                             { title: 'Số người SD', dataIndex: 'soNguoiSuDung', key: 'soNguoiSuDung', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Lượt xem', dataIndex: 'luotXem', key: 'luotXem', width: 90, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Lượt thích', dataIndex: 'luotThich', key: 'luotThich', width: 90, align: 'center' as const, render: (v: number) => fmtNum(v) },
                             { title: 'Bình luận', dataIndex: 'binhLuan', key: 'binhLuan', width: 90, align: 'center' as const, render: (v: number) => fmtNum(v) },
-                            { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
+                            { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 400 }}>{v}</Tag> },
                           ] as any}
                           dataSource={(tuongTac?.theoDonVi ?? []).filter(r => !filterDonVi || r.donViCode.toLowerCase().includes(filterDonVi.toLowerCase()))}
                           rowKey={(r: ITuongTacTheoDonVi) => r.donViCode}
@@ -1776,16 +1780,16 @@ export const BaoCaoPage: React.FC = () => {
                     )}
 
                     <div className="row g-4">
-                      <div className="col-xl-6">
+                      <div className="col-12 mb-4">
                         <div className="fw-bold text-gray-700 fs-7 mb-2">
                           <i className="fa-regular fa-building me-2 text-info" />Theo đơn vị
                         </div>
                         <Table
                           columns={[
-                            { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v}</span> },
+                            { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', ellipsis: true, render: (v: string) => <span style={{ fontWeight: 400, fontSize: 14 }}>{v}</span> },
                             { title: 'Hồ sơ', dataIndex: 'tongHoSo', key: 'tongHoSo', width: 80, align: 'center' as const },
                             { title: 'TB (giờ)', dataIndex: 'gioTrungBinh', key: 'gioTrungBinh', width: 90, align: 'center' as const, render: (v: number) => v ?? '—' },
-                            { title: 'Đúng hạn', dataIndex: 'tyLeDungHan', key: 'tyLeDungHan', width: 100, align: 'center' as const, render: (v: number) => <span style={{ color: v != null && v < 70 ? '#F1416C' : '#17C653', fontWeight: 700 }}>{v != null ? `${v}%` : '—'}</span> },
+                            { title: 'Đúng hạn', dataIndex: 'tyLeDungHan', key: 'tyLeDungHan', width: 100, align: 'center' as const, render: (v: number) => <span style={{ color: v != null && v < 70 ? '#F1416C' : '#17C653', fontWeight: 400 }}>{v != null ? `${v}%` : '—'}</span> },
                             { title: 'Tồn đọng', dataIndex: 'soTonDongQuaHan', key: 'soTonDongQuaHan', width: 90, align: 'center' as const, render: (v: number) => v > 0 ? <Tag color="error">{v}</Tag> : 0 },
                           ] as any}
                           dataSource={(slaReport?.theoDonVi ?? []).filter(r => !filterDonVi || r.donVi.toLowerCase().includes(filterDonVi.toLowerCase()))}
@@ -1796,7 +1800,7 @@ export const BaoCaoPage: React.FC = () => {
                           locale={{ emptyText: <Empty description="Chưa có dữ liệu SLA theo đơn vị" /> }}
                         />
                       </div>
-                      <div className="col-xl-6">
+                      <div className="col-12">
                         <div className="fw-bold text-gray-700 fs-7 mb-2">
                           <i className="fa-regular fa-bell-exclamation me-2 text-danger" />Cảnh báo tồn đọng hồ sơ
                         </div>
@@ -2034,7 +2038,7 @@ export const BaoCaoPage: React.FC = () => {
                           { title: 'Tiến độ', dataIndex: 'tienDo', width: 120, render: (v: number) => `${v}%` },
                           { title: 'Ngân sách', dataIndex: 'nganSach', width: 120, render: (v: number) => `${v}%` },
                           { title: 'Milestone', key: 'moc', width: 110, render: (_: unknown, r: typeof CDS_PROGRAMS[number]) => `${r.mocHoanThanh}/${r.mocTong}` },
-                          { title: 'Hiệu quả đạt được', dataIndex: 'chatLuong', width: 130, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : v === 'Trung bình' ? 'gold' : 'red'}>{v}</Tag> },
+                          { title: 'Hiệu quả đạt được', dataIndex: 'chatLuong', width: 230, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : v === 'Trung bình' ? 'gold' : 'red'}>{v}</Tag> },
                         ]}
                       />
                     ),
