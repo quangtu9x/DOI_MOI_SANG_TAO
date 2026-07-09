@@ -286,7 +286,8 @@ type ReportTemplateKey =
   | 'vi-giao-dich'
   | 'qua-tang'
   | 'usage'
-  | 'roi';
+  | 'roi'
+  | 'y-tuong-giai-phap-sang-kien';
 
 const REPORT_OBJECT_OPTIONS: { value: ReportObjectType; label: string }[] = [
   { value: 'TatCa', label: 'Tất cả' },
@@ -310,6 +311,7 @@ const REPORT_TEMPLATES: { value: ReportTemplateKey; label: string; group: string
   { value: 'qua-tang', label: 'Quy đổi quà tặng', group: 'Tài chính', desc: 'Số quy đổi, loại quà, tồn kho, chi phí' },
   { value: 'usage', label: 'Người dùng & sử dụng hệ thống', group: 'Vận hành', desc: 'Người dùng hoạt động, tần suất, tỷ lệ sử dụng' },
   { value: 'roi', label: 'Ngân sách & ROI', group: 'Phân tích nâng cao', desc: 'So sánh chi phí và giá trị mang lại' },
+  { value: 'y-tuong-giai-phap-sang-kien', label: 'Báo cáo Ý tưởng/Giải pháp/Sáng kiến', group: 'Ý tưởng/Giải pháp/Sáng kiến', desc: 'Cho phép thống kê số lượng theo trạng thái (nháp, đã nộp, phê duyệt, triển khai, không thông qua), theo đơn vị, lĩnh vực, thời gian và mức độ hiệu quả' },
 ];
 
 export const BaoCaoPage: React.FC = () => {
@@ -449,6 +451,30 @@ export const BaoCaoPage: React.FC = () => {
   const [exportingFormat, setExportingFormat] = useState<'csv' | 'excel' | 'pdf' | 'word' | null>(null);
   const [reportObject, setReportObject] = useState<ReportObjectType>('TatCa');
 
+  // Gọi lại API tương ứng khi người dùng chọn mẫu báo cáo, để luôn có dữ liệu mới nhất
+  // và không phụ thuộc hoàn toàn vào lần tải lúc mở trang.
+  const changeReportTemplate = (value: ReportTemplateKey) => {
+    setReportTemplate(value);
+    switch (value) {
+      case 'trang-thai':
+      case 'hieu-qua':
+        loadDash();
+        break;
+      case 'sla':
+        loadSlaReport();
+        break;
+      case 'dong-gop':
+      case 'leaderboard':
+        loadLb();
+        break;
+      case 'tuong-tac':
+        loadTuongTac();
+        break;
+      default:
+        break;
+    }
+  };
+
   // Cho phép deep-link chọn sẵn mẫu báo cáo qua query string, vd: /doi-moi-sang-tao/bao-cao?template=chuong-trinh
   const [searchParams] = useSearchParams();
   const templateParam = searchParams.get('template') as ReportTemplateKey | null;
@@ -571,15 +597,30 @@ export const BaoCaoPage: React.FC = () => {
         return data;
       }
       case 'tuong-tac': {
-        // Dữ liệu thật: lượt xem/thích/bình luận (Ý tưởng + Tài liệu) + mức độ sử dụng, theo đơn vị
-        let data = (tuongTac?.theoDonVi ?? []).map(x => ({
-          ten: x.donViCode,
-          soLuong: x.luotXem,
-          ghiChu: `Thích: ${x.luotThich} • Bình luận: ${x.binhLuan} • Đăng nhập: ${x.soLanDangNhap} • Mức độ: ${x.mucDoSuDung}`,
-          linhVuc: '',
-          donVi: x.donViCode,
-          chatLuong: '',
+        // Dữ liệu thật: lượt xem/thích/bình luận (Ý tưởng + Tài liệu) + mức độ sử dụng, theo cả người dùng và đơn vị
+        const theoNguoi = (tuongTac?.theoNguoiDung ?? []).map(x => ({
+          nhom: 'Người dùng',
+          ten: x.tenNguoiDung,
+          donVi: x.donVi || '',
+          luotXem: x.luotXem,
+          luotThich: x.luotThich,
+          binhLuan: x.binhLuan,
+          soLanDangNhap: x.soLanDangNhap,
+          soNguoiSuDung: null as number | null,
+          mucDoSuDung: x.mucDoSuDung,
         }));
+        const theoDonVi = (tuongTac?.theoDonVi ?? []).map(x => ({
+          nhom: 'Đơn vị',
+          ten: x.donViCode,
+          donVi: x.donViCode,
+          luotXem: x.luotXem,
+          luotThich: x.luotThich,
+          binhLuan: x.binhLuan,
+          soLanDangNhap: x.soLanDangNhap,
+          soNguoiSuDung: x.soNguoiSuDung,
+          mucDoSuDung: x.mucDoSuDung,
+        }));
+        let data = [...theoNguoi, ...theoDonVi];
         data = filterByDonVi(data);
         return data;
       }
@@ -626,6 +667,47 @@ export const BaoCaoPage: React.FC = () => {
           soYTuongDaNop: x.soYTuongDaNop,
         }));
         data = filterByDonVi(data);
+        return data;
+      }
+      case 'y-tuong-giai-phap-sang-kien': {
+        // Thống kê số lượng theo trạng thái (tổng số/đã phê duyệt/được công nhận), theo cả lĩnh vực và đơn vị.
+        // Thời gian đã được áp dụng sẵn ở tầng API (dash được tải lại theo range đang chọn).
+        const tyLe = (tu: number, mau: number) => (mau > 0 ? Math.round((tu / mau) * 100) : 0);
+        const xepHieuQua = (tyLeCongNhan: number) => (tyLeCongNhan >= 40 ? 'Cao' : tyLeCongNhan >= 20 ? 'Trung bình' : 'Thấp');
+        const theoLinhVucRows = (dash?.theoLinhVuc ?? []).map(x => {
+          const tyLeCongNhan = tyLe(x.soDuocCongNhan, x.soLuong);
+          return {
+            nhom: 'Lĩnh vực',
+            ten: x.ten,
+            linhVuc: x.ten,
+            donVi: '',
+            tongSo: x.soLuong,
+            daDuyet: x.soDuocDuyet,
+            congNhan: x.soDuocCongNhan,
+            tyLeDuyet: tyLe(x.soDuocDuyet, x.soLuong),
+            tyLeCongNhan,
+            chatLuong: xepHieuQua(tyLeCongNhan),
+          };
+        });
+        const theoDonViRows = (dash?.theoDonVi ?? []).map(x => {
+          const tyLeCongNhan = tyLe(x.soDuocCongNhan, x.soLuong);
+          return {
+            nhom: 'Đơn vị',
+            ten: x.ten,
+            linhVuc: '',
+            donVi: x.ten,
+            tongSo: x.soLuong,
+            daDuyet: x.soDuocDuyet,
+            congNhan: x.soDuocCongNhan,
+            tyLeDuyet: tyLe(x.soDuocDuyet, x.soLuong),
+            tyLeCongNhan,
+            chatLuong: xepHieuQua(tyLeCongNhan),
+          };
+        });
+        let data = [...theoLinhVucRows, ...theoDonViRows];
+        data = filterByDonVi(data);
+        data = filterByLinhVuc(data);
+        data = filterByHieuQua(data);
         return data;
       }
       default:
@@ -732,6 +814,32 @@ export const BaoCaoPage: React.FC = () => {
         { title: 'ROI', dataIndex: 'roi', key: 'roi', width: 110, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 16, color: value >= 1000 ? '#16a34a' : value >= 100 ? '#f59e0b' : '#ef4444' }}>{value.toFixed(0)}%</span> },
         { title: 'Nhân rộng', dataIndex: 'nhanRong', key: 'nhanRong', width: 100, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v ?? 0}</span> },
         { title: 'Chất lượng', dataIndex: 'chatLuong', key: 'chatLuong', width: 120, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : 'gold'} style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{v}</Tag> },
+      ];
+    }
+
+    if (reportTemplate === 'y-tuong-giai-phap-sang-kien') {
+      return [
+        { title: 'Lĩnh vực / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
+        { title: 'Tổng số', dataIndex: 'tongSo', key: 'tongSo', width: 100, align: 'center' as const, render: (v: number) => <span style={{ fontWeight: 700, fontSize: 14 }}>{fmtNum(v)}</span> },
+        { title: 'Đã phê duyệt', dataIndex: 'daDuyet', key: 'daDuyet', width: 110, align: 'center' as const, render: (v: number) => <Tag color="success">{fmtNum(v)}</Tag> },
+        { title: 'Được công nhận', dataIndex: 'congNhan', key: 'congNhan', width: 120, align: 'center' as const, render: (v: number) => <Tag color="purple">{fmtNum(v)}</Tag> },
+        { title: 'Tỷ lệ duyệt', dataIndex: 'tyLeDuyet', key: 'tyLeDuyet', width: 100, align: 'center' as const, render: (v: number) => `${v}%` },
+        { title: 'Tỷ lệ công nhận', dataIndex: 'tyLeCongNhan', key: 'tyLeCongNhan', width: 120, align: 'center' as const, render: (v: number) => `${v}%` },
+        { title: 'Mức độ hiệu quả', dataIndex: 'chatLuong', key: 'chatLuong', width: 130, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : v === 'Trung bình' ? 'gold' : 'red'} style={{ fontSize: 13, fontWeight: 700 }}>{v}</Tag> },
+      ];
+    }
+
+    if (reportTemplate === 'tuong-tac') {
+      return [
+        { title: 'Tác nhân', dataIndex: 'nhom', key: 'nhom', width: 110, render: (v: string) => <Tag color={v === 'Đơn vị' ? 'blue' : 'default'} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
+        { title: 'Người dùng / Đơn vị', dataIndex: 'ten', key: 'ten', ellipsis: true, render: (value: string) => <span style={{ fontWeight: 700, fontSize: 14 }}>{value}</span> },
+        { title: 'Đơn vị', dataIndex: 'donVi', key: 'donVi', width: 180, ellipsis: true, render: (v: string) => v || '—' },
+        { title: 'Số người SD', dataIndex: 'soNguoiSuDung', key: 'soNguoiSuDung', width: 100, align: 'center' as const, render: (v: number | null) => v == null ? '—' : fmtNum(v) },
+        { title: 'Lượt xem', dataIndex: 'luotXem', key: 'luotXem', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+        { title: 'Lượt thích', dataIndex: 'luotThich', key: 'luotThich', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+        { title: 'Bình luận', dataIndex: 'binhLuan', key: 'binhLuan', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+        { title: 'Đăng nhập', dataIndex: 'soLanDangNhap', key: 'soLanDangNhap', width: 100, align: 'center' as const, render: (v: number) => fmtNum(v) },
+        { title: 'Mức độ SD', dataIndex: 'mucDoSuDung', key: 'mucDoSuDung', width: 110, align: 'center' as const, render: (v: string) => <Tag color={mucDoTuongTacColor(v)} style={{ fontSize: 12, fontWeight: 700 }}>{v}</Tag> },
       ];
     }
 
@@ -1109,7 +1217,7 @@ export const BaoCaoPage: React.FC = () => {
                 </div>
                 <div className="col-lg-5">
                   <div className="fs-8 fw-semibold text-muted mb-2">Mẫu báo cáo</div>
-                  <Select value={reportTemplate} onChange={(value) => setReportTemplate(value)} className="w-100" size="large">
+                  <Select value={reportTemplate} onChange={(value) => changeReportTemplate(value)} className="w-100" size="large">
                     {templateOptions.map(option => (
                       <Option key={option.value} value={option.value}>
                         {option.label} - {option.desc}
@@ -1343,6 +1451,42 @@ export const BaoCaoPage: React.FC = () => {
                     </div>
                   </Spin>
                 </>
+              ) : reportTemplate === 'y-tuong-giai-phap-sang-kien' ? (
+                /* ── Mẫu "Báo cáo Ý tưởng/Giải pháp/Sáng kiến": trạng thái theo lĩnh vực/đơn vị, tách 2 tab ── */
+                <Tabs
+                  items={[
+                    {
+                      key: 'don-vi',
+                      label: <span><i className="fa-regular fa-building me-2 text-info" />Theo đơn vị</span>,
+                      children: (
+                        <Table
+                          columns={reportColumns.map((c: any) => c.key === 'ten' ? { ...c, title: 'Đơn vị' } : c) as any}
+                          dataSource={(reportRows as any[]).filter(r => r.nhom === 'Đơn vị')}
+                          rowKey={(r: any) => r.ten}
+                          size="small"
+                          pagination={false}
+                          scroll={{ x: 'max-content' }}
+                          locale={{ emptyText: <Empty description="Chưa có dữ liệu theo đơn vị" /> }}
+                        />
+                      ),
+                    },
+                    {
+                      key: 'linh-vuc',
+                      label: <span><i className="fa-regular fa-diagram-project me-2 text-primary" />Theo lĩnh vực</span>,
+                      children: (
+                        <Table
+                          columns={reportColumns.map((c: any) => c.key === 'ten' ? { ...c, title: 'Lĩnh vực' } : c) as any}
+                          dataSource={(reportRows as any[]).filter(r => r.nhom === 'Lĩnh vực')}
+                          rowKey={(r: any) => r.ten}
+                          size="small"
+                          pagination={false}
+                          scroll={{ x: 'max-content' }}
+                          locale={{ emptyText: <Empty description="Chưa có dữ liệu theo lĩnh vực" /> }}
+                        />
+                      ),
+                    },
+                  ]}
+                />
               ) : reportTemplate === 'sla' ? (
                 /* ── Mẫu "Quy trình xử lý & SLA": thời gian từng bước, đúng hạn, điểm nghẽn, tồn đọng ── */
                 <>
