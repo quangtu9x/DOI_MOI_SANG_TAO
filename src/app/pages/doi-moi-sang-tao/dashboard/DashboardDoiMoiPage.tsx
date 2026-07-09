@@ -461,6 +461,51 @@ export const DashboardDoiMoiPage: React.FC = () => {
   const [layoutModalOpen, setLayoutModalOpen] = useState(false);
   const [draggingWidget, setDraggingWidget] = useState<DashboardWidgetKey | null>(null);
 
+  // ── Xuất biểu đồ thành ảnh (PNG) ──────────────────────────────────────────
+  const monthlyChartRef = useRef<HTMLDivElement>(null);
+  const statusChartRef = useRef<HTMLDivElement>(null);
+  const fieldChartRef = useRef<HTMLDivElement>(null);
+  const ganttChartRef = useRef<HTMLDivElement>(null);
+  const cdsProgressChartRef = useRef<HTMLDivElement>(null);
+  const cdsAlertChartRef = useRef<HTMLDivElement>(null);
+  const quyThuongChartRef = useRef<HTMLDivElement>(null);
+  const viDiemThuongChartRef = useRef<HTMLDivElement>(null);
+  const [exportingChart, setExportingChart] = useState<string | null>(null);
+
+  const exportChartImage = async (ref: React.RefObject<HTMLDivElement>, filename: string) => {
+    if (!ref.current) return;
+    setExportingChart(filename);
+    try {
+      // Đợi font tải xong trước khi chụp — nếu chụp khi font web chưa sẵn sàng, html2canvas sẽ đo
+      // line-height/kích thước chữ theo font thay thế của trình duyệt, dẫn đến chữ dòng trên đè dòng dưới.
+      if ((document as any).fonts?.ready) {
+        await (document as any).fonts.ready;
+      }
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(ref.current, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+      const link = document.createElement('a');
+      link.download = `${filename}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch {
+      message.error('Không thể xuất ảnh biểu đồ. Vui lòng thử lại!');
+    } finally {
+      setExportingChart(null);
+    }
+  };
+
+  /** Nút xuất ảnh nhỏ đặt trong tiêu đề mỗi biểu đồ */
+  const ExportChartButton: React.FC<{ chartRef: React.RefObject<HTMLDivElement>; filename: string }> = ({ chartRef, filename }) => (
+    <Button
+      type='text'
+      size='small'
+      icon={<i className='fa-regular fa-image' />}
+      title='Xuất ảnh biểu đồ (PNG)'
+      loading={exportingChart === filename}
+      onClick={() => exportChartImage(chartRef, filename)}
+    />
+  );
+
   // ── Số liệu thật từ API báo cáo ──────────────────────────────────────────
   const [dash, setDash] = useState<IIdeaDashboard | null>(null);
 
@@ -646,11 +691,12 @@ export const DashboardDoiMoiPage: React.FC = () => {
     switch (widget) {
       case 'monthly':
         return (
-          <div className='card mb-4'>
-            <div className='card-header border-0 pt-4 pb-2'>
+          <div className='card mb-4' ref={monthlyChartRef}>
+            <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
               <h4 className='card-title fw-semibold text-gray-700 fs-7'>
                 <i className='fa-regular fa-chart-bar me-2' />Ý tưởng theo tháng{dash?.nam ? ` (${dash.nam})` : ''}
               </h4>
+              <ExportChartButton chartRef={monthlyChartRef} filename='y-tuong-theo-thang' />
             </div>
             <div className='card-body pt-2 pb-4'>
               <div className='d-flex align-items-end gap-2' style={{ height: 100 }}>
@@ -675,11 +721,12 @@ export const DashboardDoiMoiPage: React.FC = () => {
 
       case 'status':
         return (
-          <div className='card mb-4'>
-            <div className='card-header border-0 pt-4 pb-2'>
+          <div className='card mb-4' ref={statusChartRef}>
+            <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
               <h4 className='card-title fw-semibold text-gray-700 fs-7'>
                 <i className='fa-regular fa-chart-pie me-2' />Phân bố theo trạng thái
               </h4>
+              <ExportChartButton chartRef={statusChartRef} filename='phan-bo-theo-trang-thai' />
             </div>
             <div className='card-body pt-2 pb-4'>
               {statusSeries.every(v => v === 0)
@@ -691,23 +738,27 @@ export const DashboardDoiMoiPage: React.FC = () => {
 
       case 'field':
         return (
-          <div className='card mb-4'>
-            <div className='card-header border-0 pt-4 pb-2'>
+          <div className='card mb-4' ref={fieldChartRef}>
+            <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
               <h4 className='card-title fw-semibold text-gray-700 fs-7'>
                 <i className='fa-regular fa-chart-pie me-2' />Phân bổ theo lĩnh vực
               </h4>
+              <ExportChartButton chartRef={fieldChartRef} filename='phan-bo-theo-linh-vuc' />
             </div>
             <div className='card-body pt-2 pb-3'>
               {LINH_VUC_DATA.map((lv, i) => (
-                <div key={i} className='d-flex align-items-center mb-3'>
+                <div key={i} className='d-flex align-items-center mb-4'>
                   <div
                     className='rounded-circle me-3 flex-shrink-0'
                     style={{ width: 8, height: 8, background: lv.color }}
                   />
                   <div className='flex-grow-1'>
-                    <div className='d-flex justify-content-between mb-1'>
-                      <span className='fs-8 fw-semibold text-gray-700'>{lv.name}</span>
-                      <span className='fs-8 text-muted'>{lv.count}</span>
+                    <div
+                      className='d-flex justify-content-between'
+                      style={{ height: '22px', lineHeight: '22px !important', marginBottom: '6px' } as React.CSSProperties}
+                    >
+                      <span className='fw-semibold text-gray-700 text-truncate' style={{ fontSize: '0.9rem' }}>{lv.name}</span>
+                      <span className='text-muted' style={{ fontSize: '0.9rem', flexShrink: 0, marginLeft: 8 }}>{lv.count}</span>
                     </div>
                     <div className='bg-light rounded' style={{ height: 5 }}>
                       <div
@@ -864,14 +915,17 @@ export const DashboardDoiMoiPage: React.FC = () => {
         {dashboardLayout.visible.cds !== false && (
         <div className='row g-2 mb-5'>
           {/* Gantt */}
-          <div className='col-xl-7'>
-            <div className='card h-100'>
+          <div className='col-xl-5'>
+            <div className='card h-100' ref={ganttChartRef}>
               <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
                 <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
                   <i className='fa-regular fa-chart-gantt me-2' />
                   Tiến độ chương trình CĐS / R&D / Sandbox (Gantt)
                 </h4>
-                <span className='badge badge-light fs-9'>Dữ liệu minh họa — chờ module chương trình</span>
+                <div className='d-flex align-items-center gap-2'>
+                  <span className='badge badge-light fs-9'>Dữ liệu minh họa — chờ module chương trình</span>
+                  <ExportChartButton chartRef={ganttChartRef} filename='tien-do-cds-rd-sandbox' />
+                </div>
               </div>
               <div className='card-body pt-0 pb-2'>
                 <ReactApexChart
@@ -885,7 +939,11 @@ export const DashboardDoiMoiPage: React.FC = () => {
                     })),
                   }]}
                   options={{
-                    chart: { toolbar: { show: false }, fontFamily: 'inherit' },
+                    chart: {
+                      toolbar: { show: false },
+                      fontFamily: 'inherit',
+                      zoom: { enabled: false, allowMouseWheelZoom: false },
+                    },
                     plotOptions: { bar: { horizontal: true, barHeight: '55%', borderRadius: 4 } },
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'MM/yyyy' } },
                     yaxis: { labels: { maxWidth: 260, style: { fontSize: '11px' } } },
@@ -930,22 +988,23 @@ export const DashboardDoiMoiPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Tiến độ vs ngân sách + cảnh báo */}
-          <div className='col-xl-5'>
-            <div className='card mb-2'>
-              <div className='card-header border-0 pt-4 pb-2'>
+          {/* Tiến độ & ngân sách */}
+          <div className='col-xl-4'>
+            <div className='card h-100' ref={cdsProgressChartRef}>
+              <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
                 <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
                   <i className='fa-regular fa-bars-progress me-2' />Tiến độ & ngân sách từng chương trình
                 </h4>
+                <ExportChartButton chartRef={cdsProgressChartRef} filename='tien-do-ngan-sach-chuong-trinh' />
               </div>
               <div className='card-body pt-1 pb-3'>
                 {CDS_DASHBOARD.map((p, i) => (
-                  <div key={i} className='mb-3'>
-                    <div className='d-flex justify-content-between align-items-center mb-1'>
-                      <span className='fs-8 fw-semibold text-gray-700 text-truncate' style={{ maxWidth: '70%' }}>
+                  <div key={i} className='mb-4'>
+                    <div className='d-flex justify-content-between align-items-center' style={{ height: 26, lineHeight: '26px', marginBottom: 10 }}>
+                      <span className='fs-8 fw-semibold text-gray-700 text-truncate' style={{ maxWidth: '70%', height: 26, lineHeight: '26px', display: 'inline-block' }}>
                         {p.ten}
                       </span>
-                      <span className='fs-9 fw-semibold' style={{ color: CDS_STATUS_HEX[p.trangThai] }}>
+                      <span className='fs-9 fw-semibold' style={{ color: CDS_STATUS_HEX[p.trangThai], height: 26, lineHeight: '26px', display: 'inline-block' }}>
                         {p.trangThai}
                       </span>
                     </div>
@@ -972,14 +1031,17 @@ export const DashboardDoiMoiPage: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* Cảnh báo mốc chậm / vượt ngân sách */}
-            <div className='card'>
-              <div className='card-header border-0 pt-4 pb-2'>
+          {/* Cảnh báo mốc chậm / vượt ngân sách */}
+          <div className='col-xl-3'>
+            <div className='card h-100' ref={cdsAlertChartRef}>
+              <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
                 <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
                   <i className='fa-regular fa-bell-exclamation me-2 text-danger' />
                   Cảnh báo triển khai <span className='badge badge-light-danger ms-2'>{CDS_ALERTS.length}</span>
                 </h4>
+                <ExportChartButton chartRef={cdsAlertChartRef} filename='canh-bao-trien-khai' />
               </div>
               <div className='card-body pt-1 pb-3'>
                 {CDS_ALERTS.length === 0 ? (
@@ -989,8 +1051,18 @@ export const DashboardDoiMoiPage: React.FC = () => {
                     style={{ background: `${a.mau}12`, borderLeft: `3px solid ${a.mau}` }}>
                     <i className={`fa-regular ${a.icon} mt-1`} style={{ color: a.mau, flexShrink: 0 }} />
                     <div className='min-w-0'>
-                      <div className='fs-8 fw-semibold text-gray-800 text-truncate'>{a.ten}</div>
-                      <div className='fs-9 text-muted'>{a.noiDung}</div>
+                      {/* Không dùng class .fs-8/.fs-9 ở đây — CSS toàn cục ép !important lên line-height,
+                          override luôn cả inline style, gây đè chữ khi xuất ảnh. Dùng fontSize/lineHeight
+                          inline riêng để không bị ghi đè. */}
+                      <div
+                        className='fw-semibold text-gray-800 text-truncate'
+                        style={{ fontSize: '0.9rem', height: '24px', lineHeight: '24px !important', marginBottom: '8px', display: 'block' } as React.CSSProperties}
+                      >
+                        {a.ten}
+                      </div>
+                      <div className='text-muted' style={{ fontSize: '0.85rem', lineHeight: '20px !important' } as React.CSSProperties}>
+                        {a.noiDung}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1004,12 +1076,15 @@ export const DashboardDoiMoiPage: React.FC = () => {
         {dashboardLayout.visible.quyThuong !== false && (
         <div className='row g-2 mb-5'>
           <div className='col-xl-8'>
-            <div className='card h-100'>
+            <div className='card h-100' ref={quyThuongChartRef}>
               <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
                 <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
                   <i className='fa-regular fa-sack-dollar me-2' />Quỹ thưởng
                 </h4>
-                <Link to='/doi-moi-sang-tao/bao-cao?template=quy' className='fs-9'>Xem chi tiết</Link>
+                <div className='d-flex align-items-center gap-2'>
+                  <Link to='/doi-moi-sang-tao/bao-cao?template=quy' className='fs-9'></Link>
+                  <ExportChartButton chartRef={quyThuongChartRef} filename='quy-thuong' />
+                </div>
               </div>
               <div className='card-body pt-0 pb-3'>
                 <div className='row g-2 mb-3'>
@@ -1049,11 +1124,12 @@ export const DashboardDoiMoiPage: React.FC = () => {
 
           {/* Ví điểm thưởng theo loại: Cánh sen / Bông sen */}
           <div className='col-xl-4'>
-            <div className='card h-100'>
-              <div className='card-header border-0 pt-4 pb-2'>
+            <div className='card h-100' ref={viDiemThuongChartRef}>
+              <div className='card-header border-0 pt-4 pb-2 d-flex justify-content-between align-items-center'>
                 <h4 className='card-title fw-semibold text-gray-700 fs-7 mb-0'>
                   <i className='fa-regular fa-wallet me-2' />Điểm thưởng theo ví
                 </h4>
+                <ExportChartButton chartRef={viDiemThuongChartRef} filename='diem-thuong-theo-vi' />
               </div>
               <div className='card-body pt-0 pb-3 d-flex flex-column gap-3'>
                 {VI_DIEM_THUONG.map((v, i) => (

@@ -588,18 +588,24 @@ body {
 html, body {
   font-size: 14px !important;
   letter-spacing: normal !important;
+  line-height: 1.5 !important;
 }
 
+// Chỉ ép letter-spacing (khoảng cách GIỮA CÁC KÝ TỰ) — không ép word-spacing.
+// Ghi chú: đã bỏ "word-spacing: normal !important" vì html2canvas (dùng để xuất ảnh biểu đồ)
+// hiểu sai giá trị "normal" ép buộc này thành 0, khiến dấu cách GIỮA CÁC TỪ (vd "Cảnh báo") biến mất
+// trong ảnh xuất ra — mặc dù trên trình duyệt vẫn hiển thị đúng.
 body, p, span, div, td, th, li, label,
 .fs-6, .fs-7, .fs-8, .fs-9 {
   letter-spacing: normal !important;
-  word-spacing: normal !important;
 }
 
-// Tăng kích thước các mức chữ nhỏ để không bị "quá bé"
-.fs-9 { font-size: 0.85rem !important; }
-.fs-8 { font-size: 0.9rem !important; }
-.fs-7 { font-size: 0.95rem !important; }
+// Tăng kích thước các mức chữ nhỏ để không bị "quá bé".
+// Luôn kèm line-height đủ rộng (>= 1.4) — dấu tiếng Việt (ẫ, ữ, ộ...) cao/thấp hơn ký tự Latin thường,
+// nếu line-height quá chật (kế thừa từ style compact của Metronic) chữ dòng trên/dưới sẽ đè lên nhau.
+.fs-9 { font-size: 0.85rem !important; line-height: 1.45 !important; }
+.fs-8 { font-size: 0.9rem !important; line-height: 1.45 !important; }
+.fs-7 { font-size: 0.95rem !important; line-height: 1.45 !important; }
 
 // Tăng độ tương phản của chữ mờ (text-muted / gray nhạt)
 .text-muted {

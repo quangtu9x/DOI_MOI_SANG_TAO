@@ -103,12 +103,12 @@ const HIEU_QUA_DATA = [
 
 // ── Mock: Ngân sách & ROI (so sánh chi phí quỹ khen thưởng với giá trị mang lại) ──
 const NGAN_SACH_ROI = [
-  { ten: 'AI dự đoán nhu cầu nhiên liệu', chiPhi: 45000000, tietKiem: 6800000000, doanhThu: 0, nhanRong: 4, chatLuong: 'Cao', donVi: 'Ban Kế hoạch phát triển', linhVuc: 'Khai thác bay', ngayGhiNhan: '2026-01-20' },
-  { ten: 'Số hóa check-in nội địa', chiPhi: 30000000, tietKiem: 1200000000, doanhThu: 350000000, nhanRong: 8, chatLuong: 'Cao', donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ hành khách', ngayGhiNhan: '2026-02-10' },
-  { ten: 'Blended learning đào tạo phi công', chiPhi: 25000000, tietKiem: 900000000, doanhThu: 0, nhanRong: 2, chatLuong: 'Trung bình', donVi: 'Ban Tổ chức và Nhân lực', linhVuc: 'Đào tạo nhân lực', ngayGhiNhan: '2026-03-05' },
-  { ten: 'Hệ thống phản hồi hành khách QR', chiPhi: 20000000, tietKiem: 250000000, doanhThu: 180000000, nhanRong: 12, chatLuong: 'Cao', donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Công nghệ thông tin', ngayGhiNhan: '2026-03-22' },
-  { ten: 'Cải tiến An toàn bay 2025', chiPhi: 60000000, tietKiem: 500000000, doanhThu: 0, nhanRong: 6, chatLuong: 'Cao', donVi: 'Ban An toàn Chất lượng', linhVuc: 'An toàn hàng không', ngayGhiNhan: '2025-11-15' },
-  { ten: 'Chuyển đổi số Mặt đất', chiPhi: 35000000, tietKiem: 800000000, doanhThu: 120000000, nhanRong: 10, chatLuong: 'Cao', donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ mặt đất', ngayGhiNhan: '2026-04-18' },
+  { ten: 'AI dự đoán nhu cầu nhiên liệu', chiPhi: 2200000000, tietKiem: 6800000000, doanhThu: 0, nhanRong: 4, chatLuong: 'Cao', donVi: 'Ban Kế hoạch phát triển', linhVuc: 'Khai thác bay', ngayGhiNhan: '2026-01-20' },
+  { ten: 'Số hóa check-in nội địa', chiPhi: 550000000, tietKiem: 1200000000, doanhThu: 350000000, nhanRong: 8, chatLuong: 'Cao', donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ hành khách', ngayGhiNhan: '2026-02-10' },
+  { ten: 'Blended learning đào tạo phi công', chiPhi: 360000000, tietKiem: 900000000, doanhThu: 0, nhanRong: 2, chatLuong: 'Trung bình', donVi: 'Ban Tổ chức và Nhân lực', linhVuc: 'Đào tạo nhân lực', ngayGhiNhan: '2026-03-05' },
+  { ten: 'Hệ thống phản hồi hành khách QR', chiPhi: 195000000, tietKiem: 250000000, doanhThu: 180000000, nhanRong: 12, chatLuong: 'Cao', donVi: 'Ban Chuyển đổi số công nghệ', linhVuc: 'Công nghệ thông tin', ngayGhiNhan: '2026-03-22' },
+  { ten: 'Cải tiến An toàn bay 2025', chiPhi: 210000000, tietKiem: 500000000, doanhThu: 0, nhanRong: 6, chatLuong: 'Cao', donVi: 'Ban An toàn Chất lượng', linhVuc: 'An toàn hàng không', ngayGhiNhan: '2025-11-15' },
+  { ten: 'Chuyển đổi số Mặt đất', chiPhi: 400000000, tietKiem: 800000000, doanhThu: 120000000, nhanRong: 10, chatLuong: 'Cao', donVi: 'Ban Dịch vụ Hành khách', linhVuc: 'Dịch vụ mặt đất', ngayGhiNhan: '2026-04-18' },
 ];
 
 // ── Mock: Chiến dịch ĐMST (IV.10) ────────────────────────────────────────────
@@ -956,7 +956,7 @@ export const BaoCaoPage: React.FC = () => {
         { title: 'Tiết kiệm chi phí', dataIndex: 'tietKiem', key: 'tietKiem', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#16a34a' }}>{fmtNum(value)}</span> },
         { title: 'Tăng doanh thu', dataIndex: 'doanhThu', key: 'doanhThu', width: 170, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
         { title: 'Giá trị hiệu quả', dataIndex: 'giaTri', key: 'giaTri', width: 160, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 15, color: '#003087' }}>{fmtNum(value)}</span> },
-        { title: 'ROI', dataIndex: 'roi', key: 'roi', width: 110, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 16, color: value >= 1000 ? '#16a34a' : value >= 100 ? '#f59e0b' : '#ef4444' }}>{value.toFixed(0)}%</span> },
+        { title: 'ROI', dataIndex: 'roi', key: 'roi', width: 110, align: 'right' as const, render: (value: number) => <span style={{ fontWeight: 800, fontSize: 16, color: value >= 180 ? '#16a34a' : value >= 100 ? '#f59e0b' : '#ef4444' }}>{value.toFixed(0)}%</span> },
         { title: 'Nhân rộng', dataIndex: 'nhanRong', key: 'nhanRong', width: 100, align: 'center' as const, render: (v: any) => <span style={{ fontWeight: 700, fontSize: 14 }}>{v ?? 0}</span> },
         { title: 'Chất lượng', dataIndex: 'chatLuong', key: 'chatLuong', width: 120, align: 'center' as const, render: (v: string) => <Tag color={v === 'Cao' ? 'green' : 'gold'} style={{ fontSize: 13, fontWeight: 700, padding: '2px 10px' }}>{v}</Tag> },
       ];
@@ -1021,11 +1021,6 @@ export const BaoCaoPage: React.FC = () => {
 
     return baseColumns;
   }, [reportTemplate, chiThuongGroupBy]);
-
-  // Chỉ các mẫu báo cáo có dữ liệu lĩnh vực/mức độ hiệu quả mới nên bật 2 bộ lọc này —
-  // tránh trường hợp người dùng đổi bộ lọc nhưng chỉ số không đổi vì mẫu báo cáo không có dữ liệu tương ứng.
-  const supportsLinhVuc = ['hieu-qua', 'chien-dich', 'chuong-trinh', 'roi'].includes(reportTemplate);
-  const supportsHieuQua = ['hieu-qua', 'chuong-trinh', 'roi', 'usage'].includes(reportTemplate);
 
   const EXPORT_CONFIG = {
     csv: { fn: exportIdeaReport, ext: 'csv', label: 'CSV — mở bằng Excel' },
@@ -1432,39 +1427,33 @@ export const BaoCaoPage: React.FC = () => {
                 </div>
                 <div className="col-md-4">
                   <div className="fs-8 text-muted mb-1">Lĩnh vực</div>
-                  <Tooltip title={!supportsLinhVuc ? 'Mẫu báo cáo này không có dữ liệu theo lĩnh vực' : undefined}>
-                    <AutoComplete
-                      value={filterLinhVuc}
-                      onChange={setFilterLinhVuc}
-                      onSelect={setFilterLinhVuc}
-                      options={LINH_VUC_OPTIONS}
-                      placeholder="Chọn hoặc nhập lĩnh vực"
-                      filterOption={(input, option) =>
-                        (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
-                      }
-                      allowClear
-                      disabled={!supportsLinhVuc}
-                      className="w-100"
-                    />
-                  </Tooltip>
+                  <AutoComplete
+                    value={filterLinhVuc}
+                    onChange={setFilterLinhVuc}
+                    onSelect={setFilterLinhVuc}
+                    options={LINH_VUC_OPTIONS}
+                    placeholder="Chọn hoặc nhập lĩnh vực"
+                    filterOption={(input, option) =>
+                      (option?.value as string)?.toLowerCase().includes(input.toLowerCase())
+                    }
+                    allowClear
+                    className="w-100"
+                  />
                 </div>
                 <div className="col-md-4">
                   <div className="fs-8 text-muted mb-1">Mức độ hiệu quả</div>
-                  <Tooltip title={!supportsHieuQua ? 'Mẫu báo cáo này không có dữ liệu theo mức độ hiệu quả' : undefined}>
-                    <Select
-                      value={filterHieuQua}
-                      onChange={setFilterHieuQua}
-                      className="w-100"
-                      allowClear
-                      disabled={!supportsHieuQua}
-                      placeholder="Tất cả"
-                    >
-                      <Option value="">Tất cả</Option>
-                      <Option value="Cao">Cao</Option>
-                      <Option value="Trung bình">Trung bình</Option>
-                      <Option value="Thấp">Thấp</Option>
-                    </Select>
-                  </Tooltip>
+                  <Select
+                    value={filterHieuQua}
+                    onChange={setFilterHieuQua}
+                    className="w-100"
+                    allowClear
+                    placeholder="Tất cả"
+                  >
+                    <Option value="">Tất cả</Option>
+                    <Option value="Cao">Cao</Option>
+                    <Option value="Trung bình">Trung bình</Option>
+                    <Option value="Thấp">Thấp</Option>
+                  </Select>
                 </div>
               </div>
 
